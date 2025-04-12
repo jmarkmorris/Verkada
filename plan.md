@@ -69,18 +69,18 @@ This plan outlines the steps to implement Phase 1 functionality as described in 
     *   [x] **Important:** Add instructions to `README.md` on how to obtain the `VERKADA_WEBHOOK_SECRET` from the Verkada Command platform during webhook setup and where to store the `.env` file.
 
 3.  **Webhook Receiver Implementation (`src/app.py`):**
-    *   [ ] Import `Flask`, `request`, `abort` from `flask`.
-    *   [ ] Import validation function from `src.security`.
-    *   [ ] Import event handling functions from `src.handlers`.
-    *   [ ] Import configuration from `src.config`.
-    *   [ ] Initialize Flask app: `app = Flask(__name__)`.
-    *   [ ] Define a route (e.g., `/webhook`) that accepts POST requests.
-    *   [ ] Inside the route:
-        *   [ ] Call the webhook signature validation function. If validation fails, `abort(401)` (Unauthorized) or `abort(400)` (Bad Request).
-        *   [ ] Get the JSON payload: `data = request.get_json()`. Handle potential JSON decoding errors.
-        *   [ ] Pass the payload to an event dispatcher function in `src/handlers.py`.
-        *   [ ] Return an appropriate HTTP response (e.g., `200 OK` or `204 No Content`) to acknowledge receipt.
-    *   [ ] Add `if __name__ == '__main__':` block to run the Flask development server.
+    *   [x] Import `Flask`, `request`, `abort` from `flask`.
+    *   [x] Import validation function from `src.security`.
+    *   [x] Import event handling functions from `src.handlers`.
+    *   [x] Import configuration from `src.config`.
+    *   [x] Initialize Flask app: `app = Flask(__name__)`.
+    *   [x] Define a route (e.g., `/webhook`) that accepts POST requests.
+    *   [x] Inside the route:
+        *   [x] Call the webhook signature validation function. If validation fails, `abort(401)` (Unauthorized) or `abort(400)` (Bad Request).
+        *   [x] Get the JSON payload: `data = request.get_json()`. Handle potential JSON decoding errors.
+        *   [x] Pass the payload to an event dispatcher function in `src/handlers.py`.
+        *   [x] Return an appropriate HTTP response (e.g., `200 OK` or `204 No Content`) to acknowledge receipt.
+    *   [x] Add `if __name__ == '__main__':` block to run the Flask development server.
 
 4.  **Webhook Signature Validation (`src/security.py`):**
     *   [ ] Import `hmac`, `hashlib`, `time`.
@@ -112,9 +112,9 @@ This plan outlines the steps to implement Phase 1 functionality as described in 
     *   [ ] Add handling for unknown or unsupported event types (e.g., log a warning).
 
 6.  **Error Handling and Logging:**
-    *   [ ] Implement `try...except` blocks in `app.py` for JSON decoding errors.
+    *   [x] Implement `try...except` blocks in `app.py` for JSON decoding errors. (Added in Step 3)
     *   [ ] Implement `try...except` blocks in `handlers.py` for potential `KeyError` when accessing payload fields. Log errors appropriately.
-    *   [ ] Use Python's built-in `logging` module for basic logging (e.g., received webhook, validation success/failure, event processing start/end, errors). Configure basic logging in `app.py`.
+    *   [x] Use Python's built-in `logging` module for basic logging (e.g., received webhook, validation success/failure, event processing start/end, errors). Configure basic logging in `app.py`. (Added basic config in Step 3)
 
 7.  **Testing (Manual):**
     *   [ ] Run the Flask application.
