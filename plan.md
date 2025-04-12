@@ -42,8 +42,8 @@ This plan outlines the steps to implement Phase 1 functionality as described in 
     *   [x] Ensure `.env` is added to `.gitignore`.
 
 2.  **Configuration Management (`.env` and `src/config.py`):**
-    *   [ ] Create the `.env` file.
-    *   [ ] Define necessary environment variables in `.env`:
+    *   [x] Create the `.env` file.
+    *   [x] Define necessary environment variables in `.env`:
         ```dotenv
         # Verkada Configuration
         VERKADA_WEBHOOK_SECRET="YOUR_VERKADA_WEBHOOK_SECRET" # Obtain from Verkada Command when setting up the webhook
@@ -54,7 +54,7 @@ This plan outlines the steps to implement Phase 1 functionality as described in 
         # FLASK_RUN_PORT=5000
         # FLASK_RUN_HOST=0.0.0.0
         ```
-    *   [ ] Create `src/config.py` to load these variables using `python-dotenv` and `os.getenv`.
+    *   [x] Create `src/config.py` to load these variables using `python-dotenv` and `os.getenv`.
         ```python
         # src/config.py
         import os
@@ -65,7 +65,7 @@ This plan outlines the steps to implement Phase 1 functionality as described in 
         VERKADA_WEBHOOK_SECRET = os.getenv("VERKADA_WEBHOOK_SECRET")
         # Add other config variables as needed
         ```
-    *   [ ] **Important:** Add instructions to `README.md` on how to obtain the `VERKADA_WEBHOOK_SECRET` from the Verkada Command platform during webhook setup. The Verkada API Key mentioned in the README might be needed for *setting up* the webhook via API or for future polling, but the *secret* is used for validating incoming webhook *requests*.
+    *   [x] **Important:** Add instructions to `README.md` on how to obtain the `VERKADA_WEBHOOK_SECRET` from the Verkada Command platform during webhook setup. The Verkada API Key mentioned in the README might be needed for *setting up* the webhook via API or for future polling, but the *secret* is used for validating incoming webhook *requests*.
 
 3.  **Webhook Receiver Implementation (`src/app.py`):**
     *   [ ] Import `Flask`, `request`, `abort` from `flask`.
@@ -123,12 +123,12 @@ This plan outlines the steps to implement Phase 1 functionality as described in 
     *   [ ] Test with invalid signatures (if possible to simulate) or old timestamps to ensure validation fails correctly.
 
 8.  **Documentation (`README.md`):**
-    *   [ ] Update `README.md` with:
-        *   Detailed setup instructions (virtual env, install requirements).
-        *   Instructions on setting up the `.env` file and obtaining the `VERKADA_WEBHOOK_SECRET`.
-        *   How to run the application (`flask run`).
-        *   Explanation of the console output format.
-        *   Instructions on using `ngrok` or similar for local testing.
+    *   [x] Update `README.md` with:
+        *   [x] Detailed setup instructions (virtual env, install requirements).
+        *   [x] Instructions on setting up the `.env` file and obtaining the `VERKADA_WEBHOOK_SECRET`.
+        *   [ ] How to run the application (`flask run`).
+        *   [ ] Explanation of the console output format.
+        *   [ ] Instructions on using `ngrok` or similar for local testing.
 
 ---
 **Future Considerations (Beyond Phase 1):**
