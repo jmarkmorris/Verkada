@@ -73,9 +73,9 @@
 
 1.  Ensure your virtual environment is activated (`source venv/bin/activate` or `venv\Scripts\activate`).
 2.  Make sure you have created the `.env` file at `/Users/markmorris/Documents/Verkada-code-base/.env` and added your `VERKADA_WEBHOOK_SECRET`.
-3.  Run the Flask development server:
+3.  **From the project root directory (`Verkada`)**, run the application as a module:
     ```bash
-    python src/app.py
+    python -m src.app
     ```
     The server will start, typically listening on `http://0.0.0.0:5000/`. You should see log output indicating it has started. The `/webhook` endpoint will be available at `http://<your-ip-address>:5000/webhook`.
 
@@ -83,7 +83,7 @@
 
 ## Expected Output
 
-When the application receives and successfully validates a webhook event from Verkada, it will print a formatted message to the console where you ran `python src/app.py`.
+When the application receives and successfully validates a webhook event from Verkada, it will print a formatted message to the console where you ran `python -m src.app`.
 
 *   **LPR Event:**
     ```

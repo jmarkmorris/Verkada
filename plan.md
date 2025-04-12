@@ -128,7 +128,7 @@ This plan outlines the steps to implement Phase 1 functionality as described in 
             *   macOS/Linux: `source venv/bin/activate`
             *   Windows: `venv\Scripts\activate`
         *   Ensure your `.env` file exists at `/Users/markmorris/Documents/Verkada-code-base/.env` and contains the correct `VERKADA_WEBHOOK_SECRET`.
-        *   Run the application: `python src/app.py`
+        *   Run the application as a module: `python -m src.app`
         *   Observe the output. You should see a log message like `INFO: Starting Flask development server.` and `* Running on http://0.0.0.0:5000/`. Keep this terminal window open.
     *   [ ] **Configure a webhook in the Verkada Command platform pointing to the application's public URL (use `ngrok` or similar for local development):**
         *   **Start ngrok:** Open a *second* terminal window. Navigate to where you downloaded ngrok (or ensure it's in your system PATH). Run `ngrok http 5000`.
@@ -144,20 +144,20 @@ This plan outlines the steps to implement Phase 1 functionality as described in 
         *   Cause a vehicle with a visible license plate to pass by an LPR-enabled camera linked to the webhook.
         *   Use a valid (or invalid) credential (card, PIN, etc.) at an access-controlled door linked to the webhook.
     *   [ ] **Verify that the application receives the webhooks, validates them, and prints the correctly formatted information to the console:**
-        *   Watch the terminal window where `python src/app.py` is running.
+        *   Watch the terminal window where `python -m src.app` is running.
         *   You should see log messages indicating signature validation success and event dispatching.
         *   You should see the formatted `[LPR Event]` or `[Access Event]` messages printed to the console.
         *   Check the ngrok terminal window (`ngrok http 5000`) to see the incoming POST requests from Verkada (e.g., `POST /webhook 204 No Content`).
     *   [ ] **Test with invalid signatures (if possible to simulate) or old timestamps to ensure validation fails correctly:**
         *   (Difficult to simulate perfectly without modifying Verkada's sending).
         *   One way to test timestamp failure: Temporarily change `TIMESTAMP_TOLERANCE` in `src/security.py` to `1` (1 second), restart the app, and trigger an event. It's likely the request will arrive outside the 1-second window and fail validation. Remember to change it back to `300`.
-        *   One way to test signature failure: Temporarily change a character in the `VERKADA_WEBHOOK_SECRET` in your `.env` file, restart the app (`python src/app.py`), and trigger an event. The signature validation should fail, and you should see a `401 Unauthorized` response in the ngrok terminal and corresponding error logs in the app terminal. Remember to change the secret back.
+        *   One way to test signature failure: Temporarily change a character in the `VERKADA_WEBHOOK_SECRET` in your `.env` file, restart the app (`python -m src.app`), and trigger an event. The signature validation should fail, and you should see a `401 Unauthorized` response in the ngrok terminal and corresponding error logs in the app terminal. Remember to change the secret back.
 
 8.  **Documentation (`README.md`):**
     *   [x] Update `README.md` with:
         *   [x] Detailed setup instructions (virtual env, install requirements).
         *   [x] Instructions on setting up the `.env` file and obtaining the `VERKADA_WEBHOOK_SECRET`.
-        *   [x] How to run the application (`python src/app.py`).
+        *   [x] How to run the application (`python -m src.app`).
         *   [x] Explanation of the console output format.
         *   [x] Instructions on using `ngrok` or similar for local testing.
 
