@@ -11,14 +11,16 @@ from .handlers import handle_event
 parser = argparse.ArgumentParser(description="Verkada Webhook Receiver")
 parser.add_argument(
     "-v", "--verbose",
-    help="Increase output verbosity (set logging level to DEBUG)",
+    help="Increase output verbosity (set logging level to INFO)",
     action="store_true"
 )
 args = parser.parse_args()
 
 # --- Logging Setup ---
 # Set logging level based on verbosity flag
-log_level = logging.DEBUG if args.verbose else logging.INFO
+# Default: WARNING (only shows WARNING, ERROR, CRITICAL)
+# Verbose: INFO (shows INFO, WARNING, ERROR, CRITICAL)
+log_level = logging.INFO if args.verbose else logging.WARNING
 logging.basicConfig(level=log_level, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # --- Flask App Setup ---
@@ -37,7 +39,7 @@ def verkada_webhook():
 
     # 1. Validate the signature
     if not validate_signature(request):
-        logging.warning("Webhook signature validation failed.")
+        logging.warning("Webhook signature validation failed.") # Shows by default
         abort(401, description="Invalid webhook signature.") # Unauthorized
     else:
         logging.info("Webhook signature validated successfully.") # Shows only if verbose
@@ -46,10 +48,10 @@ def verkada_webhook():
     try:
         data = request.get_json()
         if data is None:
-            logging.warning("Received webhook with empty or non-JSON payload.")
+            logging.warning("Received webhook with empty or non-JSON payload.") # Shows by default
             abort(400, description="Request body must be JSON.") # Bad Request
     except Exception as e:
-        logging.error(f"Error parsing JSON payload: {e}")
+        logging.error(f"Error parsing JSON payload: {e}") # Shows by default
         abort(400, description="Invalid JSON payload.") # Bad Request
 
     logging.info(f"Received valid webhook payload (Type: {data.get('webhook_type', 'Unknown')}).") # Shows only if verbose
@@ -59,7 +61,7 @@ def verkada_webhook():
         handle_event(data)
     except Exception as e:
         # Log exceptions during handling but still acknowledge receipt to Verkada
-        logging.error(f"Error handling webhook event: {e}", exc_info=True)
+        logging.error(f"Error handling webhook event: {e}", exc_info=True) # Shows by default
         # Depending on requirements, you might want to return a 500 here,
         # but often it's better to acknowledge the webhook (2xx) and handle errors internally.
 
