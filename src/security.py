@@ -59,6 +59,14 @@ def validate_signature(request) -> bool:
     timestamp_bytes = timestamp_str.encode('utf-8')
     message = timestamp_bytes + b":" + raw_body
 
+    # --- DEBUGGING: Log components just before hashing ---
+    # Log partial secret to confirm it's loaded without exposing the whole thing
+    secret_preview = f"{VERKADA_WEBHOOK_SECRET[:5]}...{VERKADA_WEBHOOK_SECRET[-5:]}" if len(VERKADA_WEBHOOK_SECRET) > 10 else VERKADA_WEBHOOK_SECRET
+    logging.debug(f"Secret loaded (preview): {secret_preview}")
+    # Log the exact message bytes being signed
+    logging.debug(f"Message bytes for HMAC: {message}")
+    # --- END DEBUGGING ---
+
     # 6. Calculate the expected signature
     try:
         secret_bytes = VERKADA_WEBHOOK_SECRET.encode('utf-8')
