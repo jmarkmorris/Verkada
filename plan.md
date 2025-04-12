@@ -83,21 +83,21 @@ This plan outlines the steps to implement Phase 1 functionality as described in 
         *   [x] Return an appropriate HTTP response (e.g., `200 OK` or `204 No Content`) to acknowledge receipt.
     *   [x] Add `if __name__ == '__main__':` block to run the Flask development server.
 
-4.  **Webhook Signature Validation (`src/security.py`):**
+4.  **Webhook Signature Validation (`src/security.py`):** (Revised based on testing)
     *   **Prerequisites (Manual Steps):**
         *   [x] Ensure you have obtained your `VERKADA_WEBHOOK_SECRET` from Verkada Command.
         *   [x] Ensure the secret is correctly placed in the external `.env` file (`/Users/markmorris/Documents/Verkada-code-base/.env`) as `VERKADA_WEBHOOK_SECRET="YOUR_SECRET_HERE"`. This step is crucial for validation to work.
     *   [x] Import `hmac`, `hashlib`, `time`. (Note: These are standard Python libraries, no `pip install` needed).
     *   [x] Import `VERKADA_WEBHOOK_SECRET` from `src.config`. (Note: We import from `config` to keep configuration loading separate from the security logic).
     *   [x] Create a function `validate_signature(request)`:
-        *   [x] Retrieve the `X-Verkada-Signature` header from the `request.headers`.
-        *   [x] Retrieve the `X-Verkada-Timestamp` header.
-        *   [x] Handle cases where headers are missing (return `False`).
-        *   [x] Check if the timestamp is within an acceptable tolerance (e.g., 5 minutes) to prevent replay attacks. `abs(time.time() - int(timestamp)) > 300`. Return `False` if outside tolerance.
+        *   [x] Retrieve the `Verkada-Signature` header from `request.headers`. (Corrected header name).
+        *   [x] Handle case where header is missing (return `False`).
+        *   [x] Split the header value by `|` into `timestamp_str` and `received_signature`. Handle format errors (return `False`).
+        *   [x] Check if the `timestamp_str` is within an acceptable tolerance (e.g., 5 minutes) to prevent replay attacks. `abs(time.time() - int(timestamp_str)) > 300`. Return `False` if outside tolerance or invalid format.
         *   [x] Get the raw request body: `request.get_data()`.
-        *   [x] Construct the message string to sign: `timestamp_bytes + b":" + raw_body`. (Ensure timestamp is bytes).
+        *   [x] Construct the message string to sign: `timestamp_str.encode('utf-8') + b":" + raw_body`.
         *   [x] Calculate the HMAC-SHA256 signature using `VERKADA_WEBHOOK_SECRET.encode('utf-8')` as the key and the message string.
-        *   [x] Compare the calculated signature (hex digest) with the received `X-Verkada-Signature` header using `hmac.compare_digest` (important for timing attack resistance).
+        *   [x] Compare the calculated signature (hex digest) with the `received_signature` using `hmac.compare_digest` (important for timing attack resistance).
         *   [x] Return `True` if valid, `False` otherwise.
 
 5.  **Event Payload Parsing and Handling (`src/handlers.py`):**
@@ -135,7 +135,7 @@ This plan outlines the steps to implement Phase 1 functionality as described in 
         *   **Copy ngrok URL:** ngrok will display forwarding URLs. Copy the `https` URL (e.g., `https://<random-string>.ngrok.io`).
         *   **Log in to Verkada Command:** Access your Verkada dashboard via a web browser.
         *   **Navigate to Webhooks:** Go to **Admin** -> **Integrations** -> **Webhooks**.
-        *   **Add/Edit Webhook:** Click **Add Webhook** or edit an existing one.
+        *   **Add/Edit Webhook:** Click **Add Webhook** or edit an existing one. (Delete and re-create if editing is not possible).
         *   **Set URL:** Paste the `https` ngrok URL you copied, and append `/webhook` to the end. Example: `https://<random-string>.ngrok.io/webhook`.
         *   **Set Secret:** Ensure the **Secret** field contains the *exact same* secret string as the `VERKADA_WEBHOOK_SECRET` value in your `.env` file.
         *   **Select Event Types:** Choose the events you want to receive. For Phase 1, ensure **License Plate Read** (under Camera) and **Door Access** (under Access Control) events are selected. You might want to select specific cameras/doors if applicable.
@@ -149,7 +149,6 @@ This plan outlines the steps to implement Phase 1 functionality as described in 
         *   You should see the formatted `[LPR Event]` or `[Access Event]` messages printed to the console.
         *   Check the ngrok terminal window (`ngrok http 5000`) to see the incoming POST requests from Verkada (e.g., `POST /webhook 204 No Content`).
     *   [ ] **Test with invalid signatures (if possible to simulate) or old timestamps to ensure validation fails correctly:**
-        *   (Difficult to simulate perfectly without modifying Verkada's sending).
         *   One way to test timestamp failure: Temporarily change `TIMESTAMP_TOLERANCE` in `src/security.py` to `1` (1 second), restart the app, and trigger an event. It's likely the request will arrive outside the 1-second window and fail validation. Remember to change it back to `300`.
         *   One way to test signature failure: Temporarily change a character in the `VERKADA_WEBHOOK_SECRET` in your `.env` file, restart the app (`python -m src.app`), and trigger an event. The signature validation should fail, and you should see a `401 Unauthorized` response in the ngrok terminal and corresponding error logs in the app terminal. Remember to change the secret back.
 
