@@ -25,7 +25,6 @@ This plan outlines the steps to implement Phase 1 functionality as described in 
     *   [x] Create basic project directory structure:
         ```
         .
-        ├── .env             # Configuration (add to .gitignore)
         ├── .gitignore
         ├── LICENSE
         ├── README.md
@@ -47,6 +46,7 @@ This plan outlines the steps to implement Phase 1 functionality as described in 
         ```dotenv
         # Verkada Configuration
         VERKADA_WEBHOOK_SECRET="YOUR_VERKADA_WEBHOOK_SECRET" # Obtain from Verkada Command when setting up the webhook
+        VERKADA_ORG_ID="YOUR_ORGANIZATION_ID_HERE" # Optional for Phase 1, added by user
 
         # Flask Configuration (Optional, Flask defaults are often fine initially)
         FLASK_APP=src.app
@@ -64,6 +64,7 @@ This plan outlines the steps to implement Phase 1 functionality as described in 
         load_dotenv(dotenv_path=dotenv_path) # Load variables from specific .env file path
 
         VERKADA_WEBHOOK_SECRET = os.getenv("VERKADA_WEBHOOK_SECRET")
+        VERKADA_ORG_ID = os.getenv("VERKADA_ORG_ID") # Loaded but not used in Phase 1 code yet
         # Add other config variables as needed
         ```
     *   [x] **Important:** Add instructions to `README.md` on how to obtain the `VERKADA_WEBHOOK_SECRET` from the Verkada Command platform during webhook setup and where to store the `.env` file.
@@ -83,18 +84,21 @@ This plan outlines the steps to implement Phase 1 functionality as described in 
     *   [x] Add `if __name__ == '__main__':` block to run the Flask development server.
 
 4.  **Webhook Signature Validation (`src/security.py`):**
-    *   [ ] Import `hmac`, `hashlib`, `time`.
-    *   [ ] Import `VERKADA_WEBHOOK_SECRET` from `src.config`.
+    *   **Prerequisites (Manual Steps):**
+        *   [ ] Ensure you have obtained your `VERKADA_WEBHOOK_SECRET` from Verkada Command.
+        *   [ ] Ensure the secret is correctly placed in the external `.env` file (`/Users/markmorris/Documents/Verkada-code-base/.env`) as `VERKADA_WEBHOOK_SECRET="YOUR_SECRET_HERE"`. This step is crucial for validation to work.
+    *   [ ] Import `hmac`, `hashlib`, `time`. (Note: These are standard Python libraries, no `pip install` needed).
+    *   [ ] Import `VERKADA_WEBHOOK_SECRET` from `src.config`. (Note: We import from `config` to keep configuration loading separate from the security logic).
     *   [ ] Create a function `validate_signature(request)`:
         *   [ ] Retrieve the `X-Verkada-Signature` header from the `request.headers`.
         *   [ ] Retrieve the `X-Verkada-Timestamp` header.
-        *   [ ] Check if the timestamp is within an acceptable tolerance (e.g., 5 minutes) to prevent replay attacks. `abs(time.time() - int(timestamp)) > 300`.
+        *   [ ] Handle cases where headers are missing (return `False`).
+        *   [ ] Check if the timestamp is within an acceptable tolerance (e.g., 5 minutes) to prevent replay attacks. `abs(time.time() - int(timestamp)) > 300`. Return `False` if outside tolerance.
         *   [ ] Get the raw request body: `request.get_data()`.
-        *   [ ] Construct the message string to sign: `timestamp + b":" + raw_body`.
+        *   [ ] Construct the message string to sign: `timestamp_bytes + b":" + raw_body`. (Ensure timestamp is bytes).
         *   [ ] Calculate the HMAC-SHA256 signature using `VERKADA_WEBHOOK_SECRET.encode('utf-8')` as the key and the message string.
-        *   [ ] Compare the calculated signature (hex digest) with the received `X-Verkada-Signature` header using `hmac.compare_digest`.
+        *   [ ] Compare the calculated signature (hex digest) with the received `X-Verkada-Signature` header using `hmac.compare_digest` (important for timing attack resistance).
         *   [ ] Return `True` if valid, `False` otherwise.
-    *   [ ] Handle cases where headers are missing.
 
 5.  **Event Payload Parsing and Handling (`src/handlers.py`):**
     *   [ ] Create a main dispatch function `handle_event(payload)`:
