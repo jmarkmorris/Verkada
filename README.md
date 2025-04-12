@@ -104,20 +104,23 @@ Verkada needs to send webhook POST requests to a publicly accessible URL. When r
 
 To bridge this gap during development, you can use a tunneling service like **ngrok**.
 
-1.  **Download and Install ngrok:** Follow the instructions on the [ngrok website](https://ngrok.com/).
-2.  **Run ngrok:** After starting the Flask application (which listens on port 5000 by default), open another terminal window and run:
+1.  **Download and Install ngrok:** Follow the instructions on the [ngrok website](https://ngrok.com/). Make sure the `ngrok` command is accessible in your terminal (e.g., by moving it to `/usr/local/bin` on macOS/Linux or running it from its download directory using `./ngrok`).
+2.  **Run ngrok:** After starting the Flask application (`python -m src.app`), open another terminal window and run:
     ```bash
     ngrok http 5000
     ```
-3.  **Get Public URL:** ngrok will display a public URL (e.g., `https://<random-string>.ngrok.io`). This URL forwards requests to your local port 5000.
+3.  **Get Public URL:** ngrok will display a public URL (e.g., `https://<random-string>.ngrok.io` or `https://<random-string>.ngrok-free.app`). This URL forwards requests to your local port 5000.
 4.  **Configure Verkada Webhook:**
     *   Go to Verkada Command: **Admin** -> **Integrations** -> **Webhooks**.
     *   Edit your webhook configuration or add a new one.
-    *   Set the **URL** to the public ngrok URL followed by `/webhook`. For example: `https://<random-string>.ngrok.io/webhook`
+    *   Set the **URL** to the public ngrok URL followed by `/webhook`. For example: `https://<random-string>.ngrok-free.app/webhook`
     *   Ensure the **Secret** matches the one in your `.env` file.
+    *   Select the desired **Event Types** (e.g., License Plate Read, Door Access).
     *   Save the webhook configuration.
 5.  **Trigger Events:** Perform actions in Verkada that trigger LPR or Access events (e.g., drive a car past the LPR camera, use an access credential at a door).
 6.  **Observe Output:** You should see the webhook requests hitting your ngrok terminal and the corresponding log messages and formatted event output appearing in the terminal where your Flask application is running.
+
+**Important Note on Free `ngrok`:** The free version of `ngrok` generates a *new random public URL* every time you start it. This means **you will need to update the URL in your Verkada Command webhook configuration each time you restart `ngrok`**. This can be inconvenient for frequent development restarts. Paid `ngrok` plans offer static URLs, or you can avoid this issue entirely once the application is deployed to a server with a permanent public address. For initial testing, manually updating the URL is usually sufficient.
 
 ---
 
