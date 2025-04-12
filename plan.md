@@ -118,19 +118,19 @@ This plan outlines the steps to implement Phase 1 functionality as described in 
 6.  **Error Handling and Logging:**
     *   [x] Implement `try...except` blocks in `app.py` for JSON decoding errors. (Added in Step 3)
     *   [x] Implement `try...except` blocks in `handlers.py` for potential `KeyError` when accessing payload fields. Log errors appropriately. (Added basic blocks in Step 5)
-    *   [x] Use Python's built-in `logging` module for basic logging (e.g., received webhook, validation success/failure, event processing start/end, errors). Configure basic logging in `app.py`. (Set level to DEBUG for testing).
+    *   [x] Use Python's built-in `logging` module for basic logging (e.g., received webhook, validation success/failure, event processing start/end, errors). Configure basic logging in `app.py`. (Set level based on --verbose flag).
 
 7.  **Testing (Manual):**
-    *   [ ] **Run the Flask application:**
+    *   [x] **Run the Flask application:**
         *   Open your terminal.
         *   Navigate to the project's root directory (`Verkada`).
         *   Activate the Python virtual environment:
             *   macOS/Linux: `source venv/bin/activate`
             *   Windows: `venv\Scripts\activate`
         *   Ensure your `.env` file exists at `/Users/markmorris/Documents/Verkada-code-base/.env` and contains the correct `VERKADA_WEBHOOK_SECRET`.
-        *   Run the application as a module: `python -m src.app`
-        *   Observe the output. You should see a log message like `INFO: Starting Flask development server.` and `* Running on http://0.0.0.0:5000/`. Keep this terminal window open.
-    *   [ ] **Configure a webhook in the Verkada Command platform pointing to the application's public URL (use `ngrok` or similar for local development):**
+        *   Run the application as a module: `python -m src.app` or `python -m src.app --verbose`
+        *   Observe the output. Keep this terminal window open.
+    *   [x] **Configure a webhook in the Verkada Command platform pointing to the application's public URL (use `ngrok` or similar for local development):**
         *   **Start ngrok:** Open a *second* terminal window. Navigate to where you downloaded ngrok (or ensure it's in your system PATH). Run `ngrok http 5000`.
         *   **Copy ngrok URL:** ngrok will display forwarding URLs. Copy the `https` URL (e.g., `https://<random-string>.ngrok.io`).
         *   **Log in to Verkada Command:** Access your Verkada dashboard via a web browser.
@@ -140,15 +140,15 @@ This plan outlines the steps to implement Phase 1 functionality as described in 
         *   **Set Secret:** Ensure the **Secret** field contains the *exact same* secret string as the `VERKADA_WEBHOOK_SECRET` value in your `.env` file.
         *   **Select Event Types:** Choose the events you want to receive. For Phase 1, ensure **License Plate Read** (under Camera) and **Door Access** (under Access Control) events are selected. You might want to select specific cameras/doors if applicable.
         *   **Save:** Save the webhook configuration in Verkada Command.
-    *   [ ] **Trigger LPR and Access Control events in the Verkada system:**
+    *   [x] **Trigger LPR and Access Control events in the Verkada system:**
         *   Cause a vehicle with a visible license plate to pass by an LPR-enabled camera linked to the webhook.
         *   Use a valid (or invalid) credential (card, PIN, etc.) at an access-controlled door linked to the webhook.
-    *   [ ] **Verify that the application receives the webhooks, validates them, and prints the correctly formatted information to the console:**
+    *   [x] **Verify that the application receives the webhooks, validates them, and prints the correctly formatted information to the console:**
         *   Watch the terminal window where `python -m src.app` is running.
-        *   You should see log messages indicating signature validation success and event dispatching.
-        *   You should see the formatted `[LPR Event]` or `[Access Event]` messages printed to the console.
+        *   You should see the formatted `Plate:` or `Door:` messages printed to the console.
+        *   If running with `--verbose`, you should see additional INFO logs.
         *   Check the ngrok terminal window (`ngrok http 5000`) to see the incoming POST requests from Verkada (e.g., `POST /webhook 204 No Content`).
-    *   [ ] **Test with invalid signatures (if possible to simulate) or old timestamps to ensure validation fails correctly:**
+    *   [x] **Test with invalid signatures (if possible to simulate) or old timestamps to ensure validation fails correctly:**
         *   One way to test timestamp failure: Temporarily change `TIMESTAMP_TOLERANCE` in `src/security.py` to `1` (1 second), restart the app, and trigger an event. It's likely the request will arrive outside the 1-second window and fail validation. Remember to change it back to `300`.
         *   One way to test signature failure: Temporarily change a character in the `VERKADA_WEBHOOK_SECRET` in your `.env` file, restart the app (`python -m src.app`), and trigger an event. The signature validation should fail, and you should see a `401 Unauthorized` response in the ngrok terminal and corresponding error logs in the app terminal. Remember to change the secret back.
 

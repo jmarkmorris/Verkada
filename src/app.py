@@ -1,4 +1,5 @@
 import logging
+import argparse # Import argparse
 from flask import Flask, request, abort
 
 # Import configuration and handlers/security functions using relative imports
@@ -6,9 +7,21 @@ from . import config
 from .security import validate_signature
 from .handlers import handle_event
 
-# Basic logging configuration - Set back to INFO
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# --- Argument Parsing ---
+parser = argparse.ArgumentParser(description="Verkada Webhook Receiver")
+parser.add_argument(
+    "-v", "--verbose",
+    help="Increase output verbosity (set logging level to DEBUG)",
+    action="store_true"
+)
+args = parser.parse_args()
 
+# --- Logging Setup ---
+# Set logging level based on verbosity flag
+log_level = logging.DEBUG if args.verbose else logging.INFO
+logging.basicConfig(level=log_level, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# --- Flask App Setup ---
 app = Flask(__name__)
 
 @app.route('/webhook', methods=['POST'])
@@ -27,7 +40,7 @@ def verkada_webhook():
         logging.warning("Webhook signature validation failed.")
         abort(401, description="Invalid webhook signature.") # Unauthorized
     else:
-        logging.info("Webhook signature validated successfully.")
+        logging.info("Webhook signature validated successfully.") # Shows only if verbose
 
     # 2. Get the JSON payload
     try:
@@ -39,7 +52,7 @@ def verkada_webhook():
         logging.error(f"Error parsing JSON payload: {e}")
         abort(400, description="Invalid JSON payload.") # Bad Request
 
-    logging.info(f"Received valid webhook payload (Type: {data.get('webhook_type', 'Unknown')}).")
+    logging.info(f"Received valid webhook payload (Type: {data.get('webhook_type', 'Unknown')}).") # Shows only if verbose
 
     # 3. Pass the payload to the event handler
     try:
@@ -61,9 +74,15 @@ def index():
 
 if __name__ == '__main__':
     # Note: Use a production WSGI server (like Gunicorn or uWSGI) for deployment
-    logging.info("Starting Flask development server.")
+    logging.info("Starting Flask development server.") # Shows only if verbose
     # When running 'python src/app.py', Flask's auto-reloader might have issues
     # with relative imports if not careful. Setting use_reloader=False can help.
     # However, the standard 'flask run' command handles this better.
     # For simplicity with 'python src/app.py', we keep debug=False.
+    # Use waitress or gunicorn for production instead of app.run()
+    # For development, suppress the default Flask server logs unless verbose
+    if not args.verbose:
+        log = logging.getLogger('werkzeug')
+        log.setLevel(logging.WARNING)
+
     app.run(host='0.0.0.0', port=5000, debug=False) # Set debug=True for Flask's internal debugging if needed

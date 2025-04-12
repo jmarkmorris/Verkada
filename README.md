@@ -75,57 +75,27 @@
 2.  Make sure you have created the `.env` file at `/Users/markmorris/Documents/Verkada-code-base/.env` and added your `VERKADA_WEBHOOK_SECRET`.
 3.  **From the project root directory (`Verkada`)**, run the application as a module:
     ```bash
+    # Default (less verbose logging)
     python -m src.app
+
+    # OR Verbose (more detailed logging including INFO messages)
+    python -m src.app --verbose
     ```
-    The server will start, typically listening on `http://0.0.0.0:5000/`. You should see log output indicating it has started. The `/webhook` endpoint will be available at `http://<your-ip-address>:5000/webhook`.
+    The server will start, typically listening on `http://0.0.0.0:5000/`. You should see log output indicating it has started (only if using `--verbose`). The `/webhook` endpoint will be available at `http://<your-ip-address>:5000/webhook`.
 
 ---
 
 ## Expected Output
 
-When the application receives and successfully validates a webhook event from Verkada, it will print a formatted message to the console where you ran `python -m src.app`.
+When the application receives and successfully validates a webhook event from Verkada, it will **always print** a formatted message to the console where you ran the application:
 
 *   **LPR Event:**
     ```
-    [LPR Event] Timestamp: <event_timestamp>, Camera: <camera_name_or_id>, Plate: <license_plate_number>, OrgID: <org_id>
+    Plate: <plate_number>, Time: <formatted_time>
     ```
 *   **Access Event:**
     ```
-    [Access Event] Timestamp: <event_timestamp>, Type: <event_type>, Door: <door_name_or_id>, User: <user_description_or_id>, Credential: <credential_type> (<credential_identifier>), OrgID: <org_id>
+    Door: <door_name>, User: <user_desc>, Credential ID: <credential_identifier>, Time: <formatted_time>
     ```
 
-You will also see INFO level logs for signature validation success and event dispatching. Errors during validation or processing will be logged as WARNING or ERROR.
-
----
-
-## Testing with Webhooks (Local Development)
-
-Verkada needs to send webhook POST requests to a publicly accessible URL. When running the application locally, your machine (`localhost` or `127.0.0.1`) is typically not accessible from the public internet.
-
-To bridge this gap during development, you can use a tunneling service like **ngrok**.
-
-1.  **Download and Install ngrok:** Follow the instructions on the [ngrok website](https://ngrok.com/). Make sure the `ngrok` command is accessible in your terminal (e.g., by moving it to `/usr/local/bin` on macOS/Linux or running it from its download directory using `./ngrok`).
-2.  **Run ngrok:** After starting the Flask application (`python -m src.app`), open another terminal window and run:
-    ```bash
-    ngrok http 5000
-    ```
-3.  **Get Public URL:** ngrok will display a public URL (e.g., `https://<random-string>.ngrok.io` or `https://<random-string>.ngrok-free.app`). This URL forwards requests to your local port 5000.
-4.  **Configure Verkada Webhook:**
-    *   Go to Verkada Command: **Admin** -> **Integrations** -> **Webhooks**.
-    *   Edit your webhook configuration or add a new one.
-    *   Set the **URL** to the public ngrok URL followed by `/webhook`. For example: `https://<random-string>.ngrok-free.app/webhook`
-    *   Ensure the **Secret** matches the one in your `.env` file.
-    *   Select the desired **Event Types** (e.g., License Plate Read, Door Access).
-    *   Save the webhook configuration.
-5.  **Trigger Events:** Perform actions in Verkada that trigger LPR or Access events (e.g., drive a car past the LPR camera, use an access credential at a door).
-6.  **Observe Output:** You should see the webhook requests hitting your ngrok terminal and the corresponding log messages and formatted event output appearing in the terminal where your Flask application is running.
-
-**Important Note on Free `ngrok`:** The free version of `ngrok` generates a *new random public URL* every time you start it. This means **you will need to update the URL in your Verkada Command webhook configuration each time you restart `ngrok`**. This can be inconvenient for frequent development restarts. Paid `ngrok` plans offer static URLs, or you can avoid this issue entirely once the application is deployed to a server with a permanent public address. For initial testing, manually updating the URL is usually sufficient.
-
----
-
-**Future Enhancements (Phase 2+):**
-*   Persistent storage of events.
-*   Fetching and displaying video thumbnails or links.
-*   Web-based or GUI for event viewing and filtering.
-*   Polling API endpoints as a supplement to webhooks.
+If you run with the `--verbose` flag, you will **also** see additional `INFO` level log messages in the console, such as:
