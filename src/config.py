@@ -1,17 +1,23 @@
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from a .env file if it exists
-load_dotenv()
+# --- Specify the path to the .env file ---
+# The .env file is stored outside the project repository for security.
+# Update this path if the location changes.
+dotenv_path = '/Users/markmorris/Documents/Verkada-code-base/.env'
+
+# Load environment variables from the specified .env file path
+load_dotenv(dotenv_path=dotenv_path)
 
 # --- Verkada Configuration ---
 # Retrieve the webhook secret required for validating incoming webhook requests.
-# This MUST be set in your .env file.
+# This MUST be set in your .env file located at the path specified above.
 VERKADA_WEBHOOK_SECRET = os.getenv("VERKADA_WEBHOOK_SECRET")
 
 if not VERKADA_WEBHOOK_SECRET:
     # In a real application, you might want to raise an error or log a critical warning.
-    print("WARNING: VERKADA_WEBHOOK_SECRET is not set in the environment variables.")
+    print(f"WARNING: VERKADA_WEBHOOK_SECRET is not set in the environment variables.")
+    print(f"Attempted to load from: {dotenv_path}")
     # For now, we'll let it proceed, but validation will likely fail.
 
 # --- Flask Configuration (Example) ---

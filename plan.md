@@ -42,7 +42,7 @@ This plan outlines the steps to implement Phase 1 functionality as described in 
     *   [x] Ensure `.env` is added to `.gitignore`.
 
 2.  **Configuration Management (`.env` and `src/config.py`):**
-    *   [x] Create the `.env` file.
+    *   [x] Create the `.env` file. (Note: Moved to `/Users/markmorris/Documents/Verkada-code-base/.env` for security).
     *   [x] Define necessary environment variables in `.env`:
         ```dotenv
         # Verkada Configuration
@@ -54,18 +54,19 @@ This plan outlines the steps to implement Phase 1 functionality as described in 
         # FLASK_RUN_PORT=5000
         # FLASK_RUN_HOST=0.0.0.0
         ```
-    *   [x] Create `src/config.py` to load these variables using `python-dotenv` and `os.getenv`.
+    *   [x] Create `src/config.py` to load these variables using `python-dotenv` and `os.getenv`. (Note: Updated `load_dotenv` call to use specific path).
         ```python
         # src/config.py
         import os
         from dotenv import load_dotenv
 
-        load_dotenv() # Load variables from .env file
+        dotenv_path = '/Users/markmorris/Documents/Verkada-code-base/.env'
+        load_dotenv(dotenv_path=dotenv_path) # Load variables from specific .env file path
 
         VERKADA_WEBHOOK_SECRET = os.getenv("VERKADA_WEBHOOK_SECRET")
         # Add other config variables as needed
         ```
-    *   [x] **Important:** Add instructions to `README.md` on how to obtain the `VERKADA_WEBHOOK_SECRET` from the Verkada Command platform during webhook setup. The Verkada API Key mentioned in the README might be needed for *setting up* the webhook via API or for future polling, but the *secret* is used for validating incoming webhook *requests*.
+    *   [x] **Important:** Add instructions to `README.md` on how to obtain the `VERKADA_WEBHOOK_SECRET` from the Verkada Command platform during webhook setup and where to store the `.env` file.
 
 3.  **Webhook Receiver Implementation (`src/app.py`):**
     *   [ ] Import `Flask`, `request`, `abort` from `flask`.

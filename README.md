@@ -41,15 +41,16 @@
     ```
 
 4.  **Create Configuration File (`.env`):**
-    *   Create a file named `.env` in the root directory of the project.
-    *   Copy the contents from the example `.env` file (or the template provided below) into your new `.env` file.
+    *   **Important:** For security, the `.env` file containing secrets is stored *outside* the project directory.
+    *   Create a file named `.env` in the following location: `/Users/markmorris/Documents/Verkada-code-base/.env`
+    *   Copy the contents from the example `.env` template below into your new `.env` file.
     *   **Crucially:** You need to obtain the `VERKADA_WEBHOOK_SECRET`.
         *   Log in to your Verkada Command account.
         *   Navigate to **Admin** -> **Integrations** -> **Webhooks**.
         *   Click **Add Webhook**.
         *   Configure the webhook (you'll need the URL where this application will be running later).
         *   Under the **Secret** section, generate or copy the secret value.
-        *   Paste this value into your `.env` file, replacing `"YOUR_VERKADA_WEBHOOK_SECRET"`.
+        *   Paste this value into your `.env` file (located at `/Users/markmorris/Documents/Verkada-code-base/.env`), replacing `"YOUR_VERKADA_WEBHOOK_SECRET"`.
 
     **.env Template:**
     ```dotenv
@@ -64,7 +65,7 @@
     # FLASK_RUN_PORT=5000
     # FLASK_RUN_HOST=0.0.0.0
     ```
-    *   **Security Note:** The `.env` file is listed in `.gitignore` and should **never** be committed to version control.
+    *   **Security Note:** Ensure the directory `/Users/markmorris/Documents/Verkada-code-base/` and the `.env` file within it have appropriate permissions set and are not accidentally committed to any version control system.
 
 ---
 
