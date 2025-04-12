@@ -116,7 +116,62 @@ This application runs as a web server that listens for incoming webhook POST req
 
 ---
 
-## Expected Output Format
+## Architecture and Design
 
-Successfully processed events will be printed to the console in a fixed-width format:
+The application follows a simple, modular design suitable for receiving and processing webhooks.
 
+*   **Web Server (Flask):** `src/app.py` uses the Flask microframework to create a lightweight web server. Flask was chosen for its simplicity in handling a single primary endpoint.
+*   **Webhook Endpoint (`/webhook`):** Defined in `src/app.py`, this route listens for incoming `POST` requests from Verkada.
+*   **Configuration (`.env`, `src/config.py`):** Sensitive configuration (like the webhook secret) is stored in an external `.env` file (path specified in `src/config.py`). The `python-dotenv` library is used within `src/config.py` to load these variables into the environment securely, keeping secrets out of the source code.
+*   **Signature Validation (`src/security.py`):** The `validate_signature` function implements Verkada's webhook security protocol. It extracts the `Verkada-Signature` header, parses the timestamp and hash, checks the timestamp tolerance, reconstructs the message payload (`body|timestamp`), calculates the expected HMAC-SHA256 hash using the shared secret, and performs a constant-time comparison against the received hash.
+*   **Event Handling (`src/handlers.py`):**
+    *   **Dispatcher (`handle_event`):** Receives the validated JSON payload from `app.py`. It inspects the `webhook_type` and `notification_type` fields to determine the event category and calls the appropriate processing function.
+    *   **Processors (`process_lpr_event`, `process_access_event`):** These functions are responsible for extracting the relevant data points from the specific event payload structure (handling nested dictionaries like `data`, `door_info`, `user_info`). They format the extracted data into the desired fixed-width string using f-string formatting and print it to the console.
+    *   **Timestamp Formatting:** A helper function converts the Unix epoch timestamps provided by Verkada into human-readable date/time strings adjusted for the local timezone.
+*   **Command-Line Interface (`argparse`):** `src/app.py` uses `argparse` to handle command-line arguments, specifically the `--verbose` flag to control the logging verbosity.
+*   **Logging:** The standard `logging` module is used throughout the application. The logging level is set based on the `--verbose` flag (defaulting to `WARNING`, changing to `INFO` if `--verbose` is used), allowing for detailed debugging information when needed while keeping the default output clean.
+
+---
+
+## Development Challenges & Solutions
+
+Several challenges were encountered during the development and testing of Phase 1:
+
+1.  **Signature Validation Discrepancies:**
+    *   **Initial Issue:** The application initially failed validation, logging errors about missing `X-Verkada-Signature` and `X-Verkada-Timestamp` headers.
+    *   **Debugging:** Inspecting the actual incoming request headers using the `ngrok` web interface (`http://127.0.0.1:4040`) revealed that Verkada was sending a single combined header named `Verkada-Signature` with the format `timestamp|signature_hash`.
+    *   **Documentation Mismatch:** The specific documentation page ([https://apidocs.verkada.com/reference/securing-webhooks](https://apidocs.verkada.com/reference/securing-webhooks)) provided sample code showing a different message construction (`body|timestamp`) than initially assumed (`timestamp:body`).
+    *   **Solution:** The `src/security.py` module was updated to:
+        *   Look for the correct `Verkada-Signature` header.
+        *   Split the header value by `|` to extract the timestamp and hash.
+        *   Construct the message for HMAC calculation using the documented `raw_body + b"|" + timestamp_bytes` format.
+    *   **Secret Mismatch:** After fixing the header/message format, "Signature mismatch" errors occurred, indicating the secret stored locally in `.env` did not exactly match the secret configured in the active Verkada webhook. This required careful verification and recreation of the webhook in Verkada Command.
+
+2.  **Timestamp Tolerance / Clock Skew:**
+    *   **Issue:** Validation failed with warnings indicating the received timestamp was outside the allowed tolerance window (initially 300 seconds / 5 minutes).
+    *   **Cause:** The system clock on the local development machine was out of sync with Verkada's servers by more than the tolerance window.
+    *   **Solution:** The primary fix is to ensure the local system clock is synchronized using NTP (e.g., via OS settings). As a temporary workaround during development, the `TIMESTAMP_TOLERANCE` constant in `src/security.py` was increased to 600 seconds (10 minutes).
+
+3.  **Python Module Imports:**
+    *   **Issue:** Running the application directly via `python src/app.py` resulted in `ModuleNotFoundError` or `ImportError: attempted relative import with no known parent package` because Python didn't recognize `src` as a package in that context.
+    *   **Solution:** The application must be run as a module from the project root directory (`Verkada`) using `python -m src.app`. This allows Python to correctly resolve the relative imports (e.g., `from . import config`) within the `src` package. Running instructions were updated accordingly.
+
+4.  **Virtual Environment Corruption:**
+    *   **Issue:** The `pip` command within the activated virtual environment became corrupted, leading to `ModuleNotFoundError: No module named 'pip._internal.build_env'` when trying to install dependencies. Attempts to repair with `ensurepip` failed.
+    *   **Solution:** The corrupted virtual environment directory was deleted, and a new one was created and activated. Dependencies were then successfully reinstalled using `pip install -r requirements.txt`.
+
+5.  **`ngrok` Temporary URLs:**
+    *   **Issue:** Using the free tier of `ngrok` for local testing generates a new random public URL each time `ngrok` is started.
+    *   **Impact:** This requires manually updating the webhook URL in Verkada Command every time `ngrok` is restarted, which can be inconvenient during development.
+    *   **Solution/Mitigation:** For short testing sessions, leave `ngrok` running. For more frequent development, consider a paid `ngrok` plan with static subdomains or deploy the application to a server with a permanent URL.
+
+---
+
+**Future Enhancements (Phase 2+):**
+*   Persistent storage of events (e.g., database).
+*   More robust event correlation (linking LPR and subsequent Access events).
+*   Fetching and displaying video thumbnails or links via Verkada API calls.
+*   Web-based or GUI for event viewing and filtering.
+*   Polling API endpoints as a supplement to webhooks for certain data.
+*   More sophisticated error handling and alerting.
+*   Unit and integration tests.
