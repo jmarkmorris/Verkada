@@ -101,23 +101,23 @@ This plan outlines the steps to implement Phase 1 functionality as described in 
         *   [x] Return `True` if valid, `False` otherwise.
 
 5.  **Event Payload Parsing and Handling (`src/handlers.py`):**
-    *   [ ] Create a main dispatch function `handle_event(payload)`:
-        *   [ ] Check the payload structure or a specific field (e.g., `event_type`, if present in Verkada's payload) to determine the event type (LPR, Access Control, etc.). Refer to Verkada Webhook Models documentation.
-        *   [ ] Call specific processing functions based on the type (e.g., `process_lpr_event(payload)`, `process_access_event(payload)`).
-        *   [ ] Include basic logging for received event types.
-    *   [ ] Create `process_lpr_event(payload)`:
-        *   [ ] Extract relevant fields: `timestamp`, `camera_name` (or `camera_id`), `license_plate_number`. Access nested fields as needed based on the [LPR Webhook Object](/reference/lpr) structure.
-        *   [ ] Format the extracted data into a string.
-        *   [ ] Print the formatted string to the console.
-    *   [ ] Create `process_access_event(payload)`:
-        *   [ ] Extract relevant fields: `timestamp`, `event_type` (e.g., "Door Accessed", "Access Denied"), `door_name` (or `door_id`), `user_description` (or `user_id`, `credential_type`, `credential_identifier` like code used or card number). Refer to [Access Events Webhooks](/reference/access-events-webhooks).
-        *   [ ] Format the extracted data into a string.
-        *   [ ] Print the formatted string to the console.
-    *   [ ] Add handling for unknown or unsupported event types (e.g., log a warning).
+    *   [x] Create a main dispatch function `handle_event(payload)`:
+        *   [x] Check the payload structure or a specific field (e.g., `event_type`, if present in Verkada's payload) to determine the event type (LPR, Access Control, etc.). Refer to Verkada Webhook Models documentation. (Used key presence for now).
+        *   [x] Call specific processing functions based on the type (e.g., `process_lpr_event(payload)`, `process_access_event(payload)`).
+        *   [x] Include basic logging for received event types.
+    *   [x] Create `process_lpr_event(payload)`:
+        *   [x] Extract relevant fields: `timestamp`, `camera_name` (or `camera_id`), `license_plate_number`. Access nested fields as needed based on the [LPR Webhook Object](/reference/lpr) structure.
+        *   [x] Format the extracted data into a string.
+        *   [x] Print the formatted string to the console.
+    *   [x] Create `process_access_event(payload)`:
+        *   [x] Extract relevant fields: `timestamp`, `event_type` (e.g., "Door Accessed", "Access Denied"), `door_name` (or `door_id`), `user_description` (or `user_id`, `credential_type`, `credential_identifier` like code used or card number). Refer to [Access Events Webhooks](/reference/access-events-webhooks).
+        *   [x] Format the extracted data into a string.
+        *   [x] Print the formatted string to the console.
+    *   [x] Add handling for unknown or unsupported event types (e.g., log a warning).
 
 6.  **Error Handling and Logging:**
     *   [x] Implement `try...except` blocks in `app.py` for JSON decoding errors. (Added in Step 3)
-    *   [ ] Implement `try...except` blocks in `handlers.py` for potential `KeyError` when accessing payload fields. Log errors appropriately.
+    *   [x] Implement `try...except` blocks in `handlers.py` for potential `KeyError` when accessing payload fields. Log errors appropriately. (Added basic blocks in Step 5)
     *   [x] Use Python's built-in `logging` module for basic logging (e.g., received webhook, validation success/failure, event processing start/end, errors). Configure basic logging in `app.py`. (Added basic config in Step 3)
 
 7.  **Testing (Manual):**
