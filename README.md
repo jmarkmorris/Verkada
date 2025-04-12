@@ -69,6 +69,58 @@
 
 ---
 
+## Running the Application
+
+1.  Ensure your virtual environment is activated (`source venv/bin/activate` or `venv\Scripts\activate`).
+2.  Make sure you have created the `.env` file at `/Users/markmorris/Documents/Verkada-code-base/.env` and added your `VERKADA_WEBHOOK_SECRET`.
+3.  Run the Flask development server:
+    ```bash
+    python src/app.py
+    ```
+    The server will start, typically listening on `http://0.0.0.0:5000/`. You should see log output indicating it has started. The `/webhook` endpoint will be available at `http://<your-ip-address>:5000/webhook`.
+
+---
+
+## Expected Output
+
+When the application receives and successfully validates a webhook event from Verkada, it will print a formatted message to the console where you ran `python src/app.py`.
+
+*   **LPR Event:**
+    ```
+    [LPR Event] Timestamp: <event_timestamp>, Camera: <camera_name_or_id>, Plate: <license_plate_number>, OrgID: <org_id>
+    ```
+*   **Access Event:**
+    ```
+    [Access Event] Timestamp: <event_timestamp>, Type: <event_type>, Door: <door_name_or_id>, User: <user_description_or_id>, Credential: <credential_type> (<credential_identifier>), OrgID: <org_id>
+    ```
+
+You will also see INFO level logs for signature validation success and event dispatching. Errors during validation or processing will be logged as WARNING or ERROR.
+
+---
+
+## Testing with Webhooks (Local Development)
+
+Verkada needs to send webhook POST requests to a publicly accessible URL. When running the application locally, your machine (`localhost` or `127.0.0.1`) is typically not accessible from the public internet.
+
+To bridge this gap during development, you can use a tunneling service like **ngrok**.
+
+1.  **Download and Install ngrok:** Follow the instructions on the [ngrok website](https://ngrok.com/).
+2.  **Run ngrok:** After starting the Flask application (which listens on port 5000 by default), open another terminal window and run:
+    ```bash
+    ngrok http 5000
+    ```
+3.  **Get Public URL:** ngrok will display a public URL (e.g., `https://<random-string>.ngrok.io`). This URL forwards requests to your local port 5000.
+4.  **Configure Verkada Webhook:**
+    *   Go to Verkada Command: **Admin** -> **Integrations** -> **Webhooks**.
+    *   Edit your webhook configuration or add a new one.
+    *   Set the **URL** to the public ngrok URL followed by `/webhook`. For example: `https://<random-string>.ngrok.io/webhook`
+    *   Ensure the **Secret** matches the one in your `.env` file.
+    *   Save the webhook configuration.
+5.  **Trigger Events:** Perform actions in Verkada that trigger LPR or Access events (e.g., drive a car past the LPR camera, use an access credential at a door).
+6.  **Observe Output:** You should see the webhook requests hitting your ngrok terminal and the corresponding log messages and formatted event output appearing in the terminal where your Flask application is running.
+
+---
+
 **Future Enhancements (Phase 2+):**
 *   Persistent storage of events.
 *   Fetching and displaying video thumbnails or links.

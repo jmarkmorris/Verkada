@@ -131,9 +131,9 @@ This plan outlines the steps to implement Phase 1 functionality as described in 
     *   [x] Update `README.md` with:
         *   [x] Detailed setup instructions (virtual env, install requirements).
         *   [x] Instructions on setting up the `.env` file and obtaining the `VERKADA_WEBHOOK_SECRET`.
-        *   [ ] How to run the application (`flask run`).
-        *   [ ] Explanation of the console output format.
-        *   [ ] Instructions on using `ngrok` or similar for local testing.
+        *   [x] How to run the application (`python src/app.py`).
+        *   [x] Explanation of the console output format.
+        *   [x] Instructions on using `ngrok` or similar for local testing.
 
 ---
 **Future Considerations (Beyond Phase 1):**
