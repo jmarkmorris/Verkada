@@ -8,7 +8,8 @@ from .config import VERKADA_WEBHOOK_SECRET
 
 # Define the tolerance for timestamp validation (in seconds)
 # Documentation sample uses 60, but 300 (5 min) is generally safer for clock skew
-TIMESTAMP_TOLERANCE = 300
+# Increased to 600 (10 min) to handle observed clock skew. Best practice is to fix system clock.
+TIMESTAMP_TOLERANCE = 600
 
 def validate_signature(request) -> bool:
     """
@@ -45,7 +46,7 @@ def validate_signature(request) -> bool:
     try:
         timestamp_int = int(timestamp_str)
         current_time = int(time.time())
-        # Using tolerance defined above (e.g., 300 seconds)
+        # Using tolerance defined above (e.g., 600 seconds)
         if abs(current_time - timestamp_int) > TIMESTAMP_TOLERANCE:
             logging.warning(f"Timestamp {timestamp_str} is outside the tolerance window ({TIMESTAMP_TOLERANCE}s). Current time: {current_time}")
             # Note: Sample code uses 60s, which might be too strict.

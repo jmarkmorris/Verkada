@@ -54,10 +54,16 @@ def process_access_event(payload):
 
         # Door info might be nested further
         door_info = event_data.get('door_info', {})
+        # Ensure door_info is a dict even if the key exists with a null value
+        if door_info is None:
+            door_info = {}
         door_name = door_info.get('name', event_data.get('door_name', event_data.get('door_id', 'N/A')))
 
         # User info might be nested
         user_info = event_data.get('user_info', {})
+        # Ensure user_info is a dict even if the key exists with a null value
+        if user_info is None:
+            user_info = {}
         user_desc = user_info.get('name', event_data.get('user_description', event_data.get('person_id', 'N/A')))
 
         # Input value might contain the credential identifier for some notification types
