@@ -83,19 +83,19 @@ This plan outlines the steps to implement Phase 1 functionality as described in 
         *   [x] Return an appropriate HTTP response (e.g., `200 OK` or `204 No Content`) to acknowledge receipt.
     *   [x] Add `if __name__ == '__main__':` block to run the Flask development server.
 
-4.  **Webhook Signature Validation (`src/security.py`):** (Revised based on testing)
+4.  **Webhook Signature Validation (`src/security.py`):** (Revised based on documentation sample)
     *   **Prerequisites (Manual Steps):**
         *   [x] Ensure you have obtained your `VERKADA_WEBHOOK_SECRET` from Verkada Command.
         *   [x] Ensure the secret is correctly placed in the external `.env` file (`/Users/markmorris/Documents/Verkada-code-base/.env`) as `VERKADA_WEBHOOK_SECRET="YOUR_SECRET_HERE"`. This step is crucial for validation to work.
     *   [x] Import `hmac`, `hashlib`, `time`. (Note: These are standard Python libraries, no `pip install` needed).
     *   [x] Import `VERKADA_WEBHOOK_SECRET` from `src.config`. (Note: We import from `config` to keep configuration loading separate from the security logic).
     *   [x] Create a function `validate_signature(request)`:
-        *   [x] Retrieve the `Verkada-Signature` header from `request.headers`. (Corrected header name).
+        *   [x] Retrieve the `Verkada-Signature` header from `request.headers`.
         *   [x] Handle case where header is missing (return `False`).
         *   [x] Split the header value by `|` into `timestamp_str` and `received_signature`. Handle format errors (return `False`).
         *   [x] Check if the `timestamp_str` is within an acceptable tolerance (e.g., 5 minutes) to prevent replay attacks. `abs(time.time() - int(timestamp_str)) > 300`. Return `False` if outside tolerance or invalid format.
         *   [x] Get the raw request body: `request.get_data()`.
-        *   [x] Construct the message string to sign: `timestamp_str.encode('utf-8') + b":" + raw_body`.
+        *   [x] Construct the message string to sign: `raw_body + b"|" + timestamp_str.encode('utf-8')`. (Corrected format based on documentation).
         *   [x] Calculate the HMAC-SHA256 signature using `VERKADA_WEBHOOK_SECRET.encode('utf-8')` as the key and the message string.
         *   [x] Compare the calculated signature (hex digest) with the `received_signature` using `hmac.compare_digest` (important for timing attack resistance).
         *   [x] Return `True` if valid, `False` otherwise.
@@ -118,7 +118,7 @@ This plan outlines the steps to implement Phase 1 functionality as described in 
 6.  **Error Handling and Logging:**
     *   [x] Implement `try...except` blocks in `app.py` for JSON decoding errors. (Added in Step 3)
     *   [x] Implement `try...except` blocks in `handlers.py` for potential `KeyError` when accessing payload fields. Log errors appropriately. (Added basic blocks in Step 5)
-    *   [x] Use Python's built-in `logging` module for basic logging (e.g., received webhook, validation success/failure, event processing start/end, errors). Configure basic logging in `app.py`. (Added basic config in Step 3)
+    *   [x] Use Python's built-in `logging` module for basic logging (e.g., received webhook, validation success/failure, event processing start/end, errors). Configure basic logging in `app.py`. (Set level to DEBUG for testing).
 
 7.  **Testing (Manual):**
     *   [ ] **Run the Flask application:**

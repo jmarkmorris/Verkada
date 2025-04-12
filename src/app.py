@@ -6,7 +6,7 @@ from . import config
 from .security import validate_signature
 from .handlers import handle_event
 
-# Basic logging configuration
+# Basic logging configuration - Set back to INFO
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__)
@@ -39,7 +39,7 @@ def verkada_webhook():
         logging.error(f"Error parsing JSON payload: {e}")
         abort(400, description="Invalid JSON payload.") # Bad Request
 
-    logging.info(f"Received valid webhook payload.") # Consider logging type if available: data.get('event_type')
+    logging.info(f"Received valid webhook payload (Type: {data.get('webhook_type', 'Unknown')}).")
 
     # 3. Pass the payload to the event handler
     try:
@@ -66,4 +66,4 @@ if __name__ == '__main__':
     # with relative imports if not careful. Setting use_reloader=False can help.
     # However, the standard 'flask run' command handles this better.
     # For simplicity with 'python src/app.py', we keep debug=False.
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    app.run(host='0.0.0.0', port=5000, debug=False) # Set debug=True for Flask's internal debugging if needed

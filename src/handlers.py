@@ -9,9 +9,11 @@ def process_lpr_event(payload):
     """
     try:
         # Extract relevant fields - adjust keys based on actual Verkada payload structure
-        timestamp = payload.get('event_timestamp', 'N/A')
-        camera_name = payload.get('camera_name', payload.get('camera_id', 'N/A')) # Prefer name, fallback to ID
-        plate_number = payload.get('license_plate_number', 'N/A')
+        # The timestamp seems to be in the 'data' sub-dictionary for LPR
+        event_data = payload.get('data', {})
+        timestamp = event_data.get('created', payload.get('created_at', 'N/A')) # Prefer 'created' in data, fallback to top-level
+        camera_name = event_data.get('camera_name', event_data.get('camera_id', 'N/A')) # Prefer name, fallback to ID
+        plate_number = event_data.get('license_plate_number', 'N/A')
         org_id = payload.get('org_id', 'N/A') # Example of accessing other potential fields
 
         output = (
@@ -30,18 +32,31 @@ def process_lpr_event(payload):
 
 def process_access_event(payload):
     """
-    Processes an Access Control event payload.
+    Processes an Access Control event payload (potentially wrapped in a 'notification').
     Extracts relevant information and prints it.
     """
     try:
-        # Extract relevant fields - adjust keys based on actual Verkada payload structure
-        timestamp = payload.get('event_timestamp', 'N/A')
-        event_type = payload.get('event_type', 'N/A') # e.g., "Door Accessed", "Access Denied"
-        door_name = payload.get('door_name', payload.get('door_id', 'N/A')) # Prefer name, fallback to ID
-        user_desc = payload.get('user_description', payload.get('person_id', 'N/A')) # Prefer description
-        credential_type = payload.get('credential_type', 'N/A') # e.g., "Card", "PIN", "BLE"
-        credential_identifier = payload.get('credential_identifier', 'N/A') # e.g., card number, code used
-        org_id = payload.get('org_id', 'N/A')
+        # Data might be nested under 'data' if it's a 'notification' type
+        event_data = payload.get('data', payload) # Use top-level payload if 'data' key doesn't exist
+
+        timestamp = event_data.get('created', payload.get('created_at', 'N/A')) # Prefer 'created' in data, fallback to top-level
+        # Determine event type - might be 'notification_type' or 'event_type'
+        event_type = event_data.get('notification_type', event_data.get('event_type', 'N/A'))
+
+        # Door info might be nested further
+        door_info = event_data.get('door_info', {})
+        door_name = door_info.get('name', event_data.get('door_name', event_data.get('door_id', 'N/A')))
+
+        # User info might be nested
+        user_info = event_data.get('user_info', {})
+        user_desc = user_info.get('name', event_data.get('user_description', event_data.get('person_id', 'N/A')))
+
+        # Credential info might be at the event_data level
+        credential_type = event_data.get('credential_type', 'N/A') # e.g., "Card", "PIN", "BLE"
+        # Input value might contain the credential identifier for some notification types
+        credential_identifier = event_data.get('input_value', event_data.get('credential_identifier', 'N/A'))
+
+        org_id = payload.get('org_id', 'N/A') # Org ID is likely at the top level
 
         output = (
             f"[Access Event] Timestamp: {timestamp}, "
@@ -68,24 +83,35 @@ def handle_event(payload):
     Args:
         payload (dict): The JSON payload received from the webhook.
     """
-    logging.debug(f"Handling event payload: {payload}") # Log full payload only if needed (can be verbose)
+    # logging.debug(f"Handling event payload: {payload}") # Avoid logging full payload unless necessary
 
     # --- Determine Event Type ---
-    # NOTE: The exact field indicating the webhook type needs verification.
-    # It might be 'webhook_type', 'event_category', or determined by specific keys.
-    webhook_type = payload.get('webhook_type', 'Unknown') # Placeholder guess
+    webhook_type = payload.get('webhook_type') # Explicit type field from Verkada
 
-    if 'license_plate_number' in payload:
+    if webhook_type == 'lpr':
         logging.info(f"Dispatching LPR event...")
         process_lpr_event(payload)
-    elif 'door_id' in payload or 'door_name' in payload:
-        logging.info(f"Dispatching Access event...")
+    elif webhook_type == 'notification':
+        # Notifications often wrap other event types, check nested data
+        notification_type = payload.get('data', {}).get('notification_type', '')
+        logging.info(f"Dispatching Notification event (Type: {notification_type})...")
+        # Assuming 'notification' types related to access control should use process_access_event
+        # This might need refinement based on different notification_types
+        if 'door' in notification_type:
+             process_access_event(payload)
+        else:
+             logging.warning(f"Received unhandled notification type: {notification_type}")
+    elif webhook_type == 'access_event': # Handle direct access events if they exist
+         logging.info(f"Dispatching Access event...")
+         process_access_event(payload)
+    # Fallback check using keys if webhook_type is missing (less reliable)
+    elif 'license_plate_number' in payload.get('data', {}):
+        logging.info(f"Dispatching LPR event (detected by key)...")
+        process_lpr_event(payload)
+    elif 'door_id' in payload.get('data', {}):
+        logging.info(f"Dispatching Access event (detected by key)...")
         process_access_event(payload)
-    # Add elif conditions for other event types (Sensor, Alarm, etc.) if needed in the future
-    # elif 'sensor_id' in payload:
-    #     logging.info("Dispatching Sensor event...")
-    #     # process_sensor_event(payload) # Implement this function if needed
     else:
-        # Fallback if specific keys aren't found or webhook_type is generic
+        # Fallback if type is unknown or keys don't match
         logging.warning(f"Received unknown or unsupported event type. Webhook Type Field: '{webhook_type}'. Keys: {list(payload.keys())}")
 
