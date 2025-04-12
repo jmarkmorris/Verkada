@@ -1,10 +1,10 @@
 import logging
 from flask import Flask, request, abort
 
-# Import configuration and handlers/security functions
-from src import config
-from src.security import validate_signature
-from src.handlers import handle_event # Placeholder for event processing logic
+# Import configuration and handlers/security functions using relative imports
+from . import config
+from .security import validate_signature
+from .handlers import handle_event
 
 # Basic logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -62,4 +62,8 @@ def index():
 if __name__ == '__main__':
     # Note: Use a production WSGI server (like Gunicorn or uWSGI) for deployment
     logging.info("Starting Flask development server.")
-    app.run(host='0.0.0.0', port=5000, debug=False) # Set debug=True for development debugging output
+    # When running 'python src/app.py', Flask's auto-reloader might have issues
+    # with relative imports if not careful. Setting use_reloader=False can help.
+    # However, the standard 'flask run' command handles this better.
+    # For simplicity with 'python src/app.py', we keep debug=False.
+    app.run(host='0.0.0.0', port=5000, debug=False)

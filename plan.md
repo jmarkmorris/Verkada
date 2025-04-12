@@ -123,7 +123,7 @@ This plan outlines the steps to implement Phase 1 functionality as described in 
 7.  **Testing (Manual):**
     *   [ ] **Run the Flask application:**
         *   Open your terminal.
-        *   Navigate to the project's root directory (`verkada-api-monitor`).
+        *   Navigate to the project's root directory (`Verkada`).
         *   Activate the Python virtual environment:
             *   macOS/Linux: `source venv/bin/activate`
             *   Windows: `venv\Scripts\activate`

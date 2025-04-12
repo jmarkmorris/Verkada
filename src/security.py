@@ -1,11 +1,10 @@
-
 import hmac
 import hashlib
 import time
 import logging
 
-# Import the secret from the configuration module
-from src.config import VERKADA_WEBHOOK_SECRET
+# Import the secret from the configuration module using relative import
+from .config import VERKADA_WEBHOOK_SECRET
 
 # Define the tolerance for timestamp validation (in seconds)
 TIMESTAMP_TOLERANCE = 300  # 5 minutes
