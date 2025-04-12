@@ -44,13 +44,17 @@ def process_lpr_event(payload):
 def process_access_event(payload):
     """
     Processes an Access Control event payload (potentially wrapped in a 'notification').
-    Extracts key information and prints it.
+    Extracts key information and prints it, prioritizing Plate if applicable.
     """
     try:
         # Data might be nested under 'data' if it's a 'notification' type
         event_data = payload.get('data', payload) # Use top-level payload if 'data' key doesn't exist
 
         timestamp_unix = event_data.get('created', payload.get('created_at')) # Get Unix timestamp
+        formatted_time = format_timestamp(timestamp_unix)
+
+        # Determine event type - might be 'notification_type' or 'event_type'
+        notification_type = event_data.get('notification_type', event_data.get('event_type', 'N/A'))
 
         # Door info might be nested further
         door_info = event_data.get('door_info', {})
@@ -69,12 +73,18 @@ def process_access_event(payload):
         # Input value might contain the credential identifier for some notification types
         credential_identifier = event_data.get('input_value', event_data.get('credential_identifier', 'N/A'))
 
-        # Format timestamp
-        formatted_time = format_timestamp(timestamp_unix)
+        # Format output based on whether it's a license plate access event
+        if notification_type == 'door_lp_presented_accepted':
+            # Prioritize Plate for this specific notification type
+            output = (
+                f"Plate: {credential_identifier}, Door: {door_name}, User: {user_desc}, Time: {formatted_time}"
+            )
+        else:
+            # Default format for other access events
+            output = (
+                f"Door: {door_name}, User: {user_desc}, Credential ID: {credential_identifier}, Time: {formatted_time}"
+            )
 
-        output = (
-            f"Door: {door_name}, User: {user_desc}, Credential ID: {credential_identifier}, Time: {formatted_time}"
-        )
         print(output) # Print essential info to console always
         # logging.info(output) # Log only if verbose (handled by level setting in app.py)
     except KeyError as e:
