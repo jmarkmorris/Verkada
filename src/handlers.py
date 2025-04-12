@@ -9,7 +9,8 @@ def format_timestamp(unix_timestamp):
     try:
         # Assume UTC timestamp from Verkada, convert to local timezone display
         dt_object = datetime.fromtimestamp(unix_timestamp, tz=timezone.utc).astimezone()
-        return dt_object.strftime('%Y-%m-%d %H:%M:%S %Z') # e.g., 2025-04-12 17:30:20 EDT
+        # Format: YYYY-MM-DD HH:MM:SS ZZZ (e.g., 2025-04-12 17:30:20 EDT) - needs ~24 chars
+        return dt_object.strftime('%Y-%m-%d %H:%M:%S %Z')
     except Exception as e:
         logging.warning(f"Could not format timestamp {unix_timestamp}: {e}")
         return str(unix_timestamp) # Fallback to original string
@@ -19,22 +20,22 @@ def format_timestamp(unix_timestamp):
 def process_lpr_event(payload):
     """
     Processes a License Plate Recognition event payload.
-    Extracts key information and prints it.
+    Extracts key information and prints it in fixed-width columns.
     """
     try:
         # Extract relevant fields
         event_data = payload.get('data', {})
         timestamp_unix = event_data.get('created', payload.get('created_at')) # Get Unix timestamp
-        plate_number = event_data.get('license_plate_number', 'N/A')
+        plate_number = event_data.get('license_plate_number', '') # Default to empty string if missing
 
         # Format timestamp
         formatted_time = format_timestamp(timestamp_unix)
+        # Prepare plate string (first 10 chars)
+        plate_str = (plate_number or '')[:10]
 
-        output = (
-            f"Plate: {plate_number}, Time: {formatted_time}"
-        )
-        print(output) # Print essential info to console always
-        # logging.info(output) # Log only if verbose (handled by level setting in app.py)
+        # Print in fixed-width columns: Plate/Cred (12), Door (20), User (35), Time (25)
+        print(f"{plate_str:<12} {'':<20} {'':<35} {formatted_time:<25}")
+
     except KeyError as e:
         logging.error(f"Missing expected key in LPR payload: {e}")
     except Exception as e:
@@ -44,7 +45,7 @@ def process_lpr_event(payload):
 def process_access_event(payload):
     """
     Processes an Access Control event payload (potentially wrapped in a 'notification').
-    Extracts key information and prints it, prioritizing Plate if applicable.
+    Extracts key information and prints it in fixed-width columns.
     """
     try:
         # Data might be nested under 'data' if it's a 'notification' type
@@ -53,40 +54,27 @@ def process_access_event(payload):
         timestamp_unix = event_data.get('created', payload.get('created_at')) # Get Unix timestamp
         formatted_time = format_timestamp(timestamp_unix)
 
-        # Determine event type - might be 'notification_type' or 'event_type'
-        notification_type = event_data.get('notification_type', event_data.get('event_type', 'N/A'))
-
         # Door info might be nested further
         door_info = event_data.get('door_info', {})
-        # Ensure door_info is a dict even if the key exists with a null value
-        if door_info is None:
-            door_info = {}
-        door_name = door_info.get('name', event_data.get('door_name', event_data.get('door_id', 'N/A')))
+        if door_info is None: door_info = {}
+        door_name = door_info.get('name', event_data.get('door_name', event_data.get('door_id', ''))) # Default to empty
 
         # User info might be nested
         user_info = event_data.get('user_info', {})
-        # Ensure user_info is a dict even if the key exists with a null value
-        if user_info is None:
-            user_info = {}
-        user_desc = user_info.get('name', event_data.get('user_description', event_data.get('person_id', 'N/A')))
+        if user_info is None: user_info = {}
+        user_desc = user_info.get('name', event_data.get('user_description', event_data.get('person_id', ''))) # Default to empty
 
         # Input value might contain the credential identifier for some notification types
-        credential_identifier = event_data.get('input_value', event_data.get('credential_identifier', 'N/A'))
+        credential_identifier = event_data.get('input_value', event_data.get('credential_identifier', '')) # Default to empty
 
-        # Format output based on whether it's a license plate access event
-        if notification_type == 'door_lp_presented_accepted':
-            # Prioritize Plate for this specific notification type
-            output = (
-                f"Plate: {credential_identifier}, Door: {door_name}, User: {user_desc}, Time: {formatted_time}"
-            )
-        else:
-            # Default format for other access events
-            output = (
-                f"Door: {door_name}, User: {user_desc}, Credential ID: {credential_identifier}, Time: {formatted_time}"
-            )
+        # Prepare strings for printing, handling None and length limits
+        cred_str = (credential_identifier or '')[:10]
+        door_str = (door_name or '')
+        user_str = (user_desc or '')
 
-        print(output) # Print essential info to console always
-        # logging.info(output) # Log only if verbose (handled by level setting in app.py)
+        # Print in fixed-width columns: Plate/Cred (12), Door (20), User (35), Time (25)
+        print(f"{cred_str:<12} {door_str:<20} {user_str:<35} {formatted_time:<25}")
+
     except KeyError as e:
         logging.error(f"Missing expected key in Access payload: {e}")
     except Exception as e:
