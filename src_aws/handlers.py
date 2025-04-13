@@ -1,10 +1,15 @@
 import logging
 from datetime import datetime, timezone
 
+# Configure logging for this module
+# The level will be set by the root logger configuration in lambda_function.py
+logger = logging.getLogger(__name__)
+
 # Helper function to format timestamp
 def format_timestamp(unix_timestamp):
     """Converts a Unix epoch timestamp to a readable string."""
     if not isinstance(unix_timestamp, (int, float)):
+        logger.debug(f"Timestamp '{unix_timestamp}' is not a number, returning as string.")
         return str(unix_timestamp) # Return as is if not a valid number
     try:
         # Assume UTC timestamp from Verkada, convert to local timezone display
@@ -12,15 +17,16 @@ def format_timestamp(unix_timestamp):
         # Format: YYYY-MM-DD HH:MM:SS ZZZ (e.g., 2025-04-12 17:30:20 EDT) - needs ~24 chars
         return dt_object.strftime('%Y-%m-%d %H:%M:%S %Z')
     except Exception as e:
-        logging.warning(f"Could not format timestamp {unix_timestamp}: {e}")
+        # Use warning level as this indicates a potential issue with timestamp data
+        logger.warning(f"Could not format timestamp {unix_timestamp}: {e}")
         return str(unix_timestamp) # Fallback to original string
 
-# Placeholder functions for processing specific event types
+# Functions for processing specific event types
 
 def process_lpr_event(payload):
     """
     Processes a License Plate Recognition event payload.
-    Extracts key information and prints it in fixed-width columns.
+    Extracts key information and logs it.
     """
     try:
         # Extract relevant fields
@@ -33,19 +39,21 @@ def process_lpr_event(payload):
         # Prepare plate string (first 10 chars)
         plate_str = (plate_number or '')[:10]
 
-        # Print in fixed-width columns: Plate/Cred (12), Door (20), User (35), Time (25)
-        print(f"{plate_str:<12} {'':<20} {'':<35} {formatted_time:<25}")
+        # Log the processed event information using INFO level
+        # Format: Plate/Cred (12), Door (20), User (35), Time (25)
+        log_message = f"LPR Event: {plate_str:<12} {'':<20} {'':<35} {formatted_time:<25}"
+        logger.info(log_message) # Replaced print with logger.info
 
     except KeyError as e:
-        logging.error(f"Missing expected key in LPR payload: {e}")
+        logger.error(f"Missing expected key in LPR payload: {e}")
     except Exception as e:
-        logging.error(f"Error processing LPR event: {e}", exc_info=True)
+        logger.error(f"Error processing LPR event: {e}", exc_info=True)
 
 
 def process_access_event(payload):
     """
     Processes an Access Control event payload (potentially wrapped in a 'notification').
-    Extracts key information and prints it in fixed-width columns.
+    Extracts key information and logs it.
     """
     try:
         # Data might be nested under 'data' if it's a 'notification' type
@@ -67,21 +75,23 @@ def process_access_event(payload):
         # Input value might contain the credential identifier for some notification types
         credential_identifier = event_data.get('input_value', event_data.get('credential_identifier', '')) # Default to empty
 
-        # Prepare strings for printing, handling None and length limits
+        # Prepare strings for logging, handling None and length limits
         cred_str = (credential_identifier or '')[:10]
         door_str = (door_name or '')
         user_str = (user_desc or '')
 
-        # Print in fixed-width columns: Plate/Cred (12), Door (20), User (35), Time (25)
-        print(f"{cred_str:<12} {door_str:<20} {user_str:<35} {formatted_time:<25}")
+        # Log the processed event information using INFO level
+        # Format: Plate/Cred (12), Door (20), User (35), Time (25)
+        log_message = f"Access Event: {cred_str:<12} {door_str:<20} {user_str:<35} {formatted_time:<25}"
+        logger.info(log_message) # Replaced print with logger.info
 
     except KeyError as e:
-        logging.error(f"Missing expected key in Access payload: {e}")
+        logger.error(f"Missing expected key in Access payload: {e}")
     except Exception as e:
-        logging.error(f"Error processing Access event: {e}", exc_info=True)
+        logger.error(f"Error processing Access event: {e}", exc_info=True)
 
 
-# Main event handler/dispatcher called by app.py
+# Main event handler/dispatcher called by lambda_function.py
 
 def handle_event(payload):
     """
@@ -90,39 +100,40 @@ def handle_event(payload):
     Args:
         payload (dict): The JSON payload received from the webhook.
     """
-    # logging.debug(f"Handling event payload: {payload}") # Avoid logging full payload unless necessary
+    logger.debug(f"Handling event payload: {payload}") # Log full payload only at DEBUG level
 
     # --- Determine Event Type ---
     webhook_type = payload.get('webhook_type') # Explicit type field from Verkada
 
     if webhook_type == 'lpr':
-        logging.info(f"Dispatching LPR event...") # Shows only if verbose
+        logger.info(f"Dispatching LPR event...")
         process_lpr_event(payload)
     elif webhook_type == 'notification':
         # Notifications often wrap other event types, check nested data
         notification_type = payload.get('data', {}).get('notification_type', '')
-        logging.info(f"Dispatching Notification event (Type: {notification_type})...") # Shows only if verbose
+        logger.info(f"Dispatching Notification event (Type: {notification_type})...")
         # Assuming 'notification' types related to access control should use process_access_event
         if 'door' in notification_type:
              process_access_event(payload)
         elif notification_type == 'license_plate_of_interest':
              # Log that we received it, but don't process further for Phase 1 unless requested
-             logging.info(f"Received 'license_plate_of_interest' notification. No specific action defined for Phase 1.") # Shows only if verbose
+             logger.info(f"Received 'license_plate_of_interest' notification. No specific action defined.")
              # Optionally, you could call process_lpr_event if the structure is similar enough
              # process_lpr_event(payload)
         else:
-             logging.warning(f"Received unhandled notification type: {notification_type}") # Always shows
+             # Use warning level for unhandled types
+             logger.warning(f"Received unhandled notification type: {notification_type}")
     elif webhook_type == 'access_event': # Handle direct access events if they exist
-         logging.info(f"Dispatching Access event...") # Shows only if verbose
+         logger.info(f"Dispatching Access event...")
          process_access_event(payload)
     # Fallback check using keys if webhook_type is missing (less reliable)
     elif 'license_plate_number' in payload.get('data', {}):
-        logging.info(f"Dispatching LPR event (detected by key)...") # Shows only if verbose
+        logger.info(f"Dispatching LPR event (detected by key)...")
         process_lpr_event(payload)
     elif 'door_id' in payload.get('data', {}):
-        logging.info(f"Dispatching Access event (detected by key)...") # Shows only if verbose
+        logger.info(f"Dispatching Access event (detected by key)...")
         process_access_event(payload)
     else:
         # Fallback if type is unknown or keys don't match
-        logging.warning(f"Received unknown or unsupported event type. Webhook Type Field: '{webhook_type}'. Keys: {list(payload.keys())}") # Always shows
-
+        # Use warning level for unknown/unsupported types
+        logger.warning(f"Received unknown or unsupported event type. Webhook Type Field: '{webhook_type}'. Keys: {list(payload.keys())}")
