@@ -1,3 +1,1 @@
-Flask>=2.0
-python-dotenv>=0.19
-requests>=2.25
+boto3>=1.20.0 # For interacting with AWS services (SSM, CloudWatch, etc.)
