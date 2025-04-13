@@ -1,0 +1,3 @@
+Flask>=2.0.0       # Web framework used by the original application
+python-dotenv>=0.19.0 # For loading environment variables from .env file (used in original config)
+# Add other specific dependencies for the Flask app if any were used
