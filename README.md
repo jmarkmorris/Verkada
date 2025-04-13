@@ -2,8 +2,8 @@
 
 This project provides two implementations for monitoring events from a Verkada security system:
 
-1.  **AWS Lambda Implementation (Recommended):** A serverless approach using AWS Lambda and API Gateway for scalability and reduced management. Located in `src_aws/`.
-2.  **Original Flask Implementation:** A standalone Python Flask application suitable for local testing or environments where a persistent server is preferred. Located in `src_flask/`.
+1.  **AWS Lambda Implementation (not yet tested):** A serverless approach using AWS Lambda and API Gateway for scalability and reduced management. Located in `src_aws/`.
+2.  **Original Flask Implementation (tested):** A standalone Python Flask application suitable for local testing or environments where a persistent server is preferred. Located in `src_flask/`.
 
 ---
 
@@ -46,13 +46,11 @@ Refer to `plan.md` (Steps 7-10) for detailed instructions. The general steps are
     *   Attach the `AWSLambdaBasicExecutionRole` managed policy (for CloudWatch Logs).
     *   Add an inline policy granting `ssm:GetParameter` permission specifically for the secret parameter created above.
 
-4.  **Package the Code (Step 7 from `plan.md`):**
-    *   Ensure `src_aws/app.py` is removed (it contains the unused Flask code).
-    *   Create a deployment package (`.zip` file) containing the contents of `src_aws/` (excluding `app.py`) and the dependencies from `src_aws/requirements.txt`.
+4.  **Package the Code:**
+    *   Create a deployment package (`.zip` file) containing the contents of `src_aws/` and the dependencies from `src_aws/requirements.txt`.
         ```bash
         # Example packaging steps:
         # Ensure you are in the project root directory
-        rm -f src_aws/app.py # Ensure Flask app is removed from AWS source
         mkdir package
         pip install -r src_aws/requirements.txt -t ./package
         # Copy Python files from src_aws into the package directory
