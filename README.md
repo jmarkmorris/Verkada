@@ -1,6 +1,132 @@
 # Project: Verkada API Monitor for Gated Community
 
-**Goal:** Develop a Python application to monitor events from a Verkada security system deployed in a gated neighborhood. The system includes cameras at entry gates (capturing LPR and access code usage) and other locations.
+This project provides two implementations for monitoring events from a Verkada security system:
+
+1.  **AWS Lambda Implementation (Recommended):** A serverless approach using AWS Lambda and API Gateway for scalability and reduced management. Located in `src_aws/`.
+2.  **Original Flask Implementation:** A standalone Python Flask application suitable for local testing or environments where a persistent server is preferred. Located in `src_flask/`.
+
+---
+
+## AWS Lambda Implementation (`src_aws/`)
+
+**Goal:** Provide a scalable, serverless solution using AWS services to monitor events from a Verkada security system deployed in a gated neighborhood.
+
+**Functionality:**
+*   Receive real-time events via Verkada Webhooks triggered through AWS API Gateway.
+*   Validate incoming webhooks using signature verification.
+*   Parse event payloads (JSON).
+*   Log essential event information (Plate/Credential, Door, User, Time) to AWS CloudWatch Logs.
+*   Control logging verbosity via Lambda environment variables.
+
+**Technology Stack:**
+*   Python 3.x
+*   AWS Lambda
+*   AWS API Gateway (HTTP API or REST API)
+*   AWS Systems Manager (SSM) Parameter Store (for webhook secret)
+*   AWS CloudWatch Logs (for monitoring)
+*   AWS IAM (for permissions)
+*   Boto3 (AWS SDK for Python)
+
+---
+
+### AWS Setup and Deployment
+
+Refer to `plan.md` (Steps 7-10) for detailed instructions. The general steps are:
+
+1.  **Prerequisites:**
+    *   AWS Account
+    *   AWS CLI configured (optional, can use console)
+    *   Python 3.x and `pip`
+
+2.  **Store Secret:**
+    *   Store your `VERKADA_WEBHOOK_SECRET` securely in AWS Systems Manager Parameter Store (as a `SecureString`). Note the parameter name (e.g., `/verkada/webhook/secret`).
+
+3.  **Create IAM Role:**
+    *   Create an IAM role for the Lambda function.
+    *   Attach the `AWSLambdaBasicExecutionRole` managed policy (for CloudWatch Logs).
+    *   Add an inline policy granting `ssm:GetParameter` permission specifically for the secret parameter created above.
+
+4.  **Package the Code (Step 7 from `plan.md`):**
+    *   Ensure `src_aws/app.py` is removed (it contains the unused Flask code).
+    *   Create a deployment package (`.zip` file) containing the contents of `src_aws/` (excluding `app.py`) and the dependencies from `src_aws/requirements.txt`.
+        ```bash
+        # Example packaging steps:
+        # Ensure you are in the project root directory
+        rm -f src_aws/app.py # Ensure Flask app is removed from AWS source
+        mkdir package
+        pip install -r src_aws/requirements.txt -t ./package
+        # Copy Python files from src_aws into the package directory
+        cp src_aws/__init__.py src_aws/config.py src_aws/handlers.py src_aws/lambda_function.py src_aws/security.py ./package/
+        # Zip the contents of the package directory
+        cd package
+        zip -r ../lambda_deployment_package.zip .
+        cd ..
+        # Clean up temporary directory
+        rm -rf package
+        ```
+    *   Alternatively, use AWS SAM or Serverless Framework for more robust packaging and deployment.
+
+5.  **Create Lambda Function:**
+    *   In the AWS Lambda console, create a new function.
+    *   Choose the Python runtime (e.g., Python 3.9+).
+    *   Upload the `lambda_deployment_package.zip`.
+    *   Assign the created IAM role.
+    *   Set the Handler to `lambda_function.lambda_handler`.
+    *   Configure Environment Variables:
+        *   `SECRET_PARAMETER_NAME`: The name of the SSM Parameter storing the secret (e.g., `/verkada/webhook/secret`).
+        *   `LOG_LEVEL`: `INFO` (default) or `DEBUG` for more verbose logging.
+    *   Adjust memory/timeout as needed (start with defaults).
+
+6.  **Create API Gateway:**
+    *   In the AWS API Gateway console, create an HTTP API (recommended for simplicity) or REST API.
+    *   Configure a `POST` route (e.g., `/webhook`).
+    *   Set the integration target to the created Lambda function (using Lambda proxy integration).
+    *   Deploy the API stage (e.g., `prod`). Note the **Invoke URL**.
+
+---
+
+### AWS Usage
+
+1.  **Configure Verkada Webhook:**
+    *   In Verkada Command (**Admin** -> **Integrations** -> **Webhooks**), create or update a webhook.
+    *   **URL:** Use the **Invoke URL** from the deployed API Gateway stage.
+    *   **Secret:** Ensure the secret configured here matches the value stored in SSM Parameter Store.
+    *   **Event Types:** Select desired events (e.g., `License Plate Read`, `Door Access`).
+    *   Save the webhook.
+
+2.  **Trigger Events:** Perform actions in Verkada that match the configured event types.
+
+3.  **Monitor Output:**
+    *   Go to the AWS CloudWatch console.
+    *   Navigate to Log groups.
+    *   Find the log group associated with your Lambda function (e.g., `/aws/lambda/<your-function-name>`).
+    *   View the log streams to see the output logged by the `handlers.py` module.
+
+---
+
+### AWS Architecture and Design
+
+The AWS implementation leverages serverless components for handling webhooks:
+
+*   **API Gateway:** Acts as the public HTTPS endpoint, receiving POST requests from Verkada. It validates the request method and forwards the entire request payload (headers, body) to the Lambda function via proxy integration.
+*   **AWS Lambda (`src_aws/lambda_function.py`):** The core compute service. The `lambda_handler` function serves as the entry point.
+    *   It parses the incoming `event` object from API Gateway.
+    *   Normalizes headers and decodes the body if necessary.
+    *   Calls `security.validate_signature` for webhook validation.
+    *   Parses the JSON payload.
+    *   Dispatches the payload to `handlers.handle_event`.
+    *   Returns the appropriate HTTP status code to API Gateway.
+*   **Configuration (`src_aws/config.py`):** Uses `boto3` to fetch the `VERKADA_WEBHOOK_SECRET` from AWS SSM Parameter Store based on the `SECRET_PARAMETER_NAME` environment variable. Caches the secret in memory for the lifetime of the Lambda execution environment instance.
+*   **Signature Validation (`src_aws/security.py`):** The `validate_signature` function is adapted to work with headers and body provided by the Lambda event, rather than a Flask request object. It retrieves the secret via `config.get_webhook_secret()`.
+*   **Event Handling (`src_aws/handlers.py`):** The logic remains similar to the Flask version, but uses the standard `logging` module to output formatted event information, which is automatically captured by CloudWatch Logs.
+*   **Logging:** Standard Python `logging` is configured in `lambda_function.py`, with the level controlled by the `LOG_LEVEL` environment variable. All logs are sent to CloudWatch.
+
+---
+---
+
+## Original Flask Implementation (`src_flask/`)
+
+**Goal:** Develop a Python application (using Flask) to monitor events from a Verkada security system deployed in a gated neighborhood, suitable for local execution or environments where a persistent server is managed.
 
 **Functionality:**
 *   Receive real-time events via Verkada Webhooks (primarily LPR and Access Control events).
@@ -17,83 +143,69 @@
 
 ---
 
-## Setup
+### Flask Setup
 
 1.  **Clone the repository:**
     ```bash
     git clone <your-repo-url>
     # Replace <your-repo-url> with the actual repository URL
-    cd Verkada
+    cd Verkada # Assuming project root is Verkada
     ```
 
 2.  **Create and activate a virtual environment:**
-    *   It's recommended to create the environment within the project directory:
+    *   It's recommended to create a separate environment for the Flask app:
         ```bash
-        python3 -m venv venv
+        python3 -m venv venv_flask
         ```
     *   Activate it:
         ```bash
         # On macOS/Linux:
-        source venv/bin/activate
+        source venv_flask/bin/activate
         # On Windows:
-        # venv\Scripts\activate
+        # venv_flask\Scripts\activate
         ```
-    *   Your terminal prompt should now be prefixed (e.g., `(venv)`).
+    *   Your terminal prompt should now be prefixed (e.g., `(venv_flask)`).
 
 3.  **Install dependencies:**
     ```bash
-    pip install -r requirements.txt
+    pip install -r src_flask/requirements.txt
     ```
 
 4.  **Create Configuration File (`.env`):**
-    *   **Important:** For security, the `.env` file containing secrets is stored *outside* the project directory.
-    *   Create a file named `.env` in the following location: `$HOME/.env` (Adjust path if necessary).
-    *   Copy the contents from the example `.env` template below into your new `.env` file.
-    *   **Crucially:** You need to obtain the `VERKADA_WEBHOOK_SECRET`.
-        *   Log in to your Verkada Command account.
-        *   Navigate to **Admin** -> **Integrations** -> **Webhooks**.
-        *   Click **Add Webhook**.
-        *   Configure the webhook (URL details below in Usage/Testing).
-        *   Under the **Secret** section, generate or copy the secret value. **Ensure you copy the exact value.**
-        *   Paste this value into your `.env` file (located at the path specified above), replacing `"YOUR_VERKADA_WEBHOOK_SECRET"`.
+    *   **Important:** For security, the `.env` file containing secrets is stored *outside* the project directory. The Flask app is configured (in `src_flask/config.py`) to look for it in `$HOME/.env`.
+    *   Create a file named `.env` in your home directory (`~/.env` on Linux/macOS).
+    *   Copy the contents from the example `.env` template below into your new `$HOME/.env` file.
+    *   **Crucially:** Obtain the `VERKADA_WEBHOOK_SECRET` from Verkada Command (**Admin** -> **Integrations** -> **Webhooks** -> **Add Webhook** -> **Secret**) and paste it into your `$HOME/.env` file, replacing `"YOUR_VERKADA_WEBHOOK_SECRET"`.
 
-    **.env Template:**
+    **.env Template (for `$HOME/.env`):**
     ```dotenv
     # Verkada Configuration
-    # Obtain this secret from the Verkada Command platform when setting up the webhook.
-    # Go to Admin -> Integrations -> Webhooks -> Add Webhook -> Secret
     VERKADA_WEBHOOK_SECRET="YOUR_VERKADA_WEBHOOK_SECRET"
 
     # Optional: Add Org ID if needed for future API calls
     # VERKADA_ORG_ID="YOUR_ORGANIZATION_ID_HERE"
-
-    # Flask Configuration (Optional, Flask defaults are often fine initially)
-    # FLASK_APP=src.app
-    # FLASK_ENV=development
-    # FLASK_RUN_PORT=5000
-    # FLASK_RUN_HOST=0.0.0.0
     ```
-    *   **Security Note:** Ensure the directory containing the `.env` file has appropriate permissions set and is not accidentally committed to any version control system. The project's `.gitignore` file prevents committing `.env` files located within the project directory itself.
+    *   **Security Note:** Ensure the `$HOME/.env` file has appropriate permissions and is not accidentally committed anywhere.
 
 ---
 
-## Usage
+### Flask Usage
 
 This application runs as a web server that listens for incoming webhook POST requests from Verkada.
 
-1.  **Activate Virtual Environment:** Ensure your virtual environment is activated (e.g., `source venv/bin/activate`).
-2.  **Verify Configuration:** Make sure the `.env` file exists at the configured path (`$HOME/.env`) and contains the correct `VERKADA_WEBHOOK_SECRET`.
+1.  **Activate Virtual Environment:** Ensure your Flask virtual environment is activated (e.g., `source venv_flask/bin/activate`).
+2.  **Verify Configuration:** Make sure the `.env` file exists at `$HOME/.env` and contains the correct `VERKADA_WEBHOOK_SECRET`.
 3.  **Run the Application:**
     *   Navigate to the project's root directory (`Verkada`) in your terminal.
-    *   Execute the application as a module:
+    *   Execute the application using the `src_flask` module:
         ```bash
         # Standard output (minimal logging)
-        python -m src.app
+        python -m src_flask.app
 
         # Verbose output (includes INFO level logs for validation, dispatching etc.)
-        python -m src.app --verbose
+        python -m src_flask.app --verbose
         ```
-    *   The server will start, typically listening on `http://0.0.0.0:5000/`. The webhook endpoint will be `/webhook`. Keep this terminal running.
+    *   The server will start, typically listening on `http://127.0.0.1:5000/`. The webhook endpoint will be `/webhook`. Keep this terminal running.
 
 4.  **Expose Local Server (for Testing):**
     *   Since Verkada needs a public URL, use `ngrok` (or a similar tool) in a separate terminal window while the application is running:
@@ -103,32 +215,29 @@ This application runs as a web server that listens for incoming webhook POST req
     *   Note the public `https` URL provided by `ngrok` (e.g., `https://<random-string>.ngrok-free.app`).
 
 5.  **Configure Verkada Webhook:**
-    *   In Verkada Command (**Admin** -> **Integrations** -> **Webhooks**), create a **New Webhook**. (Editing existing webhooks may not be possible).
+    *   In Verkada Command (**Admin** -> **Integrations** -> **Webhooks**), create a **New Webhook**.
     *   **URL:** Enter the `ngrok` `https` URL from the previous step, appending `/webhook` (e.g., `https://<random-string>.ngrok-free.app/webhook`).
-    *   **Secret:** Paste the **exact** secret from your `.env` file.
+    *   **Secret:** Paste the **exact** secret from your `$HOME/.env` file.
     *   **Event Types:** Select the events you want to monitor (e.g., `License Plate Read`, `Door Access`).
     *   Save the new webhook.
-    *   **Note:** If using free `ngrok`, you must update the URL in Verkada Command each time you restart `ngrok`, as the public URL will change.
+    *   **Note:** If using free `ngrok`, you must update the URL in Verkada Command each time you restart `ngrok`.
 
 6.  **Trigger Events:** Perform actions in Verkada (e.g., LPR read, door access) that match the configured event types.
 
-7.  **Observe Output:** Watch the terminal where `python -m src.app` is running. You should see formatted output lines for each successfully received and validated event. If running with `--verbose`, you will see additional logging information.
+7.  **Observe Output:** Watch the terminal where `python -m src_flask.app` is running. You should see formatted output lines for each successfully received and validated event. If running with `--verbose`, you will see additional logging information.
 
 ---
 
-## Architecture and Design
+### Flask Architecture and Design
 
-The application follows a simple, modular design suitable for receiving and processing webhooks.
+The Flask application follows a simple, modular design:
 
-*   **Web Server (Flask):** `src/app.py` uses the Flask microframework to create a lightweight web server. Flask was chosen for its simplicity in handling a single primary endpoint.
-*   **Webhook Endpoint (`/webhook`):** Defined in `src/app.py`, this route listens for incoming `POST` requests from Verkada.
-*   **Configuration (`.env`, `src/config.py`):** Sensitive configuration (like the webhook secret) is stored in an external `.env` file (path specified in `src/config.py`). The `python-dotenv` library is used within `src/config.py` to load these variables into the environment securely, keeping secrets out of the source code.
-*   **Signature Validation (`src/security.py`):** The `validate_signature` function implements Verkada's webhook security protocol. It extracts the `Verkada-Signature` header, parses the timestamp and hash, checks the timestamp tolerance, reconstructs the message payload (`body|timestamp`), calculates the expected HMAC-SHA256 hash using the shared secret, and performs a constant-time comparison against the received hash.
-*   **Event Handling (`src/handlers.py`):**
-    *   **Dispatcher (`handle_event`):** Receives the validated JSON payload from `app.py`. It inspects the `webhook_type` and `notification_type` fields to determine the event category and calls the appropriate processing function.
-    *   **Processors (`process_lpr_event`, `process_access_event`):** These functions are responsible for extracting the relevant data points from the specific event payload structure (handling nested dictionaries like `data`, `door_info`, `user_info`). They format the extracted data into the desired fixed-width string using f-string formatting and print it to the console.
-    *   **Timestamp Formatting:** A helper function converts the Unix epoch timestamps provided by Verkada into human-readable date/time strings adjusted for the local timezone.
-*   **Command-Line Interface (`argparse`):** `src/app.py` uses `argparse` to handle command-line arguments, specifically the `--verbose` flag to control the logging verbosity.
-*   **Logging:** The standard `logging` module is used throughout the application. The logging level is set based on the `--verbose` flag (defaulting to `WARNING`, changing to `INFO` if `--verbose` is used), allowing for detailed debugging information when needed while keeping the default output clean.
+*   **Web Server (Flask):** `src_flask/app.py` uses the Flask microframework.
+*   **Webhook Endpoint (`/webhook`):** Defined in `src_flask/app.py`, listens for `POST` requests.
+*   **Configuration (`.env`, `src_flask/config.py`):** Loads the secret from `$HOME/.env` using `python-dotenv`.
+*   **Signature Validation (`src_flask/security.py`):** Implements Verkada's webhook security using the Flask `request` object.
+*   **Event Handling (`src_flask/handlers.py`):** Parses payloads and prints formatted output to the console.
+*   **Command-Line Interface (`argparse`):** `src_flask/app.py` handles the `--verbose` flag.
+*   **Logging:** Standard `logging` module, level controlled by `--verbose`.
 
 ---
