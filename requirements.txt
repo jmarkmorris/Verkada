@@ -1,1 +1,2 @@
 boto3>=1.20.0 # For interacting with AWS services (SSM, CloudWatch, etc.)
+# python-dotenv is removed as it's no longer needed

@@ -2,94 +2,95 @@ import hmac
 import hashlib
 import time
 import logging
+from typing import Dict, Optional
 
-# Import the secret from the configuration module using relative import
-from .config import VERKADA_WEBHOOK_SECRET
+# Import the function to get the secret from the configuration module
+from .config import get_webhook_secret
+
+# Configure logging
+# Use standard Python logging; level will be configured in lambda_function.py
+logger = logging.getLogger(__name__)
 
 # Define the tolerance for timestamp validation (in seconds)
-# Documentation sample uses 60, but 300 (5 min) is generally safer for clock skew
 # Increased to 600 (10 min) to handle observed clock skew. Best practice is to fix system clock.
 TIMESTAMP_TOLERANCE = 600
 
-def validate_signature(request) -> bool:
+def validate_signature(headers: Dict[str, str], raw_body: bytes) -> bool:
     """
-    Validates the Verkada webhook signature based on the combined
-    'Verkada-Signature: timestamp|signature_hash' header format and
-    documentation specifying 'body|timestamp' for hashing.
+    Validates the Verkada webhook signature using headers and raw body
+    provided by the AWS API Gateway event.
 
     Args:
-        request: The Flask request object.
+        headers (Dict[str, str]): A dictionary of request headers (keys should be
+                                   normalized to lowercase by the caller).
+        raw_body (bytes): The raw byte string of the request body.
 
     Returns:
         True if the signature is valid, False otherwise.
     """
-    if not VERKADA_WEBHOOK_SECRET:
-        logging.critical("Webhook secret is not configured. Cannot validate signature.")
+    # 1. Retrieve the webhook secret from configuration (e.g., SSM)
+    webhook_secret = get_webhook_secret()
+    if not webhook_secret:
+        # Critical error already logged by get_webhook_secret()
+        logger.error("Signature validation failed: Webhook secret could not be retrieved.")
         return False
 
-    # 1. Retrieve the combined Verkada-Signature header
-    verkada_combined_signature = request.headers.get('Verkada-Signature')
+    # 2. Retrieve the combined Verkada-Signature header (case-insensitive)
+    # Caller (lambda_handler) is expected to provide lowercase header keys
+    verkada_combined_signature = headers.get('verkada-signature')
 
     if not verkada_combined_signature:
-        # Log the actual headers received for debugging if the expected one is missing
-        logging.error(f"Missing Verkada-Signature header. Received headers: {dict(request.headers)}")
+        # Log keys received if the expected one is missing
+        logger.error(f"Missing 'verkada-signature' header. Received header keys: {list(headers.keys())}")
         return False
 
-    # 2. Split the header into timestamp and received signature hash
+    # 3. Split the header into timestamp and received signature hash
     try:
         timestamp_str, received_signature = verkada_combined_signature.split('|', 1)
     except ValueError:
-        logging.error(f"Invalid Verkada-Signature format. Expected 'timestamp|signature', got: {verkada_combined_signature}")
+        logger.error(f"Invalid Verkada-Signature format. Expected 'timestamp|signature', got: {verkada_combined_signature}")
         return False
 
-    # 3. Check timestamp tolerance
+    # 4. Check timestamp tolerance
     try:
         timestamp_int = int(timestamp_str)
         current_time = int(time.time())
-        # Using tolerance defined above (e.g., 600 seconds)
         if abs(current_time - timestamp_int) > TIMESTAMP_TOLERANCE:
-            logging.warning(f"Timestamp {timestamp_str} is outside the tolerance window ({TIMESTAMP_TOLERANCE}s). Current time: {current_time}")
-            # Note: Sample code uses 60s, which might be too strict.
-            # if time.time() - timestamp_int > 60: # Direct check from sample code
-            #     logging.warning(f"Timestamp {timestamp_str} is older than 60 seconds.")
-            #     return False
-            return False # Return false if outside our defined tolerance
+            logger.warning(f"Timestamp {timestamp_str} is outside the tolerance window ({TIMESTAMP_TOLERANCE}s). Current time: {current_time}")
+            return False
     except ValueError:
-        logging.error(f"Invalid timestamp format in Verkada-Signature: {timestamp_str}")
+        logger.error(f"Invalid timestamp format in Verkada-Signature: {timestamp_str}")
         return False
 
-    # 4. Get raw request body
-    raw_body = request.get_data() # Returns bytes
-
-    # 5. Construct the message string to sign - CORRECTED based on documentation sample
+    # 5. Construct the message string to sign
     # Format: body + b"|" + timestamp_bytes
     timestamp_bytes = timestamp_str.encode('utf-8')
-    # Ensure raw_body is bytes (it should be from get_data())
+    # raw_body is already bytes, ensure it's not None
     message = (raw_body or b'') + b"|" + timestamp_bytes
 
     # 6. Calculate the expected signature
     try:
-        secret_bytes = VERKADA_WEBHOOK_SECRET.encode('utf-8')
+        secret_bytes = webhook_secret.encode('utf-8')
         calculated_signature = hmac.new(secret_bytes, message, hashlib.sha256).hexdigest()
     except Exception as e:
-        logging.error(f"Error calculating HMAC signature: {e}")
+        logger.error(f"Error calculating HMAC signature: {e}", exc_info=True)
         return False
 
     # 7. Compare signatures using hmac.compare_digest for timing attack resistance
     try:
-        # Ensure comparison happens with encoded values if necessary, though hexdigest should be str
         is_valid = hmac.compare_digest(calculated_signature, received_signature)
     except TypeError as e:
-        # Example: If one is bytes and other is str
-        logging.error(f"Type error comparing signatures: {e}. Calculated type: {type(calculated_signature)}, Received type: {type(received_signature)}")
+        logger.error(f"Type error comparing signatures: {e}. Calculated type: {type(calculated_signature)}, Received type: {type(received_signature)}")
         is_valid = False
     except Exception as e:
-        # Handle potential errors during comparison
-        logging.error(f"Error comparing signatures: {e}")
+        logger.error(f"Error comparing signatures: {e}", exc_info=True)
         is_valid = False
 
     if not is_valid:
-        logging.warning(f"Signature mismatch. Calculated: {calculated_signature}, Received: {received_signature}")
-    # No need to log success here, app.py already logs it if this returns True
+        # Log detailed info only on failure for security/noise reduction
+        logger.warning(f"Signature mismatch. Calculated: {calculated_signature}, Received: {received_signature}")
+        # Avoid logging raw body or full message in production unless debugging requires it.
+        # logger.debug(f"Failed validation for message: {message!r}") # Example debug log
 
+    # No need to log success here, the calling function (lambda_handler) can log it.
     return is_valid
