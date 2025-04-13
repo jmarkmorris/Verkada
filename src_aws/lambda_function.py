@@ -21,6 +21,7 @@ if root_logger.handlers:
     for handler in root_logger.handlers:
         root_logger.removeHandler(handler)
 
+# Configure the root logger format for CloudWatch
 logging.basicConfig(level=log_level, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.info(f"Logging configured with level: {log_level_name}")
@@ -52,6 +53,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         # Normalize header keys to lowercase for consistent access
         normalized_headers = {k.lower(): v for k, v in headers.items()} if headers else {}
+        logger.debug(f"Normalized headers (ID: {request_id}): {list(normalized_headers.keys())}")
 
     except Exception as e:
         logger.error(f"Error extracting basic event data (ID: {request_id}): {e}", exc_info=True)
@@ -86,6 +88,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     # 4. Validate Signature (Requires secret fetched within validate_signature)
     # Pass normalized headers and the raw byte body
     logger.info(f"Attempting signature validation (ID: {request_id})...")
+    # Note: get_webhook_secret() is called inside validate_signature
     if not security.validate_signature(normalized_headers, raw_body_bytes):
         # Specific logging is done within validate_signature
         logger.warning(f"Webhook signature validation failed (ID: {request_id}).")
@@ -163,4 +166,3 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 #     # Call the handler
 #     response = lambda_handler(sample_event, MockContext())
 #     print(f"Lambda handler response: {response}")
-
