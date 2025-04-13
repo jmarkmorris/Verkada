@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 # --- Specify the path to the .env file ---
 # The .env file is stored outside the project repository for security.
 # Update this path if the location changes.
-dotenv_path = '/Users/markmorris/Documents/Verkada-code-base/.env'
+dotenv_path = os.path.join(os.path.expanduser("~"), ".env")
 
 # Load environment variables from the specified .env file path
 load_dotenv(dotenv_path=dotenv_path)

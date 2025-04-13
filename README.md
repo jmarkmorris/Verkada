@@ -47,7 +47,7 @@
 
 4.  **Create Configuration File (`.env`):**
     *   **Important:** For security, the `.env` file containing secrets is stored *outside* the project directory.
-    *   Create a file named `.env` in the following location: `/Users/markmorris/Documents/Verkada-code-base/.env` (Adjust path if necessary).
+    *   Create a file named `.env` in the following location: `$HOME/.env` (Adjust path if necessary).
     *   Copy the contents from the example `.env` template below into your new `.env` file.
     *   **Crucially:** You need to obtain the `VERKADA_WEBHOOK_SECRET`.
         *   Log in to your Verkada Command account.
@@ -82,7 +82,7 @@
 This application runs as a web server that listens for incoming webhook POST requests from Verkada.
 
 1.  **Activate Virtual Environment:** Ensure your virtual environment is activated (e.g., `source venv/bin/activate`).
-2.  **Verify Configuration:** Make sure the `.env` file exists at the configured path (`/Users/markmorris/Documents/Verkada-code-base/.env`) and contains the correct `VERKADA_WEBHOOK_SECRET`.
+2.  **Verify Configuration:** Make sure the `.env` file exists at the configured path (`$HOME/.env`) and contains the correct `VERKADA_WEBHOOK_SECRET`.
 3.  **Run the Application:**
     *   Navigate to the project's root directory (`Verkada`) in your terminal.
     *   Execute the application as a module:
