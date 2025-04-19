@@ -1,5 +1,5 @@
 # Alerts LP and Video 
-- today: sends via email only to administrators for LP of interest.
+- today: sends via email only to administrators for LP of interest (LPoI).
 
 - goal is to send the alert for license plates of interest, but not the video, to one email associated with each LP
 - Verkada db allows
@@ -7,9 +7,7 @@
 - every user has an email address
 - carrie wants to associate an email with each LP of interest - does Verkada support that?
 
-- read about Helix events
-- https://www.verkada.com/helix/
-
+- Helix API: - https://www.verkada.com/helix/
 
 API Info
 ---
@@ -39,26 +37,13 @@ JSON
   }
 }
 
-Looking at online alerts every LPoI includes a PoI.  The PoI field could be used for email addresses.
-
----
-
-You can create a Helix Event Type through APIs.
-- but not known if it is useful at this point
-- I think this is to send events to verkada that they can attach to certain events
-
 ---
 Get Alerts
 get https://{region}.verkada.com/cameras/v1/alerts
 Returns alerts for an organization within a specified time range.
 
 This API allows selecting alerts, including LP of interest alerts (I think) for a time period.
-- don't yet know if the webhook event would have the LP of interest field
 - however, this API could be used for a polling implementation. Every NN minutes.
-- note that Person (LP?) of interest alerts include a label. Could this label be the email address?
-
-Alert types include camera offline, camera online, tamper, motion, crowd, and Person of Interest alerts.
-Person of Interest alerts include the label set for the person.
 
 ---
 
@@ -73,10 +58,8 @@ Get All License Plates of Interest
 get https://{region}.verkada.com/cameras/v1/analytics/lpr/license_plate_of_interest
 Returns creation time, description, and license plate number for all License Plates of Interest for an organization.
 Could use this one to poll for LP of interest. Refresh every NN minutes.
-- perhaps description field could be used for email address
 - then with this list could correlate with LPR events.
 - but if you already have to use the helix api and poll for LP of interested, then get events too?
-
 
 Questions for tech
 1. Do the webhook event records note LP of interest and their description field?
