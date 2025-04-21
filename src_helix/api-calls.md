@@ -33,8 +33,14 @@ The `src_helix/lpoi.py` script interacts with the following Verkada API endpoint
 
 4.  **Get seen license plates (`GET /cameras/v1/analytics/lpr/imagesview`)**: Retrieves a list of LPR detection events within a specified time range. This endpoint provides the license plate, camera ID, and timestamp for each detection. This is the primary endpoint used to find LPR events for LPOIs.
     *   *Documentation:* [Get seen license plates](https://apidocs.verkada.com/reference/getlprimagesview)
-    *   *Note on Approach:* This endpoint was chosen over `/cameras/v1/analytics/lpr/timestamps` because it allows fetching all events in a range and filtering locally, which is more efficient than querying timestamps for each LPOI on each camera individually.
+    *   *Note on Approach:* This endpoint was chosen over `/cameras/v1/analytics/lpr/timestamps` because it allows fetching all events in a range and filtering locally, which is more efficient than querying timestamps for each LPOI on each camera individually. The script implements basic pagination for this endpoint to retrieve all available events within the time range.
     *   *Note on Issue:* Accessing this endpoint requires specific API Key permissions (Camera API Read access), which resulted in a `403 Forbidden` error until the key's permissions were correctly configured in Verkada Command.
+
+---
+
+## API Rate Limiting
+
+When fetching large amounts of data, particularly when paginating through results from endpoints like `/cameras/v1/analytics/lpr/imagesview`, you may encounter API rate limits. If you receive `429 Too Many Requests` errors, consider adding a small delay (e.g., `time.sleep(0.1)`) between API calls, especially between fetching subsequent pages of results.
 
 ---
 
