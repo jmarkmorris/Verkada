@@ -14,15 +14,6 @@ from typing import List, Dict, Any
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Hardcoded list of LPR camera IDs for debugging
-HARDCODED_LPR_CAMERA_IDS = [
-    "8c219867-9e7a-40e1-b19d-020f7458558c",
-    "ab34699a-038b-41b4-98b4-9d83055489b6",
-    "f9cd473f-3794-4bee-825c-d1ae60d8e791",
-    "2bc18656-7a1e-4612-b08a-4e1ae47364f0",
-    "d1e37446-ca48-4398-9243-49a99ea4bc80",
-]
-
 VERKADA_API_BASE_URL = "https://api.verkada.com"
 TOKEN_ENDPOINT = "/token"
 LPOI_ENDPOINT = "/cameras/v1/analytics/lpr/license_plate_of_interest"
@@ -137,16 +128,15 @@ def fetch_api_data(api_token: str, endpoint: str, params: Dict[str, Any] = None)
         raise # Re-raise the exception after logging
 
 
-def handle_lpr_timestamps(api_token: str, history_days: int, use_hardcoded_cameras: bool) -> None:
+def handle_lpr_timestamps(api_token: str, history_days: int) -> None:
     """
-    Fetches License Plates of Interest, then fetches camera list (or uses hardcoded list),
+    Fetches License Plates of Interest, then fetches camera list,
     and finally fetches and prints timestamps for each LPOI on each camera
     within the specified history days.
 
     Args:
         api_token: The short-lived Verkada API Token.
         history_days: The number of days of history to query for timestamps.
-        use_hardcoded_cameras: Boolean flag to use the hardcoded camera list instead of fetching from API.
     """
     try:
         # Calculate start and end time based on history_days
@@ -170,34 +160,27 @@ def handle_lpr_timestamps(api_token: str, history_days: int, use_hardcoded_camer
         unique_license_plates = list(set(lpoi.get('license_plate') for lpoi in lpois if lpoi.get('license_plate')))
         logger.info(f"Found {len(unique_license_plates)} unique License Plates of Interest.")
 
-        # 2. Get Camera List (from API or hardcoded)
-        if use_hardcoded_cameras:
-            camera_ids = HARDCODED_LPR_CAMERA_IDS
-            logger.info(f"Using hardcoded list of {len(camera_ids)} LPR camera IDs.")
-            if not camera_ids:
-                 logger.warning("Hardcoded camera list is empty. Cannot fetch LPR timestamps.")
-                 return
-        else:
-            # Note: This fetches ALL cameras. The LPR timestamps endpoint only works for LPR-enabled cameras.
-            # A more robust solution would filter cameras based on LPR capability if the camera endpoint provided that info.
-            camera_data = fetch_api_data(api_token, CAMERAS_ENDPOINT)
+        # 2. Get Camera List from API
+        # Note: This fetches ALL cameras. The LPR timestamps endpoint only works for LPR-enabled cameras.
+        # A more robust solution would filter cameras based on LPR capability if the camera endpoint provided that info.
+        camera_data = fetch_api_data(api_token, CAMERAS_ENDPOINT)
 
-            # Debug log to show the raw response from the cameras endpoint
-            logger.debug(f"Raw response from {CAMERAS_ENDPOINT}: {camera_data}")
+        # Debug log to show the raw response from the cameras endpoint
+        logger.debug(f"Raw response from {CAMERAS_ENDPOINT}: {camera_data}")
 
-            if 'cameras' not in camera_data or not isinstance(camera_data['cameras'], list):
-                 raise ValueError(f"Unexpected API response format for Cameras from {CAMERAS_ENDPOINT}: missing or invalid 'cameras' list. Raw data: {camera_data}")
+        if 'cameras' not in camera_data or not isinstance(camera_data['cameras'], list):
+             raise ValueError(f"Unexpected API response format for Cameras from {CAMERAS_ENDPOINT}: missing or invalid 'cameras' list. Raw data: {camera_data}")
 
-            cameras = camera_data.get('cameras', []) # Use .get with default to handle missing key gracefully
+        cameras = camera_data.get('cameras', []) # Use .get with default to handle missing key gracefully
 
-            if not cameras:
-                logger.warning(f"No cameras found in the organization using the {CAMERAS_ENDPOINT} endpoint. Please ensure your API Key has 'Read' permissions for the Camera API.")
-                # The raw response is already logged above, no need to log again here.
-                return
+        if not cameras:
+            logger.warning(f"No cameras found in the organization using the {CAMERAS_ENDPOINT} endpoint. Please ensure your API Key has 'Read' permissions for the Camera API.")
+            # The raw response is already logged above, no need to log again here.
+            return
 
-            # Extract 'camera_id' as the unique identifier
-            camera_ids = [camera.get('camera_id') for camera in cameras if camera.get('camera_id')]
-            logger.info(f"Found {len(camera_ids)} cameras from API.")
+        # Extract 'camera_id' as the unique identifier
+        camera_ids = [camera.get('camera_id') for camera in cameras if camera.get('camera_id')]
+        logger.info(f"Found {len(camera_ids)} cameras from API.")
 
 
         # 3. Fetch and print timestamps for each LPOI on each camera
@@ -220,10 +203,6 @@ def handle_lpr_timestamps(api_token: str, history_days: int, use_hardcoded_camer
                     }
 
                     timestamp_data = fetch_api_data(api_token, LPR_TIMESTAMPS_ENDPOINT, params=timestamp_params)
-
-                    # Debug log to show the raw response for each timestamp query if the flag is set
-                    if args.debug_timestamps_response:
-                         logger.debug(f"Raw response for timestamps for {license_plate} on camera {camera_id}: {timestamp_data}")
 
                     # Check for expected keys and format
                     if 'detections' not in timestamp_data or not isinstance(timestamp_data['detections'], list):
@@ -298,16 +277,6 @@ if __name__ == "__main__":
         help="Number of days of history to query for LPR timestamps (default: 1)."
     )
     parser.add_argument(
-        "--use_hardcoded_cameras",
-        action="store_true", # This flag doesn't need a value, just its presence matters
-        help="Use a hardcoded list of LPR camera IDs instead of fetching from the API."
-    )
-    parser.add_argument(
-        "--debug_timestamps_response",
-        action="store_true",
-        help="Print the raw JSON response for each timestamp query (requires --log_level DEBUG)."
-    )
-    parser.add_argument(
         "--log_level",
         default="INFO",
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
@@ -344,7 +313,7 @@ if __name__ == "__main__":
         if handler_function and callable(handler_function):
             # Pass the appropriate arguments based on the handler function's signature
             if args.api == "lpr_timestamps":
-                 handler_function(api_token, args.history_days, args.use_hardcoded_cameras)
+                 handler_function(api_token, args.history_days)
             # Add conditions here for other APIs if they require different arguments
             # elif args.api == "cameras":
             #      handler_function(api_token)
