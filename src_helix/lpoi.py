@@ -17,18 +17,17 @@ logger = logging.getLogger(__name__)
 VERKADA_API_BASE_URL = "https://api.verkada.com"
 TOKEN_ENDPOINT = "/token"
 LPOI_ENDPOINT = "/cameras/v1/analytics/lpr/license_plate_of_interest"
-CAMERAS_ENDPOINT = "/cameras/v1/devices"
-LPR_TIMESTAMPS_ENDPOINT = "/cameras/v1/analytics/lpr/timestamps"
+LPR_IMAGES_ENDPOINT = "/cameras/v1/analytics/lpr/imagesview" # Endpoint to get seen license plates
 
 # Dictionary to map API names to their endpoints and handler functions
 API_ENDPOINTS = {
-    "lpr_timestamps": {
-        "handler": "handle_lpr_timestamps", # Name of the function to call
-        "description": "Fetch timestamps for License Plates of Interest across specified cameras"
+    "lpr_events": {
+        "handler": "handle_lpr_events", # Name of the function to call
+        "description": "Fetch LPR events for License Plates of Interest"
     }
     # Add other APIs here as needed
     # "cameras": {
-    #     "endpoint": CAMERAS_ENDPOINT,
+    #     "endpoint": "/cameras/v1/devices", # Keep endpoint definition if needed for other handlers
     #     "handler": "handle_cameras_api",
     #     "description": "Fetch Camera List"
     # }
@@ -128,22 +127,21 @@ def fetch_api_data(api_token: str, endpoint: str, params: Dict[str, Any] = None)
         raise # Re-raise the exception after logging
 
 
-def handle_lpr_timestamps(api_token: str, history_days: int) -> None:
+def handle_lpr_events(api_token: str, history_days: int) -> None:
     """
-    Fetches License Plates of Interest, then fetches camera list,
-    and finally fetches and prints timestamps for each LPOI on each camera
-    within the specified history days.
+    Fetches License Plates of Interest, then fetches LPR events using the
+    /cameras/v1/analytics/lpr/imagesview endpoint within the specified history days,
+    filters for LPOI events, and prints their details.
 
     Args:
         api_token: The short-lived Verkada API Token.
-        history_days: The number of days of history to query for timestamps.
+        history_days: The number of days of history to query for events.
     """
     try:
         # Calculate start and end time based on history_days
         end_time = int(time.time())
         start_time = end_time - (history_days * 24 * 60 * 60)
-        logger.info(f"Querying LPR timestamps for the last {history_days} days (from {datetime.datetime.fromtimestamp(start_time)} to {datetime.datetime.fromtimestamp(end_time)})")
-
+        logger.info(f"Querying LPR events for the last {history_days} days (from {datetime.datetime.fromtimestamp(start_time)} to {datetime.datetime.fromtimestamp(end_time)})")
 
         # 1. Fetch License Plates of Interest
         lpoi_data = fetch_api_data(api_token, LPOI_ENDPOINT)
@@ -157,92 +155,171 @@ def handle_lpr_timestamps(api_token: str, history_days: int) -> None:
             logger.info("No License Plates of Interest found in the organization.")
             return
 
-        unique_license_plates = list(set(lpoi.get('license_plate') for lpoi in lpois if lpoi.get('license_plate')))
-        logger.info(f"Found {len(unique_license_plates)} unique License Plates of Interest.")
+        unique_lpoi_plates = {lpoi.get('license_plate') for lpoi in lpois if lpoi.get('license_plate')}
+        logger.info(f"Found {len(unique_lpoi_plates)} unique License Plates of Interest.")
 
-        # 2. Get Camera List from API
-        # Note: This fetches ALL cameras. The LPR timestamps endpoint only works for LPR-enabled cameras.
-        # A more robust solution would filter cameras based on LPR capability if the camera endpoint provided that info.
-        camera_data = fetch_api_data(api_token, CAMERAS_ENDPOINT)
+        # 2. Fetch LPR Events using /cameras/v1/analytics/lpr/imagesview with pagination
+        all_lpr_events = []
+        page_token = None
+        lpr_events_endpoint = LPR_IMAGES_ENDPOINT
 
-        # Debug log to show the raw response from the cameras endpoint
-        logger.debug(f"Raw response from {CAMERAS_ENDPOINT}: {camera_data}")
+        logger.info(f"Fetching LPR events from {lpr_events_endpoint}...")
 
-        if 'cameras' not in camera_data or not isinstance(camera_data['cameras'], list):
-             raise ValueError(f"Unexpected API response format for Cameras from {CAMERAS_ENDPOINT}: missing or invalid 'cameras' list. Raw data: {camera_data}")
+        while True:
+            lpr_params = {
+                "start_time": start_time,
+                "end_time": end_time,
+                "page_size": 200 # Max page size for this endpoint
+            }
+            if page_token:
+                lpr_params["page_token"] = page_token
 
-        cameras = camera_data.get('cameras', []) # Use .get with default to handle missing key gracefully
+            lpr_data = fetch_api_data(api_token, lpr_events_endpoint, params=lpr_params)
 
-        if not cameras:
-            logger.warning(f"No cameras found in the organization using the {CAMERAS_ENDPOINT} endpoint. Please ensure your API Key has 'Read' permissions for the Camera API.")
-            # The raw response is already logged above, no need to log again here.
+            if 'license_plates' not in lpr_data or not isinstance(lpr_data['license_plates'], list):
+                 logger.warning(f"Unexpected API response format for LPR events from {lpr_events_endpoint}: missing or invalid 'license_plates' list. Raw data: {lpr_data}. Stopping pagination.")
+                 break # Stop fetching if the format is unexpected
+
+            lpr_events_page = lpr_data['license_plates']
+            all_lpr_events.extend(lpr_events_page)
+
+            page_token = lpr_data.get('next_page_token')
+            if not page_token:
+                break # Stop if there are no more pages
+
+            logger.info(f"Fetched {len(lpr_events_page)} events, fetching next page with token: {page_token}")
+            # Consider adding a small delay here to avoid hitting rate limits, especially with many pages
+            # time.sleep(0.1)
+
+
+        logger.info(f"Fetched a total of {len(all_lpr_events)} LPR events within the specified time range.")
+
+        # 3. Filter LPR events for those matching LPOIs
+        lpoi_lpr_events = [
+            event for event in all_lpr_events
+            if event.get('license_plate') in unique_lpoi_plates
+        ]
+
+        if not lpoi_lpr_events:
+            logger.info(f"No LPR events found for any of the License Plates of Interest in the last {history_days} days.")
             return
 
-        # Extract 'camera_id' as the unique identifier
-        camera_ids = [camera.get('camera_id') for camera in cameras if camera.get('camera_id')]
-        logger.info(f"Found {len(camera_ids)} cameras from API.")
+        logger.info(f"Found {len(lpoi_lpr_events)} LPR events matching License Plates of Interest.")
 
+        # 4. Print details of matching events
+        print("\n--- LPR Events for License Plates of Interest ---")
+        for event in lpoi_lpr_events:
+            license_plate = event.get('license_plate', 'N/A')
+            camera_id = event.get('camera_id', 'N/A')
+            timestamp = event.get('timestamp', 'N/A')
+            image_url = event.get('image_url', 'N/A') # The imagesview endpoint includes image_url
 
-        # 3. Fetch and print timestamps for each LPOI on each camera
-        logger.info("Fetching timestamps for each LPOI on each camera...")
-        any_detections_found_overall = False
-
-        for license_plate in unique_license_plates:
-            detections_found_for_plate = False
-            plate_timestamps = [] # Collect timestamps for the current plate across all cameras
-
-            for camera_id in camera_ids:
-                try:
-                    logger.info(f"Querying timestamps for {license_plate} on camera {camera_id}")
-                    timestamp_params = {
-                        "license_plate": license_plate,
-                        "camera_id": camera_id,
-                        "page_size": 200, # Max page size for this endpoint
-                        "start_time": start_time,
-                        "end_time": end_time
-                    }
-
-                    timestamp_data = fetch_api_data(api_token, LPR_TIMESTAMPS_ENDPOINT, params=timestamp_params)
-
-                    # Check for expected keys and format
-                    if 'detections' not in timestamp_data or not isinstance(timestamp_data['detections'], list):
-                         logger.warning(f"Unexpected API response format for timestamps for {license_plate} on camera {camera_id}: missing or invalid 'detections' list. Raw data: {timestamp_data}. Skipping.")
-                         continue
-
-                    detections = timestamp_data['detections']
-
-                    if detections:
-                        detections_found_for_plate = True
-                        any_detections_found_overall = True
-                        plate_timestamps.extend([(camera_id, timestamp) for timestamp in detections])
-
-                        if 'next_page_token' in timestamp_data and timestamp_data['next_page_token']:
-                            logger.warning(f"Pagination detected for timestamps for {license_plate} on camera {camera_id}. Only the first page of results is being returned.")
-                            # TODO: Implement full pagination for timestamps if needed
-                    else:
-                        logger.info(f"  No detections found for {license_plate} on camera {camera_id} in the specified time range.")
-                        # Log the full response even if detections list is empty, for debugging
-                        logger.debug(f"Full response for {license_plate} on camera {camera_id} with no detections: {timestamp_data}")
-
-                except (requests.exceptions.RequestException, ValueError) as e:
-                    logger.error(f"Failed to fetch timestamps for {license_plate} on camera {camera_id}: {e}", exc_info=True)
-                    # Continue to the next camera/plate even if one fails
-
-            # Print timestamps for the current plate if any were found across all cameras
-            if detections_found_for_plate:
-                print(f"\n--- Timestamps for License Plate: {license_plate} ---")
-                for cam_id, timestamp in plate_timestamps:
-                     print(f"  Camera ID: {cam_id}, Timestamp: {timestamp} ({datetime.datetime.fromtimestamp(timestamp)})")
-                print("-" * 20)
-
-
-        if not any_detections_found_overall:
-            logger.info(f"No LPR detections found for any of the License Plates of Interest in the last {history_days} days across the specified cameras.")
+            print(f"  License Plate: {license_plate}")
+            print(f"    Camera ID: {camera_id}")
+            if isinstance(timestamp, int):
+                 print(f"    Timestamp: {timestamp} ({datetime.datetime.fromtimestamp(timestamp)})")
+            else:
+                 print(f"    Timestamp: {timestamp}")
+            print(f"    Image URL: {image_url}")
+            print("-" * 20)
 
 
     except (requests.exceptions.RequestException, ValueError) as e:
-        logger.error(f"Failed during LPR timestamps processing: {e}", exc_info=True)
+        logger.error(f"Failed during LPR events processing: {e}", exc_info=True)
         raise # Re-raise to be caught by the main error handler
+
+
+# Add other API handler functions here as needed
+# def handle_cameras_api(api_token: str) -> None:
+#     """
+#     Fetches and prints camera list.
+#     """
+#     try:
+#         data = fetch_api_data(api_token, "/cameras/v1/devices") # Use the endpoint constant if defined globally
+#         # Process and print camera data
+#         print("Camera data (first page):", data)
+#         if 'next_page_token' in data and data['next_page_token']:
+#             logger.warning("Pagination detected for Cameras. Only the first page of results is being returned.")
+#             # TODO: Implement full pagination if needed
+#     except (requests.exceptions.RequestException, ValueError) as e:
+#         logger.error(f"Failed to handle Cameras API: {e}", exc_info=True)
+#         raise # Re-raise to be caught by the main error handler
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Query various Verkada API endpoints.")
+    parser.add_argument(
+        "--api",
+        choices=API_ENDPOINTS.keys(),
+        required=True,
+        help="Specify which Verkada API to query."
+    )
+    parser.add_argument(
+        "--history_days",
+        type=int,
+        default=1, # Default to 1 day of history
+        help="Number of days of history to query for LPR events (default: 1)."
+    )
+    parser.add_argument(
+        "--log_level",
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="Set the logging level (default: INFO)."
+    )
+
+    args = parser.parse_args()
+
+    # Set the logging level based on the command-line argument for the root logger
+    log_level = getattr(logging, args.log_level.upper(), logging.INFO)
+    logging.getLogger().setLevel(log_level)
+    # Also set the level for the module logger explicitly
+    logger.setLevel(log_level)
+
+
+    try:
+        api_key = os.environ.get("API_KEY")
+        if not api_key:
+            raise KeyError("API_KEY environment variable not set.")
+
+        # First, get the API token
+        api_token = get_api_token(api_key)
+
+        # Get the handler function based on the chosen API
+        api_info = API_ENDPOINTS.get(args.api)
+        if not api_info:
+             # This should not happen due to argparse choices, but as a safeguard
+            logger.error(f"Unknown API specified: {args.api}")
+            sys.exit(1)
+
+        handler_function_name = api_info["handler"]
+        handler_function = globals().get(handler_function_name)
+
+        if handler_function and callable(handler_function):
+            # Pass the appropriate arguments based on the handler function's signature
+            if args.api == "lpr_events": # Updated API name
+                 handler_function(api_token, args.history_days)
+            # Add conditions here for other APIs if they require different arguments
+            # elif args.api == "cameras":
+            #      handler_function(api_token)
+            else:
+                 # Default case for handlers that only need the api_token
+                 handler_function(api_token)
+        else:
+            logger.error(f"Handler function not found or not callable for API: {args.api} ({handler_function_name})")
+            sys.exit(1)
+
+
+    except KeyError as e:
+        logger.error(f"Configuration error: {e}")
+        sys.exit(1) # Exit with a non-zero status code to indicate an error
+    except (requests.exceptions.RequestException, ValueError) as e:
+        # Specific API or data errors are already logged in the handler functions
+        # This catches any exceptions re-raised from handlers or other unexpected errors
+        logger.error(f"Operation failed: {e}", exc_info=True)
+        sys.exit(1) # Exit with a non-zero status code to indicate an error
+    except Exception as e:
+        logger.error(f"An unexpected error occurred: {e}", exc_info=True) # Log exception details
+        sys.exit(1) # Exit with a non-zero status code to indicate an error
 
 
 # Add other API handler functions here as needed
