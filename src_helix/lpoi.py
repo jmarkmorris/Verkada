@@ -10,8 +10,8 @@ import datetime
 import time
 from typing import List, Dict, Any
 
-# Configure basic logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Configure basic logging (level will be set by argparse later)
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 # Hardcoded list of LPR camera IDs for debugging
@@ -182,18 +182,21 @@ def handle_lpr_timestamps(api_token: str, history_days: int, use_hardcoded_camer
             # A more robust solution would filter cameras based on LPR capability if the camera endpoint provided that info.
             camera_data = fetch_api_data(api_token, CAMERAS_ENDPOINT)
 
+            # Debug log to show the raw response from the cameras endpoint
+            logger.debug(f"Raw response from {CAMERAS_ENDPOINT}: {camera_data}")
+
             if 'cameras' not in camera_data or not isinstance(camera_data['cameras'], list):
-                 raise ValueError("Unexpected API response format for Cameras: missing or invalid 'cameras' list.")
+                 raise ValueError(f"Unexpected API response format for Cameras from {CAMERAS_ENDPOINT}: missing or invalid 'cameras' list. Raw data: {camera_data}")
 
             cameras = camera_data.get('cameras', []) # Use .get with default to handle missing key gracefully
 
             if not cameras:
-                logger.warning("No cameras found in the organization using the /cameras/v1/devices endpoint. Please ensure your API Key has 'Read' permissions for the Camera API.")
-                # Log the full response even if the cameras list is empty, for debugging
-                logger.debug(f"Full response from /cameras/v1/devices: {camera_data}")
+                logger.warning(f"No cameras found in the organization using the {CAMERAS_ENDPOINT} endpoint. Please ensure your API Key has 'Read' permissions for the Camera API.")
+                # The raw response is already logged above, no need to log again here.
                 return
 
-            camera_ids = [camera.get('id') for camera in cameras if camera.get('id')]
+            # Extract 'camera_id' as the unique identifier
+            camera_ids = [camera.get('camera_id') for camera in cameras if camera.get('camera_id')]
             logger.info(f"Found {len(camera_ids)} cameras from API.")
 
 
@@ -218,9 +221,13 @@ def handle_lpr_timestamps(api_token: str, history_days: int, use_hardcoded_camer
 
                     timestamp_data = fetch_api_data(api_token, LPR_TIMESTAMPS_ENDPOINT, params=timestamp_params)
 
-                    # Log the raw response data for debugging if no detections are found
+                    # Debug log to show the raw response for each timestamp query if the flag is set
+                    if args.debug_timestamps_response:
+                         logger.debug(f"Raw response for timestamps for {license_plate} on camera {camera_id}: {timestamp_data}")
+
+                    # Check for expected keys and format
                     if 'detections' not in timestamp_data or not isinstance(timestamp_data['detections'], list):
-                         logger.warning(f"Unexpected API response format for timestamps for {license_plate} on camera {camera_id}: {timestamp_data}. Skipping.")
+                         logger.warning(f"Unexpected API response format for timestamps for {license_plate} on camera {camera_id}: missing or invalid 'detections' list. Raw data: {timestamp_data}. Skipping.")
                          continue
 
                     detections = timestamp_data['detections']
@@ -295,8 +302,26 @@ if __name__ == "__main__":
         action="store_true", # This flag doesn't need a value, just its presence matters
         help="Use a hardcoded list of LPR camera IDs instead of fetching from the API."
     )
+    parser.add_argument(
+        "--debug_timestamps_response",
+        action="store_true",
+        help="Print the raw JSON response for each timestamp query (requires --log_level DEBUG)."
+    )
+    parser.add_argument(
+        "--log_level",
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="Set the logging level (default: INFO)."
+    )
 
     args = parser.parse_args()
+
+    # Set the logging level based on the command-line argument for the root logger
+    log_level = getattr(logging, args.log_level.upper(), logging.INFO)
+    logging.getLogger().setLevel(log_level)
+    # Also set the level for the module logger explicitly
+    logger.setLevel(log_level)
+
 
     try:
         api_key = os.environ.get("API_KEY")
