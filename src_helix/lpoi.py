@@ -116,6 +116,8 @@ def fetch_api_data(api_token: str, endpoint: str, params: Dict[str, Any] = None)
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 401:
             logger.error(f"API request failed: 401 Unauthorized for {url}. The API token may be invalid or expired, or the API Key used to generate it lacks necessary permissions for this endpoint.")
+        elif e.response.status_code == 403:
+             logger.error(f"API request failed: 403 Forbidden for {url}. The API Key used to generate the token likely lacks the necessary permissions for this endpoint.")
         else:
             logger.error(f"API request failed with HTTP error {e.response.status_code}: {e}")
         raise # Re-raise the exception after logging
