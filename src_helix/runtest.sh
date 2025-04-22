@@ -13,12 +13,12 @@ LOG_LEVEL="DEBUG"
 
 # Function to display the menu
 show_menu() {
-  echo "========================================"
+  echo "================================================================================"
   echo " Verkada API Test Script Runner"
-  echo "========================================"
+  echo "================================================================================"
   echo " API_KEY: ${API_KEY:0:5}...${API_KEY: -4}"
   echo " Current Log Level: $LOG_LEVEL"
-  echo "----------------------------------------"
+  echo "--------------------------------------------------------------------------------"
   echo " Select a test to run:"
   echo " 1) /token (test_token_api.py)"
   echo " 2) /cameras/v1/analytics/lpr/license_plate_of_interest (test_lpoi_api.py)"
@@ -29,22 +29,22 @@ show_menu() {
   echo " 7) /access/v1/access_users (test_users_list_api.py)"
   echo " 8) /access/v1/access_users/user (test_user_details_api.py)"
   echo " 9) /cameras/v1/analytics/lpr/timestamps (test_lpr_timestamps_api.py)"
-  echo "----------------------------------------"
+  echo "--------------------------------------------------------------------------------"
   echo " L) Change Log Level (Current: $LOG_LEVEL)"
   echo " 0) Exit"
-  echo "========================================"
+  echo "================================================================================"
 }
 
 # Function to change log level
 change_log_level() {
-  echo "----------------------------------------"
+  echo "--------------------------------------------------------------------------------"
   echo " Select Log Level:"
   echo " 1) DEBUG"
   echo " 2) INFO"
   echo " 3) WARNING"
   echo " 4) ERROR"
   echo " 5) CRITICAL"
-  echo "----------------------------------------"
+  echo "--------------------------------------------------------------------------------"
   read -p "Enter your choice [1-5]: " level_choice
   
   case $level_choice in
@@ -126,10 +126,10 @@ run_test() {
 
 
     # Build camera selection menu
-    echo "----------------------------------------"
+    echo "--------------------------------------------------------------------------------"
     echo " Select a camera for LPR timestamps test:"
     echo " (Choose an LPR-enabled camera)"
-    echo "----------------------------------------"
+    echo "--------------------------------------------------------------------------------"
     camera_options=()
     # Now pipe the filtered output to the while loop
     while IFS=',' read -r index camera_id camera_name; do
@@ -150,9 +150,9 @@ run_test() {
         return
     fi
 
-    echo "----------------------------------------"
+    echo "--------------------------------------------------------------------------------"
     echo " 0) Cancel"
-    echo "----------------------------------------"
+    echo "--------------------------------------------------------------------------------"
 
     read -p "Enter your choice: " camera_choice
 
@@ -188,12 +188,12 @@ run_test() {
   # Convert script path to module path (e.g., src_helix/test_script.py -> src_helix.test_script)
   local module_path=$(echo "$script_name" | sed 's/\.py$//' | sed 's/\//./g')
 
-  echo "----------------------------------------"
+  echo "--------------------------------------------------------------------------------"
   echo "Running: python -m $module_path --log_level $LOG_LEVEL ${extra_args[@]}"
-  echo "----------------------------------------"
+  echo "--------------------------------------------------------------------------------"
   # Execute the script as a module
   python -m "$module_path" --log_level "$LOG_LEVEL" "${extra_args[@]}"
-  echo "----------------------------------------"
+  echo "--------------------------------------------------------------------------------"
   read -n 1 -s -r -p "Press any key to return to the menu..."
   echo # Add a newline after the key press
 }
