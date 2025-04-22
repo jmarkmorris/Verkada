@@ -8,8 +8,8 @@ if [ -z "$API_KEY" ]; then
   exit 1
 fi
 
-# Default log level
-LOG_LEVEL="DEBUG"
+# Default log level - Changed to ERROR
+LOG_LEVEL="ERROR"
 
 # Function to display the menu
 show_menu() {
@@ -39,11 +39,11 @@ show_menu() {
 change_log_level() {
   echo "--------------------------------------------------------------------------------"
   echo " Select Log Level:"
-  echo " 1) DEBUG"
-  echo " 2) INFO"
-  echo " 3) WARNING"
-  echo " 4) ERROR"
-  echo " 5) CRITICAL"
+  echo " 1) DEBUG    - Detailed information, useful for diagnosis"
+  echo " 2) INFO     - Confirmation that things are working as expected"
+  echo " 3) WARNING  - Something unexpected happened, but software is still working"
+  echo " 4) ERROR    - Software failed to perform a function due to a problem"
+  echo " 5) CRITICAL - Serious error, program may be unable to continue"
   echo "--------------------------------------------------------------------------------"
   read -p "Enter your choice [1-5]: " level_choice
   
