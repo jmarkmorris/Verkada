@@ -137,41 +137,9 @@ def fetch_lpoi_data(api_token: str):
             logger.error(f"Response content: {response.content}")
             raise
 
-        # Print the response in pretty format with increased indent width for better readability
-        print("\n--- License Plates of Interest API Response ---")
-
-        # First, limit the number of items to display to prevent overwhelming output
-        display_data = data.copy() if isinstance(data, dict) else data # Handle case where data is a list
-        if isinstance(display_data, dict) and 'license_plate_of_interest' in display_data and len(display_data['license_plate_of_interest']) > 20:
-            # Only show first 20 items to keep output manageable
-            original_count = len(display_data['license_plate_of_interest'])
-            display_data['license_plate_of_interest'] = display_data['license_plate_of_interest'][:20]
-            display_data['_note'] = f"Showing first 20 of {original_count} license plates"
-        elif isinstance(display_data, list) and len(display_data) > 20:
-             # Handle case where the response is a list directly
-            original_count = len(display_data)
-            display_data = display_data[:20]
-            # Add a note if it was originally a list, maybe wrap in a dict for the note?
-            # Or just print the limited list and mention the count in the log
-            logger.info(f"Showing first 20 of {original_count} license plates in the output.")
-
-
-        # Generate the JSON string and print it
-        # Removed contextlib.redirect_stdout as it's not needed and complicates things
-        try:
-             # Use ensure_ascii=False to correctly display non-ASCII characters
-            formatted_json = json.dumps(display_data, indent=2, ensure_ascii=False)
-            print(formatted_json)
-            sys.stdout.flush() # Explicitly flush stdout after printing JSON
-        except Exception as e:
-            logger.error(f"Error formatting JSON for display: {e}")
-            # Fallback to simple printing if formatting fails
-            print("Error formatting full response. See debug log for details.")
-            if isinstance(data, dict) and 'license_plate_of_interest' in data:
-                 print(f"Response contains {len(data['license_plate_of_interest'])} license plates")
-            elif isinstance(data, list):
-                 print(f"Response contains {len(data)} items")
-
+        # The data is returned for processing by the caller.
+        # Avoid printing the full list here to keep output clean when imported.
+        # Debug logs already capture the raw data.
 
         return data
     except requests.exceptions.HTTPError as e:
