@@ -17,7 +17,13 @@
     ],
     "entry_code": "",
     "has_profile_photo": 0,
-    "license_plates": [],
+    "license_plates": [
+        {
+            "active": 0,
+            "license_plate_number": "",
+            "name": ""
+        }
+    ],
     "mfa_codes": [],
     "remote_unlock": 0,
     "user_id": ""

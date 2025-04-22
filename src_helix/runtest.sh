@@ -131,6 +131,7 @@ run_test() {
     echo "--------------------------------------------------------------------------------"
     user_options=() # Array to store user_id
     user_display_options=() # Array to store display string (index)
+    user_names=() # Array to store user_name for display confirmation
     # Now pipe the filtered output to the while loop
     while IFS=',' read -r index user_id user_name; do
       # The filtering should ensure we only get valid lines, but keep the check for safety
@@ -138,6 +139,7 @@ run_test() {
         echo " $index) $user_name (ID: ${user_id:0:5}...)" # Display user name and truncated ID
         user_options+=("$user_id") # Store user_id in an array
         user_display_options+=("$index") # Store the display index
+        user_names+=("$user_name") # Store user name
       fi
     done <<< "$user_list_output" # Use the filtered output
 
@@ -182,7 +184,8 @@ run_test() {
     fi
 
     # Pass the 0-based index to the script
-    echo "Selected user index: $selected_index"
+    # Print a confirmation message using the user's choice and the selected user's name/ID
+    echo "Selected choice $user_choice: ${user_names[$selected_index]} (ID: ${user_options[$selected_index]:0:5}...)"
     extra_args+=("--user_index" "$selected_index")
   fi
 

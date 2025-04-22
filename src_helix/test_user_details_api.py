@@ -190,6 +190,11 @@ def main():
             user_id_to_fetch = selected_user.get('user_id')
 
             if user_id_to_fetch:
+                # Print the base user record before fetching details
+                print("\n--- Base User Record (from list) ---")
+                print(json.dumps(selected_user, indent=4))
+                sys.stdout.flush() # Explicitly flush stdout
+
                 logger.info(f"Attempting to fetch details for user at index {args.user_index} (ID: {user_id_to_fetch})...")
                 user_details = fetch_user_details(api_token, user_id_to_fetch)
                 logger.info(f"Successfully retrieved details for user ID: {user_id_to_fetch}")
