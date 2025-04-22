@@ -196,14 +196,22 @@ def main():
 
             # Print header
             print(f"{'License Plate':<{plate_width}} | {'Gate (Camera Name)':<{gate_width}} | {'Day/Time':<{time_width}}")
-            print("-" * (plate_width + gate_width + time_width + 6)) # Separator line
+            print("-" * (plate_width + gate_width + time_width + 6)) # Header separator line
 
-            # Print rows
+            # Print rows, adding a separator between different license plates
+            previous_plate = None
             for detection in matched_detections:
                 license_plate = detection.get('license_plate', 'N/A')
                 camera_name = detection.get('camera_name', 'Unknown Camera') # Use the added camera_name
                 timestamp = detection.get('timestamp')
                 formatted_time = format_timestamp(timestamp) if timestamp is not None else 'N/A' # Use imported format_timestamp
+
+                # Add a separator line if the license plate changes (and it's not the first row)
+                if previous_plate is not None and license_plate != previous_plate:
+                    print("-" * (plate_width + gate_width + time_width + 6)) # Group separator line
+
+                # Update the previous plate tracker
+                previous_plate = license_plate
 
                 # Truncate if necessary to fit column width
                 display_plate = (license_plate[:plate_width-3] + '...') if len(license_plate) > plate_width else license_plate
