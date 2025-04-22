@@ -184,10 +184,14 @@ run_test() {
     extra_args+=("--license_plate" "$license_plate")
   fi
 
+  # Convert script path to module path (e.g., src_helix/test_script.py -> src_helix.test_script)
+  local module_path=$(echo "$script_name" | sed 's/\.py$//' | sed 's/\//./g')
+
   echo "----------------------------------------"
-  echo "Running: python src_helix/$script_name --log_level $LOG_LEVEL ${extra_args[@]}"
+  echo "Running: python -m $module_path --log_level $LOG_LEVEL ${extra_args[@]}"
   echo "----------------------------------------"
-  python "src_helix/$script_name" --log_level "$LOG_LEVEL" "${extra_args[@]}"
+  # Execute the script as a module
+  python -m "$module_path" --log_level "$LOG_LEVEL" "${extra_args[@]}"
   echo "----------------------------------------"
   read -n 1 -s -r -p "Press any key to return to the menu..."
   echo # Add a newline after the key press
@@ -203,15 +207,15 @@ while true; do
   choice=${choice:-0}
 
   case $choice in
-    1) run_test "test_token_api.py" ;;
-    2) run_test "test_lpoi_api.py" ;;
-    3) run_test "test_cameras_api.py" ;;
-    4) run_test "test_lpr_images_api.py" ;;
-    5) run_test "test_notifications_api.py" ;;
-    6) run_test "test_access_events_api.py" ;;
-    7) run_test "test_users_list_api.py" ;;
-    8) run_test "test_user_details_api.py" ;;
-    9) run_test "test_lpr_timestamps_api.py" ;;
+    1) run_test "src_helix/test_token_api.py" ;;
+    2) run_test "src_helix/test_lpoi_api.py" ;;
+    3) run_test "src_helix/test_cameras_api.py" ;;
+    4) run_test "src_helix/test_lpr_images_api.py" ;;
+    5) run_test "src_helix/test_notifications_api.py" ;;
+    6) run_test "src_helix/test_access_events_api.py" ;;
+    7) run_test "src_helix/test_users_list_api.py" ;;
+    8) run_test "src_helix/test_user_details_api.py" ;;
+    9) run_test "src_helix/test_lpr_timestamps_api.py" ;;
     [Ll]) change_log_level ;;
     0) echo "Exiting."; exit 0 ;;
     *) echo "Invalid choice. Please try again." ;;
