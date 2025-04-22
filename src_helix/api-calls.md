@@ -69,6 +69,11 @@ The following endpoints have corresponding test scripts in the `src_helix/` dire
     *   *Purpose:* Retrieves detailed information for a specific access user (requires `user_id` or `external_id`).
     *   *Documentation:* [Get Access Information Object](https://apidocs.verkada.com/reference/getaccessuserviewv1)
 
+9.  **`GET /cameras/v1/analytics/lpr/timestamps`**: Get Timestamps for a specific License Plate.
+    *   *Script:* `test_lpr_timestamps_api.py`
+    *   *Purpose:* Retrieves timestamps when a specific license plate was seen (requires `license_plate` parameter).
+    *   *Documentation:* [Get Timestamps for a specific License Plate](https://apidocs.verkada.com/reference/getlprtimestampsviewv1)
+
 ### Potential Future Endpoints for Testing
 
 The following endpoints also return JSON data and could be implemented with test scripts:

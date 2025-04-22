@@ -24,6 +24,7 @@ show_menu() {
   echo " 6) /access/v1/events (test_access_events_api.py)"
   echo " 7) /access/v1/access_users (test_users_list_api.py)"
   echo " 8) /access/v1/access_users/user (test_user_details_api.py)"
+  echo " 9) /cameras/v1/analytics/lpr/timestamps (test_lpr_timestamps_api.py)"
   echo "----------------------------------------"
   echo " 0) Exit"
   echo "========================================"
@@ -38,7 +39,8 @@ run_test() {
   # Handle scripts requiring history_days
   if [[ "$script_name" == "test_lpr_images_api.py" || \
         "$script_name" == "test_notifications_api.py" || \
-        "$script_name" == "test_access_events_api.py" ]]; then
+        "$script_name" == "test_access_events_api.py" || \
+        "$script_name" == "test_lpr_timestamps_api.py" ]]; then
     read -p "Enter history_days (default: 7): " history_days
     history_days=${history_days:-7} # Set default if empty
     if ! [[ "$history_days" =~ ^[0-9]+$ ]]; then
@@ -58,6 +60,19 @@ run_test() {
     fi
     extra_args+=("--user_index" "$user_index")
   fi
+
+  # Handle script requiring license_plate
+  if [[ "$script_name" == "test_lpr_timestamps_api.py" ]]; then
+    read -p "Enter license plate: " license_plate
+    if [ -z "$license_plate" ]; then
+      echo "License plate cannot be empty. Aborting."
+      read -n 1 -s -r -p "Press any key to return to the menu..."
+      echo
+      return
+    fi
+    extra_args+=("--license_plate" "$license_plate")
+  fi
+
 
   # Ask for log level
   read -p "Enter log level (DEBUG, INFO, WARNING, ERROR, CRITICAL - default: INFO): " input_log_level
@@ -88,7 +103,7 @@ run_test() {
 while true; do
   clear # Clear screen for better readability
   show_menu
-  read -p "Enter your choice [0-8]: " choice
+  read -p "Enter your choice [0-9]: " choice
 
   case $choice in
     1) run_test "test_token_api.py" ;;
@@ -99,6 +114,7 @@ while true; do
     6) run_test "test_access_events_api.py" ;;
     7) run_test "test_users_list_api.py" ;;
     8) run_test "test_user_details_api.py" ;;
+    9) run_test "test_lpr_timestamps_api.py" ;;
     0) echo "Exiting."; exit 0 ;;
     *) echo "Invalid choice. Please try again." ;;
   esac
