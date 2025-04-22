@@ -15,7 +15,8 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler('token_api_debug.log')
+        # Save log file in the src_helix directory
+        logging.FileHandler('src_helix/token_api_debug.log')
     ]
 )
 logger = logging.getLogger(__name__)

@@ -22,7 +22,8 @@ logging.basicConfig(
         # Stream handler for stdout - level will be set based on user input.
         logging.StreamHandler(sys.stdout),
         # File handler for debug logs - always log DEBUG and above to file.
-        logging.FileHandler('lpoi_api_debug.log')
+        # Save log file in the src_helix directory
+        logging.FileHandler('src_helix/lpoi_api_debug.log')
     ]
 )
 logger = logging.getLogger(__name__)

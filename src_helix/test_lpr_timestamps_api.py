@@ -23,7 +23,8 @@ logging.basicConfig(
         # Stream handler for stdout - level will be set based on user input.
         logging.StreamHandler(sys.stdout),
         # File handler for debug logs - always log DEBUG and above to file.
-        logging.FileHandler('lpr_timestamps_api_debug.log') # Log file name
+        # Save log file in the src_helix directory
+        logging.FileHandler('src_helix/lpr_timestamps_api_debug.log') # Log file name
     ]
 )
 logger = logging.getLogger(__name__)

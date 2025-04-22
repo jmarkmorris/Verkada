@@ -17,7 +17,8 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler('access_events_api_debug.log') # New log file
+        # Save log file in the src_helix directory
+        logging.FileHandler('src_helix/access_events_api_debug.log') # New log file
     ]
 )
 logger = logging.getLogger(__name__)
