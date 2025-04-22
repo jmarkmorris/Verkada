@@ -166,17 +166,11 @@ def main():
     args = parser.parse_args()
 
     # Set logging level for the stream handler based on the argument.
-    # The root logger is already set to DEBUG in basicConfig.
-    # Find the stream handler and set its level.
-    stream_handler = None
-    for handler in logging.getLogger().handlers:
-        if isinstance(handler, logging.StreamHandler):
-            stream_handler = handler
-            break
-    if stream_handler:
-        stream_handler.setLevel(getattr(logging, args.log_level))
+    # The file handler level is already set to DEBUG.
+    # Use the stream_handler instance defined globally for this logger.
+    stream_handler.setLevel(getattr(logging, args.log_level))
+    logger.debug(f"Stream handler level set to: {args.log_level}") # Log level confirmation
 
-    logger.debug("Script started with log level: " + args.log_level)
     # Add debug logging to show the arguments received
     logger.debug(f"Arguments received: camera_id='{args.camera_id}', license_plate='{args.license_plate}', history_days={args.history_days}, log_level={args.log_level}") # Debug parsed args
 
@@ -224,8 +218,7 @@ def main():
             logger.warning(f"No timestamps found for plate '{args.license_plate}' on camera '{args.camera_id}' to generate a template.")
 
     except Exception as e:
-        logger.error(f"Script execution failed: {e}")
-        logger.error(f"Full exception traceback: {traceback.format_exc()}")
+        logger.error(f"Script execution failed: {e}", exc_info=True) # Use exc_info=True for traceback
         sys.exit(1)
 
 if __name__ == '__main__':
