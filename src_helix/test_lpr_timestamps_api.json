@@ -1,10 +1,8 @@
 {
-    "camera_id": "2bc18656-7a1e-4612-b08a-4e1ae47364f0",
+    "camera_id": "",
     "detections": [
-        1745346315,
-        1745341273,
-        1745338849
+        0
     ],
-    "license_plate": "3",
-    "next_page_token": 1745338849838
+    "license_plate": "",
+    "next_page_token": 0
 }

@@ -2,7 +2,7 @@
 """
 Script to test the Verkada LPR Timestamps API endpoint.
 Fetches timestamps (returned under the 'detections' key) for a specific license plate.
-Saves the actual API response to a JSON file if data is returned.
+Saves a JSON template of the expected response structure to a file.
 """
 import os
 import sys
@@ -197,40 +197,29 @@ def main():
         lpr_timestamps_data = fetch_lpr_timestamps_data(api_token, args.camera_id, args.license_plate, args.history_days)
         logger.info(f"Successfully retrieved LPR timestamps data for plate '{args.license_plate}' on camera '{args.camera_id}'")
 
-        # Save the actual API response to a JSON file *only if* data was returned
-        detections_list = [] # Changed variable name for clarity
-        if isinstance(lpr_timestamps_data, dict):
-            # Handle case where response is a dict containing 'detections' key
-            detections_list = lpr_timestamps_data.get('detections', []) # <-- Use 'detections' key
-            logger.debug("Response was a dictionary, extracted 'detections' key.") # Updated log
-        elif isinstance(lpr_timestamps_data, list):
-            # Handle case where response is a list directly (unlikely for this endpoint)
-            detections_list = lpr_timestamps_data
-            logger.debug("Response was a list directly.")
-        else:
-            # Log a warning if the data type is unexpected, but don't treat as error unless fetch failed
-            if lpr_timestamps_data is not None: # Only warn if fetch didn't raise an exception
-                 logger.warning(f"Unexpected data type received for LPR timestamps: {type(lpr_timestamps_data)}")
+        # Generate and save JSON template based on the expected structure
+        # The template should always have the same structure regardless of the data returned
+        template_output = {
+            "camera_id": "",
+            "detections": [0], # Template for a list of integers
+            "license_plate": "",
+            "next_page_token": 0 # Assuming next_page_token is an integer
+        }
 
-        logger.debug(f"Number of detections found: {len(detections_list)}") # Updated log
+        logger.debug(f"Template data created: {template_output}")
 
-        if detections_list:
-            # Save the actual data returned by the API
-            output_filename = "src_helix/test_lpr_timestamps_api.json"
-            logger.debug(f"Writing actual API response data to {output_filename}")
-            try:
-                with open(output_filename, 'w') as f:
-                    # Dump the original lpr_timestamps_data, not a template
-                    json.dump(lpr_timestamps_data, f, indent=4, ensure_ascii=False)
-                logger.info(f"Saved actual API response to: {output_filename}")
-            except Exception as write_e:
-                logger.error(f"Failed to write API response to {output_filename}: {write_e}", exc_info=True)
-        else:
-            # Log if no data was found, but don't create/overwrite the file
-            logger.warning(f"No detections found for plate '{args.license_plate}' on camera '{args.camera_id}'. JSON file will not be created/updated.") # Updated log
+        # Save the template to the src_helix directory
+        output_filename = "src_helix/test_lpr_timestamps_api.json"
+        logger.debug(f"Writing JSON template to {output_filename}")
+        try:
+            with open(output_filename, 'w') as f:
+                json.dump(template_output, f, indent=4, ensure_ascii=False)
+            logger.info(f"Generated JSON template: {output_filename}")
+        except Exception as write_e:
+            logger.error(f"Failed to write JSON template to {output_filename}: {write_e}", exc_info=True)
 
     except Exception as e:
-        # Log the execution failure, but avoid trying to write the file in the except block
+        # Log the execution failure
         logger.error(f"Script execution failed: {e}", exc_info=True)
         sys.exit(1)
 
