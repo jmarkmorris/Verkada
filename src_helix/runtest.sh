@@ -64,10 +64,13 @@ run_test() {
   # Handle script requiring license_plate and camera_id (via selection menu)
   if [[ "$script_name" == "test_lpr_timestamps_api.py" ]]; then
     echo "Fetching list of all cameras..."
-    # Fetch and list all cameras using the helper script
-    all_cameras_output=$(python src_helix/list_cameras.py) # Renamed script
-    if [ $? -ne 0 ]; then
+    # Fetch and list all cameras using test_cameras_api.py with --list-for-menu
+    all_cameras_output=$(python src_helix/test_cameras_api.py --list-for-menu)
+    script_exit_code=$? # Capture exit code
+
+    if [ $script_exit_code -ne 0 ]; then
       echo "Failed to fetch camera list. Aborting."
+      echo "Please check the 'cameras_api_debug.log' file for details." # Log file name changed
       read -n 1 -s -r -p "Press any key to return to the menu..."
       echo
       return
@@ -80,9 +83,22 @@ run_test() {
     echo "----------------------------------------"
     camera_options=()
     while IFS=',' read -r index camera_id camera_name; do
-      echo " $index) $camera_name"
-      camera_options+=("$camera_id") # Store camera_id in an array
+      # Only process lines that have all three fields
+      if [ -n "$index" ] && [ -n "$camera_id" ] && [ -n "$camera_name" ]; then
+        echo " $index) $camera_name"
+        camera_options+=("$camera_id") # Store camera_id in an array
+      fi
     done <<< "$all_cameras_output"
+
+    # Check if any cameras were actually parsed
+    if [ ${#camera_options[@]} -eq 0 ]; then
+        echo "No cameras were found or parsed from the list."
+        echo "Please check the 'cameras_api_debug.log' file for details." # Log file name changed
+        read -n 1 -s -r -p "Press any key to return to the menu..."
+        echo
+        return
+    fi
+
     echo "----------------------------------------"
     echo " 0) Cancel"
     echo "----------------------------------------"

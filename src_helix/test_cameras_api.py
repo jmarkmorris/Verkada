@@ -90,6 +90,48 @@ def fetch_cameras_data(api_token: str):
             logger.error("3. Verify the API key is not expired")
         raise
 
+def _list_cameras_for_menu(api_key: str):
+    """
+    Fetches cameras and prints them to stdout in 'index,id,name' format
+    for use by the runtest.sh script menu. Suppresses standard logging to stdout.
+    """
+    # Temporarily disable stream handler to prevent logs from interfering with stdout
+    root_logger = logging.getLogger()
+    stream_handler = None
+    for handler in root_logger.handlers:
+        if isinstance(handler, logging.StreamHandler):
+            stream_handler = handler
+            root_logger.removeHandler(handler)
+            break # Assuming only one StreamHandler
+
+    try:
+        # Get API token
+        api_token = get_api_token(api_key)
+
+        # Fetch camera data (errors will be logged to file by fetch_cameras_data)
+        cameras = fetch_cameras_data(api_token)
+
+        # Filter for cameras with 'name' and 'id'
+        all_cameras = [
+            cam for cam in cameras.get('devices', []) # Use .get with default empty list
+            if isinstance(cam, dict) and 'name' in cam and 'id' in cam
+        ]
+
+        # Print cameras in a parsable format: index,id,name
+        # Print nothing if the list is empty
+        for i, cam in enumerate(all_cameras):
+            print(f"{i+1},{cam['id']},{cam['name']}")
+
+    except Exception as e:
+        # Log the error to the file handler
+        logger.error(f"Error listing cameras for menu: {e}", exc_info=True)
+        sys.exit(1) # Exit with non-zero status on error
+    finally:
+        # Re-add the stream handler
+        if stream_handler:
+            root_logger.addHandler(stream_handler)
+
+
 def main():
     """Main entry point for the script."""
     # Set up argument parser
@@ -113,11 +155,17 @@ def main():
         logger.error("API_KEY environment variable is not set")
         sys.exit(1)
 
+    # If --list-for-menu is set, run the helper function and exit
+    if args.list_for_menu:
+        _list_cameras_for_menu(api_key)
+        sys.exit(0) # Exit successfully after listing
+
+    # Otherwise, proceed with the standard test script logic
     try:
         # Get API token
         api_token = get_api_token(api_key)
         logger.info(f"Successfully retrieved API token: {api_token[:10]}...")
-        
+
         # Fetch camera data
         cameras_data = fetch_cameras_data(api_token)
         logger.info("Successfully retrieved camera data")
