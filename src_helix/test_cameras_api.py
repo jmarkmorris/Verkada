@@ -123,7 +123,8 @@ def fetch_cameras_data(api_token: str):
 def _list_cameras_for_menu(api_key: str):
     """
     Fetches cameras and prints them to stdout in 'index,id,name' format
-    for use by the runtest.sh script menu. Suppresses standard logging to stdout.
+    for use by the runtest.sh script menu. Filters for cameras with 'License' in their name.
+    Suppresses standard logging to stdout.
     """
     # We get the logger again here to ensure we have the correct instance
     local_logger = logging.getLogger(__name__)
@@ -161,10 +162,10 @@ def _list_cameras_for_menu(api_key: str):
         logger.debug(f"Raw camera response data in _list_for_menu: {cameras}")
         logger.debug(f"Type of data received in _list_for_menu: {type(cameras)}")
 
-        # Filter for cameras with 'name' and 'camera_id' (Corrected 'id' to 'camera_id')
+        # Filter for cameras with 'name' and 'camera_id' that contain 'License' (case-insensitive)
         all_cameras = [
             cam for cam in cameras.get('cameras', []) # Use .get with default empty list
-            if isinstance(cam, dict) and 'name' in cam and 'camera_id' in cam # Corrected 'id' to 'camera_id'
+            if isinstance(cam, dict) and 'name' in cam and 'camera_id' in cam and 'license' in cam['name'].lower()
         ]
 
         logger.debug(f"Extracted cameras_list in _list_for_menu: {all_cameras}")
@@ -180,7 +181,7 @@ def _list_cameras_for_menu(api_key: str):
         for i, cam in enumerate(all_cameras):
             # Clean the camera name to remove any commas that could break parsing
             clean_name = cam['name'].replace(',', ' ')
-            # Use 'camera_id' when printing (Corrected 'id' to 'camera_id')
+            # Use 'camera_id' when printing
             print(f"{i+1},{cam['camera_id']},{clean_name}", file=sys.stdout) # Print camera lines
         sys.stdout.flush() # Explicitly flush stdout after printing the list
 
