@@ -41,6 +41,27 @@ def get_api_token(api_key: str) -> str:
         logger.error(f"API token retrieval failed: {e}")
         raise
 
+def create_template(data: dict) -> dict:
+    """Recursively create a template dictionary with empty values."""
+    template = {}
+    for key, value in data.items():
+        if isinstance(value, dict):
+            template[key] = create_template(value)
+        elif isinstance(value, list):
+            # For lists, create a list containing one template item if the list is not empty
+            template[key] = [create_template(value[0])] if value else []
+        elif isinstance(value, str):
+            template[key] = ""
+        elif isinstance(value, (int, float)):
+            template[key] = 0
+        elif isinstance(value, bool):
+            template[key] = False # Or None, depending on desired empty state for boolean
+        else:
+            template[key] = None # Handles None and other types
+
+    return template
+
+
 def fetch_lpoi_data(api_token: str):
     """Fetch License Plates of Interest from Verkada API."""
     url = f"{VERKADA_API_BASE_URL}{LPOI_ENDPOINT}"
@@ -100,6 +121,34 @@ def main():
         # Fetch LPOI data
         lpoi_data = fetch_lpoi_data(api_token)
         logger.info("Successfully retrieved License Plates of Interest data")
+
+        # Add debug logging for the fetched data structure
+        logger.debug(f"Type of fetched data: {type(lpoi_data)}")
+        if isinstance(lpoi_data, dict):
+            logger.debug(f"Keys in fetched data: {list(lpoi_data.keys())}")
+            # Corrected key from 'license_plates_of_interest' (plural) to 'license_plate_of_interest' (singular)
+            logger.debug(f"Value for 'license_plate_of_interest' key: {lpoi_data.get('license_plate_of_interest')}")
+        else:
+            logger.debug("Fetched data is not a dictionary.")
+
+
+        # Generate and save JSON template if data is available
+        # Corrected key from 'license_plates_of_interest' (plural) to 'license_plate_of_interest' (singular)
+        lpoi_list = lpoi_data.get('license_plate_of_interest', []) if isinstance(lpoi_data, dict) else []
+        logger.debug(f"Length of lpoi_list: {len(lpoi_list)}")
+
+        if lpoi_list:
+            template_data = create_template(lpoi_list[0])
+            # Keep the output key as plural for consistency with potential future use, but get data from singular key
+            template_output = {"license_plates_of_interest": [template_data]}
+
+            output_filename = "test_lpoi_api.json"
+            with open(output_filename, 'w') as f:
+                json.dump(template_output, f, indent=4)
+            logger.info(f"Generated JSON template: {output_filename}")
+        else:
+            logger.warning("No License Plates of Interest found to generate a template.")
+
     except Exception as e:
         logger.error(f"Script execution failed: {e}", exc_info=True)
         sys.exit(1)
