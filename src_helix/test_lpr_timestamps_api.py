@@ -2,6 +2,7 @@
 """
 Script to test the Verkada LPR Timestamps API endpoint.
 Fetches timestamps for a specific license plate.
+Saves the actual API response to a JSON file if data is returned.
 """
 import os
 import sys
@@ -127,11 +128,13 @@ def fetch_lpr_timestamps_data(api_token: str, camera_id: str, license_plate: str
             logger.error("3. Verify the API key is not expired")
         elif e.response.status_code == 404:
              logger.error(f"404 Not Found error for {LPR_TIMESTAMPS_ENDPOINT}. License plate '{license_plate}' may not exist or have no timestamps in the given range.")
+        # Re-raise the exception after logging
         raise
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
         logger.error(f"Error type: {type(e)}")
         logger.error(f"Full exception traceback: {traceback.format_exc()}")
+        # Re-raise the exception after logging
         raise
 
 def main():
@@ -183,6 +186,7 @@ def main():
     else:
         logger.debug(f"API_KEY found: {api_key[:5]}...{api_key[-4:]}") # Debug API key found
 
+    lpr_timestamps_data = None # Initialize to None
     try:
         # Get API token
         logger.debug("Attempting to get API token...") # Debug before getting token
@@ -192,33 +196,44 @@ def main():
 
         # Fetch LPR timestamps data
         logger.debug("Attempting to fetch LPR timestamps data...") # Debug before fetching data
-        # Removed temporary stream handler removal/re-addition logic
         lpr_timestamps_data = fetch_lpr_timestamps_data(api_token, args.camera_id, args.license_plate, args.history_days)
         logger.info(f"Successfully retrieved LPR timestamps data for plate '{args.license_plate}' on camera '{args.camera_id}'")
 
-        # Generate and save JSON template if data is available
-        # Assuming the key for the list of timestamps is 'timestamps'
-        timestamps_list = lpr_timestamps_data.get('timestamps', []) if isinstance(lpr_timestamps_data, dict) else []
+        # Save the actual API response to a JSON file *only if* data was returned
+        timestamps_list = []
+        if isinstance(lpr_timestamps_data, dict):
+            # Handle case where response is a dict containing 'timestamps' key
+            timestamps_list = lpr_timestamps_data.get('timestamps', [])
+            logger.debug("Response was a dictionary, extracted 'timestamps' key.")
+        elif isinstance(lpr_timestamps_data, list):
+            # Handle case where response is a list directly
+            timestamps_list = lpr_timestamps_data
+            logger.debug("Response was a list directly.")
+        else:
+            # Log a warning if the data type is unexpected, but don't treat as error unless fetch failed
+            if lpr_timestamps_data is not None: # Only warn if fetch didn't raise an exception
+                 logger.warning(f"Unexpected data type received for LPR timestamps: {type(lpr_timestamps_data)}")
+
         logger.debug(f"Number of timestamps found: {len(timestamps_list)}")
 
         if timestamps_list:
-            logger.debug(f"First timestamp item: {timestamps_list[0]}")
-            template_data = create_template(timestamps_list[0])
-            logger.debug(f"Template data created: {template_data}")
-
-            template_output = {"timestamps": [template_data]} # Wrap in the expected list structure
-
-            # Save the template to the src_helix directory
+            # Save the actual data returned by the API
             output_filename = "src_helix/test_lpr_timestamps_api.json"
-            logger.debug(f"Writing template to {output_filename}")
-            with open(output_filename, 'w') as f:
-                json.dump(template_output, f, indent=4)
-            logger.info(f"Generated JSON template: {output_filename}")
+            logger.debug(f"Writing actual API response data to {output_filename}")
+            try:
+                with open(output_filename, 'w') as f:
+                    # Dump the original lpr_timestamps_data, not a template
+                    json.dump(lpr_timestamps_data, f, indent=4, ensure_ascii=False)
+                logger.info(f"Saved actual API response to: {output_filename}")
+            except Exception as write_e:
+                logger.error(f"Failed to write API response to {output_filename}: {write_e}", exc_info=True)
         else:
-            logger.warning(f"No timestamps found for plate '{args.license_plate}' on camera '{args.camera_id}' to generate a template.")
+            # Log if no data was found, but don't create/overwrite the file
+            logger.warning(f"No timestamps found for plate '{args.license_plate}' on camera '{args.camera_id}'. JSON file will not be created/updated.")
 
     except Exception as e:
-        logger.error(f"Script execution failed: {e}", exc_info=True) # Use exc_info=True for traceback
+        # Log the execution failure, but avoid trying to write the file in the except block
+        logger.error(f"Script execution failed: {e}", exc_info=True)
         sys.exit(1)
 
 if __name__ == '__main__':

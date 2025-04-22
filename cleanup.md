@@ -12,46 +12,6 @@ This document outlines the remaining steps to clean up the Python and shell scri
 
 ---
 
-## Cleanup Steps per File:
-
-### `src_helix/test_users_list_api.py`
-
-**Status: COMPLETED** (Duplicated code removed, logging standardized)
-
-### `src_helix/test_cameras_api.py`
-
-**Status: COMPLETED** (Duplicated code removed, imports updated, logging standardized)
-
-### `src_helix/test_lpr_images_api.py`
-
-**Status: COMPLETED** (Duplicated code removed, logging standardized)
-
-### `src_helix/test_lpoi_api.py`
-
-**Status: COMPLETED** (Duplicated code removed, unused imports removed, logging standardized)
-
-### `src_helix/test_notifications_api.py`
-
-**Status: COMPLETED** (Appears consistent with cleanup goals, logging standardized)
-
-### `src_helix/test_token_api.py`
-
-**Status: COMPLETED** (Appears consistent with cleanup goals, logging standardized)
-
-### `src_helix/test_access_events_api.py`
-
-**Status: COMPLETED** (Appears consistent with cleanup goals, logging standardized)
-
-### `src_helix/test_lpr_timestamps_api.py`
-
-**Status: COMPLETED** (Duplicated code removed, logging standardized, logging level setting fixed)
-
-### `src_helix/runtest.sh`
-
-**Status: COMPLETED** (Uses module paths, appears functional)
-
----
-
 **Next Steps:**
 
 All planned cleanup tasks are complete.
