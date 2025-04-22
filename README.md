@@ -1,4 +1,4 @@
-# Project: Verkada API Monitor for Gated Community
+# Project: Verkada API Monitor for Community
 
 This project provides different implementations for interacting with the Verkada API and monitoring events:
 
@@ -107,7 +107,7 @@ The primary way to run the Helix tests is using the `runtest.sh` script, which p
 
 ## AWS Lambda Implementation (`src_aws/`)
 
-**Goal:** Provide a scalable, serverless solution using AWS services to monitor events from a Verkada security system deployed in a gated neighborhood.
+**Goal:** Provide a scalable, serverless solution using AWS services to monitor events from a Verkada security system deployed in a neighborhood.
 
 **Functionality:**
 *   Receive real-time events via Verkada Webhooks triggered through AWS API Gateway.
@@ -222,7 +222,7 @@ The AWS implementation leverages serverless components for handling webhooks:
 
 ## Original Flask Implementation (`src_flask/`)
 
-**Goal:** Develop a Python application (using Flask) to monitor events from a Verkada security system deployed in a gated neighborhood, suitable for local execution or environments where a persistent server is managed.
+**Goal:** Develop a Python application (using Flask) to monitor events from a Verkada security system deployed in a neighborhood, suitable for local execution or environments where a persistent server is managed.
 
 **Functionality:**
 *   Receive real-time events via Verkada Webhooks (primarily LPR and Access Control events).
