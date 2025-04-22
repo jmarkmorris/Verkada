@@ -1,10 +1,108 @@
 # Project: Verkada API Monitor for Gated Community
 
-This project provides two implementations for monitoring events from a Verkada security system:
+This project provides different implementations for interacting with the Verkada API and monitoring events:
 
-1.  **AWS Lambda Implementation (not yet tested):** A serverless approach using AWS Lambda and API Gateway for scalability and reduced management. Located in `src_aws/`.
-2.  **Original Flask Implementation (tested):** A standalone Python Flask application suitable for local testing or environments where a persistent server is preferred. Located in `src_flask/`.
+1.  **Helix API Test Scripts (`src_helix`):** A collection of Python scripts and a shell runner for testing various Verkada API endpoints.
+2.  **AWS Lambda Implementation (not yet tested):** A serverless approach using AWS Lambda and API Gateway for scalability and reduced management. Located in `src_aws/`.
+3.  **Original Flask Implementation (tested):** A standalone Python Flask application suitable for local testing or environments where a persistent server is preferred. Located in `src_flask/`.
 
+---
+
+## Helix API Test Scripts (`src_helix/`)
+
+**Goal:** Provide a set of command-line Python scripts and a menu-driven shell script to easily test specific Verkada API endpoints, fetch data, and generate JSON templates of the responses.
+
+**Functionality:**
+*   Fetch a short-lived API token using a provided API key.
+*   Test various API endpoints (e.g., Access Users List, User Details, Access Events, Camera List, LPR Images, LPR Timestamps, LPOI).
+*   Display the raw JSON response from successful API calls.
+*   Generate and save JSON template files based on the structure of successful responses.
+*   Provide a menu-driven shell script (`runtest.sh`) for interactive selection and execution of tests.
+*   Include options for controlling logging verbosity.
+*   Implement interactive selection menus for tests requiring specific parameters (like user or camera selection).
+
+**Technology Stack:**
+*   Python 3.x
+*   `requests` (for making API calls)
+*   `argparse` (for command-line arguments)
+*   `logging` (for structured output and debugging)
+*   `os`, `sys`, `json`, `time`, `datetime`, `traceback` (standard libraries)
+*   Bash shell script (`runtest.sh`) for the interactive menu.
+
+---
+
+### Helix Setup
+
+1.  **Clone the repository:**
+    ```bash
+    git clone <your-repo-url>
+    # Replace <your-repo-url> with the actual repository URL
+    cd Verkada # Assuming project root is Verkada
+    ```
+
+2.  **Create and activate a virtual environment:**
+    *   It's recommended to create a separate environment for the Helix scripts:
+        ```bash
+        python3 -m venv venv_helix
+        ```
+    *   Activate it:
+        ```bash
+        # On macOS/Linux:
+        source venv_helix/bin/activate
+        # On Windows:
+        # venv_helix\Scripts\activate
+        ```
+    *   Your terminal prompt should now be prefixed (e.g., `(venv_helix)`).
+
+3.  **Install dependencies:**
+    ```bash
+    pip install -r src_helix/requirements.txt
+    ```
+
+4.  **Set API Key Environment Variable:**
+    *   The scripts require your Verkada API key to be set as an environment variable named `API_KEY`.
+    *   Obtain your API key from Verkada Command (**Admin** -> **API**).
+    *   Set the environment variable in your terminal session *before* running the scripts:
+        ```bash
+        export API_KEY="your_verkada_api_key"
+        ```
+    *   **Security Note:** Be cautious with your API key. Avoid hardcoding it directly in scripts or committing it to version control. Using environment variables is a standard practice. For persistent environments, consider using a secrets manager.
+
+---
+
+### Helix Usage
+
+The primary way to run the Helix tests is using the `runtest.sh` script, which provides an interactive menu.
+
+1.  **Activate Virtual Environment:** Ensure your Helix virtual environment is activated (e.g., `source venv_helix/bin/activate`).
+2.  **Set API Key:** Ensure the `API_KEY` environment variable is set in your current terminal session.
+3.  **Run the Menu Script:**
+    *   Navigate to the project's root directory (`Verkada`) in your terminal.
+    *   Execute the script:
+        ```bash
+        ./src_helix/runtest.sh
+        ```
+    *   The script will display a menu of available tests.
+    *   Enter the number corresponding to the test you want to run, or 'L' to change the log level, or '0' to exit.
+    *   Some tests (like User Details or LPR Timestamps) will prompt you for additional input (e.g., selecting a user or camera/plate).
+
+4.  **Direct Script Execution (Advanced):**
+    *   You can also run individual Python scripts directly from the command line.
+    *   Navigate to the project root.
+    *   Use `python -m <module_path>` to run the script as a module.
+    *   Use `--help` to see available arguments for each script.
+    *   Example:
+        ```bash
+        python -m src_helix.test_token_api --log_level DEBUG
+        python -m src_helix.test_user_details_api --user_index 5 --log_level INFO
+        ```
+
+5.  **Monitor Output and Logs:**
+    *   API responses and script output will be printed to your terminal.
+    *   Detailed debug logs for each script are saved in the `src_helix/` directory (e.g., `token_api_debug.log`, `users_list_api_debug.log`). Check these files for more information, especially if a test fails.
+    *   JSON template files (e.g., `test_token_api.json`, `test_users_list_api.json`) are generated in the `src_helix/` directory upon successful API calls that return data.
+
+---
 ---
 
 ## AWS Lambda Implementation (`src_aws/`)
