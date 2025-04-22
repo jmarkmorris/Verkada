@@ -183,10 +183,12 @@ def main():
 
         # --- Step 4: Print matched results in a table format ---
         if matched_detections:
-            # Sort matched detections by timestamp (optional, but makes output easier to read)
-            matched_detections.sort(key=lambda x: x.get('timestamp', 0))
+            # Sort matched detections by license plate first, then by timestamp
+            # Using default values for get() to handle potential missing keys gracefully
+            matched_detections.sort(key=lambda x: (x.get('license_plate', ''), x.get('timestamp', 0)))
 
-            print("\n--- Matched LPR Detections (License Plates of Interest) ---")
+            # Include the count of LPOI plates in the header
+            print(f"\n--- Matched LPR Detections ({len(lpoi_plates)} License Plates of Interest) ---")
             # Define column widths (adjust as needed)
             plate_width = 20
             gate_width = 30
