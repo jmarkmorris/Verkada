@@ -33,19 +33,19 @@ The following endpoints have corresponding test scripts in the `src_helix/` dire
     *   *Script:* `test_lpr_images_api.py`
     *   *Purpose:* Retrieves LPR detection events within a time range.
     *   *Documentation:* [Get seen license plates](https://apidocs.verkada.com/reference/getlprimagesview)
-    *   *Note:* Requires specific Camera API Read permissions. Failed with 403 error in testing until permissions were granted. API response is a list.
+    *   *Note:* API response is a list.
 
 5.  **`GET /cameras/v1/notifications`**: Get Alerts/Notifications.
     *   *Script:* `test_notifications_api.py`
     *   *Purpose:* Retrieves camera-related notifications within a time range.
     *   *Documentation:* [Get Alerts](https://apidocs.verkada.com/reference/getnotificationsviewv1)
-    *   *Note:* Requires specific Camera API Read permissions. Failed with 403 error in testing until permissions were granted. API response key is `notifications`.
+    *   *Note:* API response key is `notifications`.
 
 6.  **`GET /access/v1/events`**: Get Access Events.
     *   *Script:* `test_access_events_api.py`
     *   *Purpose:* Retrieves access control events (door unlocks, etc.) within a time range.
     *   *Documentation:* [Get Access Events](https://apidocs.verkada.com/reference/geteventsviewv1)
-    *   *Note:* Requires specific Access API Read permissions. Failed with 403 error in testing until permissions were granted. API response key is `events`.
+    *   *Note:*  API response key is `events`.
 
 7.  **`GET /access/v1/access_users`**: Get All Access Users.
     *   *Script:* `test_users_list_api.py`
