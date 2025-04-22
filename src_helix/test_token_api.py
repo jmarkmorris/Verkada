@@ -33,7 +33,7 @@ def get_api_token(api_key: str) -> str:
     }
 
     try:
-        logger.info(f"Requesting token from {url}")
+        logger.info(f"Requesting token from {url}") # Keep this one as it's the primary purpose of this script
         response = requests.post(url, headers=headers)
         response.raise_for_status()
         data = response.json()

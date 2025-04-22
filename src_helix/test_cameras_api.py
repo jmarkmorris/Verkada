@@ -9,17 +9,33 @@ import logging
 import requests
 import argparse
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        # Save log file in the src_helix directory
-        logging.FileHandler('src_helix/cameras_api_debug.log')
-    ]
-)
+# Get the logger for this module
 logger = logging.getLogger(__name__)
+# Set the logger level to DEBUG so it processes all messages
+logger.setLevel(logging.DEBUG)
+
+# Create handlers
+# Stream handler for stdout - level will be set based on user input in main
+stream_handler = logging.StreamHandler(sys.stdout)
+# File handler for debug logs - always log DEBUG and above to file
+# Save log file in the src_helix directory
+file_handler = logging.FileHandler('src_helix/cameras_api_debug.log')
+file_handler.setLevel(logging.DEBUG)
+
+# Create formatters and add them to the handlers
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+stream_handler.setFormatter(formatter)
+file_handler.setFormatter(formatter)
+
+# Add handlers to the logger
+# Prevent duplicate handlers if the script is somehow imported multiple times
+if not logger.handlers:
+    logger.addHandler(stream_handler)
+    logger.addHandler(file_handler)
+
+# Remove the basicConfig call as we are configuring handlers manually
+# logging.basicConfig(...)
+
 
 VERKADA_API_BASE_URL = "https://api.verkada.com"
 TOKEN_ENDPOINT = "/token"
@@ -34,6 +50,8 @@ def get_api_token(api_key: str) -> str:
     }
 
     try:
+        # logger.info(f"Requesting token from {url}") # Removed redundant info log
+        logger.debug(f"Requesting token from {url}") # Keep debug log
         response = requests.post(url, headers=headers)
         response.raise_for_status()
         data = response.json()
@@ -107,20 +125,28 @@ def _list_cameras_for_menu(api_key: str):
     Fetches cameras and prints them to stdout in 'index,id,name' format
     for use by the runtest.sh script menu. Suppresses standard logging to stdout.
     """
-    # Temporarily disable stream handler to prevent logs from interfering with stdout
-    root_logger = logging.getLogger()
-    stream_handler = None
-    for handler in root_logger.handlers:
+    # We get the logger again here to ensure we have the correct instance
+    local_logger = logging.getLogger(__name__)
+    temp_stream_handler = None
+    original_level = local_logger.level # Store original level
+
+    # Temporarily remove the stream handler and set level to CRITICAL
+    # *before* any API calls or printing the marker
+    for handler in local_logger.handlers:
         if isinstance(handler, logging.StreamHandler) and handler.stream == sys.stdout:
-            stream_handler = handler
-            root_logger.removeHandler(handler)
+            temp_stream_handler = handler
+            local_logger.removeHandler(handler)
             break # Assuming only one StreamHandler for stdout
+
+    local_logger.setLevel(logging.CRITICAL) # Temporarily set level to CRITICAL
+
 
     try:
         # Get API token
+        # get_api_token now has debug logging, which goes to the file handler
         api_token = get_api_token(api_key)
 
-        # Fetch camera data (errors will be logged to file by fetch_cameras_data)
+        # Fetch camera data (errors will be logged to file by the file handler)
         url = f"{VERKADA_API_BASE_URL}{CAMERAS_ENDPOINT}"
         headers = {
             "Accept": "application/json",
@@ -131,6 +157,10 @@ def _list_cameras_for_menu(api_key: str):
         response.raise_for_status()
         cameras = response.json()
 
+        # These debug logs will go to the file handler because level is CRITICAL for stream
+        logger.debug(f"Raw camera response data in _list_for_menu: {cameras}")
+        logger.debug(f"Type of data received in _list_for_menu: {type(cameras)}")
+
         # Filter for cameras with 'name' and 'id'
         # Corrected key from 'devices' to 'cameras'
         all_cameras = [
@@ -138,12 +168,20 @@ def _list_cameras_for_menu(api_key: str):
             if isinstance(cam, dict) and 'name' in cam and 'id' in cam
         ]
 
+        logger.debug(f"Extracted cameras_list in _list_for_menu: {all_cameras}")
+        logger.debug(f"Length of cameras_list in _list_for_menu: {len(all_cameras)}")
+
+        # Add a marker to indicate the start of the parsable output
+        # Print directly to stdout, bypassing the logger
+        print("---START_CAMERA_LIST---", file=sys.stdout)
+        sys.stdout.flush() # Flush the marker immediately
+
         # Print cameras in a parsable format: index,id,name
         # Print nothing if the list is empty
         for i, cam in enumerate(all_cameras):
             # Clean the camera name to remove any commas that could break parsing
             clean_name = cam['name'].replace(',', ' ')
-            print(f"{i+1},{cam['id']},{clean_name}")
+            print(f"{i+1},{cam['id']},{clean_name}", file=sys.stdout)
         sys.stdout.flush() # Explicitly flush stdout after printing the list
 
     except Exception as e:
@@ -151,9 +189,10 @@ def _list_cameras_for_menu(api_key: str):
         logger.error(f"Error listing cameras for menu: {e}", exc_info=True)
         sys.exit(1) # Exit with non-zero status on error
     finally:
-        # Re-add the stream handler
-        if stream_handler:
-            root_logger.addHandler(stream_handler)
+        # Re-add the stream handler and restore original level
+        if temp_stream_handler:
+            local_logger.addHandler(temp_stream_handler)
+        local_logger.setLevel(original_level)
 
 
 def main():
@@ -175,8 +214,11 @@ def main():
     # Parse arguments
     args = parser.parse_args()
 
-    # Set logging level
-    logging.getLogger().setLevel(getattr(logging, args.log_level))
+    # Set logging level for the stream handler based on the argument.
+    # The file handler level is already set to DEBUG.
+    stream_handler.setLevel(getattr(logging, args.log_level))
+    logger.debug(f"Stream handler level set to: {args.log_level}")
+
 
     # Get API key from environment variable
     api_key = os.environ.get('API_KEY')

@@ -208,24 +208,26 @@ def main():
         stream_handler.setLevel(getattr(logging, args.log_level))
 
     logger.debug("Script started with log level: " + args.log_level)
-    logger.debug(f"Arguments: camera_id={args.camera_id}, license_plate={args.license_plate}, history_days={args.history_days}")
+    logger.debug(f"Arguments parsed: camera_id={args.camera_id}, license_plate={args.license_plate}, history_days={args.history_days}, log_level={args.log_level}") # Debug parsed args
 
     # Get API key from environment variable
+    logger.debug("Attempting to get API_KEY environment variable...") # Debug before getting API key
     api_key = os.environ.get('API_KEY')
     if not api_key:
         logger.error("API_KEY environment variable is not set")
         sys.exit(1)
     else:
-        logger.debug(f"API_KEY found: {api_key[:5]}...{api_key[-4:]}")
+        logger.debug(f"API_KEY found: {api_key[:5]}...{api_key[-4:]}") # Debug API key found
 
     try:
         # Get API token
-        logger.debug("Attempting to get API token...")
+        logger.debug("Attempting to get API token...") # Debug before getting token
         api_token = get_api_token(api_key)
-        logger.info(f"Successfully retrieved API token: {api_token[:10]}...")
+        logger.info(f"Successfully retrieved API token: {api_token[:10]}...") # Keep this info log
+        logger.debug(f"Retrieved API token: {api_token[:10]}...") # Debug token
 
         # Fetch LPR timestamps data
-        logger.debug("Attempting to fetch LPR timestamps data...")
+        logger.debug("Attempting to fetch LPR timestamps data...") # Debug before fetching data
         # Removed temporary stream handler removal/re-addition logic
         lpr_timestamps_data = fetch_lpr_timestamps_data(api_token, args.camera_id, args.license_plate, args.history_days)
         logger.info(f"Successfully retrieved LPR timestamps data for plate '{args.license_plate}' on camera '{args.camera_id}'")

@@ -37,7 +37,7 @@ def get_api_token(api_key: str) -> str:
 
     try:
         # Keep token request logging minimal for this script
-        # logger.info(f"Requesting token from {url}")
+        # logger.info(f"Requesting token from {url}") # Removed redundant info log
         response = requests.post(url, headers=headers)
         response.raise_for_status()
         data = response.json()
