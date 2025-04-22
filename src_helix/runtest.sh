@@ -115,7 +115,7 @@ run_test() {
     fi
 
     # Extract only the camera list lines after the marker using awk
-    # The marker is "---START_CAMERA_LIST---"
+    # Set flag=1 when marker is found, skip marker line (next), print lines when flag is 1
     camera_list_output=$(echo "$all_cameras_raw_output" | awk '/---START_CAMERA_LIST---/{flag=1; next} flag')
 
     if [ "$LOG_LEVEL" == "DEBUG" ]; then
