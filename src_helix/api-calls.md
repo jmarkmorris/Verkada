@@ -31,7 +31,7 @@ The following endpoints have corresponding test scripts in the `src_helix/` dire
 
 4.  **`GET /cameras/v1/analytics/lpr/imagesview`**: Get seen license plates.
     *   *Script:* `test_lpr_images_api.py`
-    *   *Purpose:* Retrieves LPR detection events within a time range.
+    *   *Purpose:* Retrieves LPR detection events within a time range for a *single* camera (requires `camera_id`).
     *   *Documentation:* [Get seen license plates](https://apidocs.verkada.com/reference/getlprimagesview)
     *   *Note:* API response is a list.
 
@@ -60,9 +60,15 @@ The following endpoints have corresponding test scripts in the `src_helix/` dire
 
 9.  **`GET /cameras/v1/analytics/lpr/timestamps`**: Get Timestamps for a specific License Plate.
     *   *Script:* `test_lpr_timestamps_api.py`
-    *   *Purpose:* Retrieves timestamps when a specific license plate was seen (requires `license_plate` parameter).
+    *   *Purpose:* Retrieves timestamps when a specific license plate was seen (requires `license_plate` and `camera_id` parameters).
     *   *Documentation:* [Get Timestamps for a specific License Plate](https://apidocs.verkada.com/reference/getlprtimestampsviewv1)
     *   *Note:* API response is a dictionary containing a `detections` key, which holds the list of timestamp/detection events.
+
+10. **`GET /cameras/v1/analytics/lpr/images`**: Get seen license plates (All LPR Cameras).
+    *   *Script:* `test_lpr_images_api_all_cameras.py`
+    *   *Purpose:* Fetches LPR detection events for *all* LPR-enabled cameras within a time range and displays them in a table.
+    *   *Documentation:* [Get seen license plates](https://apidocs.verkada.com/reference/getlprimagesview)
+    *   *Note:* This script iterates through LPR-enabled cameras found via `/cameras/v1/devices`.
 
 ### Potential Future Endpoints for Testing
 

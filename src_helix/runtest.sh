@@ -32,6 +32,7 @@ show_menu() {
   echo " 7) /cameras/v1/devices (test_cameras_api.py)"
   echo " 8! /cameras/v1/notifications (test_notifications_api.py)"
   echo " 9) /token (test_token_api.py)"
+  echo " 10) /cameras/v1/analytics/lpr/images (All LPR Cameras) (test_lpr_images_api_all_cameras.py)" # New test case
   echo "--------------------------------------------------------------------------------"
   echo " L) Change Log Level (Current: $LOG_LEVEL)"
   echo " 0) Exit"
@@ -82,6 +83,18 @@ run_test() {
     fi
     extra_args+=("--history_days" "$history_days")
   fi
+
+  # Handle script requiring history_hours (New test case 10)
+  if [[ "$script_name" == "src_helix/test_lpr_images_api_all_cameras.py" ]]; then
+    read -p "Enter history_hours (default: 1): " history_hours
+    history_hours=${history_hours:-1} # Set default if empty
+    if ! [[ "$history_hours" =~ ^[0-9]+$ ]]; then
+        echo "Invalid input. Using default history_hours=1."
+        history_hours=1
+    fi
+    extra_args+=("--history_hours" "$history_hours")
+  fi
+
 
   # Handle script requiring user_index (Test 2: test_user_details_api.py)
   if [[ "$script_name" == "src_helix/test_user_details_api.py" ]]; then
@@ -310,7 +323,7 @@ run_test() {
 while true; do
   clear # Clear screen for better readability
   show_menu
-  read -p "Enter your choice [0-9 or L] (default: 0): " choice
+  read -p "Enter your choice [0-10 or L] (default: 0): " choice
   
   # Set default choice to 0 (Exit) if empty
   choice=${choice:-0}
@@ -325,6 +338,7 @@ while true; do
     7) run_test "src_helix/test_cameras_api.py" ;; # /cameras/v1/devices
     8) run_test "src_helix/test_notifications_api.py" ;; # /cameras/v1/notifications
     9) run_test "src_helix/test_token_api.py" ;; # /token
+    10) run_test "src_helix/test_lpr_images_api_all_cameras.py" ;; # /cameras/v1/analytics/lpr/images (All LPR Cameras)
     [Ll]) change_log_level ;;
     0) echo "Exiting."; exit 0 ;;
     *) echo "Invalid choice. Please try again." ;;
