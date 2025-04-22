@@ -46,4 +46,22 @@ export API_KEY="your_verkada_api_key"
 python src_helix/test_alerts_api.py --history_days 14 --log_level INFO
 ```
 
+8. To test the Users List API:
+```bash
+export API_KEY="your_verkada_api_key"
+python src_helix/test_users_list_api.py --log_level INFO
+```
+
+9. To test the User Details API (fetching details for the first user in the list):
+```bash
+export API_KEY="your_verkada_api_key"
+python src_helix/test_user_details_api.py --log_level INFO
+```
+
+10. To test the User Details API for a specific user index (e.g., the third user, index 2):
+```bash
+export API_KEY="your_verkada_api_key"
+python src_helix/test_user_details_api.py --user_index 2 --log_level INFO
+```
+
 For more detailed logging, you can change `--log_level INFO` to `--log_level DEBUG` in any of these commands.
