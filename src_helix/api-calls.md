@@ -1,19 +1,6 @@
-# Verkada API Query Script (`src_helix/`)
+# Verkada API Endpoints and Test Scripts (`src_helix/`)
 
-**Goal:** Provide a command-line script to query various Verkada API endpoints, specifically focusing on retrieving License Plate Recognition (LPR) data.
-
-**Functionality:**
-*   Authenticates with the Verkada API using a two-step process (API Key to get API Token).
-*   Supports querying different API endpoints via command-line flags.
-*   Currently implements fetching License Plates of Interest (LPOIs) and LPR events.
-*   Handles pagination for LPR events.
-*   Allows specifying the history duration for LPR event queries.
-
-**Technology Stack:**
-*   Python 3.x
-*   `requests` (for making HTTP requests)
-*   `argparse` (for command-line arguments)
-*   Standard libraries: `os`, `sys`, `logging`, `datetime`, `time`
+This document lists Verkada API endpoints relevant to this project, particularly those with corresponding test scripts in the `src_helix/` directory.
 
 ---
 
@@ -23,7 +10,7 @@ This section lists Verkada API endpoints that return JSON text-based information
 
 ### Endpoints with Existing Test Scripts
 
-The following endpoints have corresponding test scripts in the `src_helix/` directory:
+The following endpoints have corresponding test scripts in the `src_helix/` directory, runnable via `runtest.sh`:
 
 1.  **`POST /token`**: Get API Token.
     *   *Script:* `test_token_api.py`
@@ -34,29 +21,31 @@ The following endpoints have corresponding test scripts in the `src_helix/` dire
     *   *Script:* `test_lpoi_api.py`
     *   *Purpose:* Retrieves the configured LPOI list.
     *   *Documentation:* [Get All License Plates of Interest](https://apidocs.verkada.com/reference/getlicenseplateofinterestviewv1)
+    *   *Note:* API response key is `license_plate_of_interest`.
 
 3.  **`GET /cameras/v1/devices`**: Get Camera Data.
     *   *Script:* `test_cameras_api.py`
     *   *Purpose:* Retrieves a list of cameras in the organization.
     *   *Documentation:* Implicitly covered in Camera API section.
+    *   *Note:* API response key is `cameras`.
 
 4.  **`GET /cameras/v1/analytics/lpr/imagesview`**: Get seen license plates.
     *   *Script:* `test_lpr_images_api.py`
     *   *Purpose:* Retrieves LPR detection events within a time range.
     *   *Documentation:* [Get seen license plates](https://apidocs.verkada.com/reference/getlprimagesview)
-    *   *Note:* Requires specific Camera API Read permissions. Failed with 403 error in testing until permissions were granted.
+    *   *Note:* Requires specific Camera API Read permissions. Failed with 403 error in testing until permissions were granted. API response is a list.
 
 5.  **`GET /cameras/v1/notifications`**: Get Alerts/Notifications.
     *   *Script:* `test_notifications_api.py`
     *   *Purpose:* Retrieves camera-related notifications within a time range.
     *   *Documentation:* [Get Alerts](https://apidocs.verkada.com/reference/getnotificationsviewv1)
-    *   *Note:* Requires specific Camera API Read permissions. Failed with 403 error in testing until permissions were granted.
+    *   *Note:* Requires specific Camera API Read permissions. Failed with 403 error in testing until permissions were granted. API response key is `notifications`.
 
 6.  **`GET /access/v1/events`**: Get Access Events.
     *   *Script:* `test_access_events_api.py`
     *   *Purpose:* Retrieves access control events (door unlocks, etc.) within a time range.
     *   *Documentation:* [Get Access Events](https://apidocs.verkada.com/reference/geteventsviewv1)
-    *   *Note:* Requires specific Access API Read permissions. Failed with 403 error in testing until permissions were granted.
+    *   *Note:* Requires specific Access API Read permissions. Failed with 403 error in testing until permissions were granted. API response key is `events`.
 
 7.  **`GET /access/v1/access_users`**: Get All Access Users.
     *   *Script:* `test_users_list_api.py`
@@ -73,6 +62,7 @@ The following endpoints have corresponding test scripts in the `src_helix/` dire
     *   *Script:* `test_lpr_timestamps_api.py`
     *   *Purpose:* Retrieves timestamps when a specific license plate was seen (requires `license_plate` parameter).
     *   *Documentation:* [Get Timestamps for a specific License Plate](https://apidocs.verkada.com/reference/getlprtimestampsviewv1)
+    *   *Note:* API response is a dictionary containing a `detections` key, which holds the list of timestamp/detection events.
 
 ### Potential Future Endpoints for Testing
 
@@ -90,7 +80,6 @@ The following endpoints also return JSON data and could be implemented with test
 
 **Camera API:**
 *   `GET /cameras/v1/analytics/people/person_of_interest`: Get All Persons of Interest.
-*   `GET /cameras/v1/analytics/lpr/timestamps`: Get Timestamps for a specific License Plate (requires `license_plate` parameter).
 *   `GET /cameras/v1/audio`: Get Camera Audio Status (may require `camera_id`).
 *   `GET /cameras/v1/cloud_backup`: Get cloud backup settings for a camera (requires `camera_id`).
 *   `GET /cameras/v1/analytics/occupancy_trends/cameras`: Get Occupancy Trends Cameras.
@@ -134,67 +123,9 @@ When fetching large amounts of data, particularly when paginating through result
 
 ## Verkada API Authentication
 
-The script follows the recommended two-factor authentication flow:
+The test scripts follow the recommended two-factor authentication flow:
 
 1.  A long-lived **API Key** (stored securely as an environment variable `API_KEY`) is used to request a short-lived **API Token** from the `/token` endpoint.
-2.  The **API Token** is then used in the `x-verkada-auth` header for subsequent calls to other API endpoints (like fetching LPOIs or LPR events).
+2.  The **API Token** is then used in the `x-verkada-auth` header for subsequent calls to other API endpoints.
 
-Ensure your `API_KEY` environment variable is set correctly and that the corresponding API Key in Verkada Command has the necessary permissions for the endpoints being queried (at least "Read-only access" for the Camera API for the current functionality).
-
----
-
-## Script Setup
-
-1.  **Clone the repository:**
-    ```bash
-    git clone <your-repo-url>
-    # Replace <your-repo-url> with the actual repository URL
-    cd Verkada # Assuming project root is Verkada
-    ```
-
-2.  **Create and activate a virtual environment:**
-    *   It's recommended to create a separate environment for the script:
-        ```bash
-        python3 -m venv venv_helix
-        ```
-    *   Activate it:
-        ```bash
-        # On macOS/Linux:
-        source venv_helix/bin/activate
-        # On Windows:
-        # venv_helix\Scripts\activate
-        ```
-    *   Your terminal prompt should now be prefixed (e.g., `(venv_helix)`).
-
-3.  **Install dependencies:**
-    ```bash
-    pip install -r requirements.md # Assuming requirements.md lists 'requests'
-    ```
-    *   *Note:* The `requirements.md` file should contain the necessary dependencies, including `requests`. If not, you might need to manually install `requests` (`pip install requests`).
-
-4.  **Set Environment Variable (`API_KEY`):**
-    *   Obtain your Verkada API Key from Verkada Command (**Admin** -> **Integrations** -> **API**).
-    *   Set the `API_KEY` environment variable in your terminal session:
-        ```bash
-        export API_KEY="YOUR_VERKADA_API_KEY"
-        ```
-    *   *Note:* For persistent environment variables, consult your operating system's documentation (e.g., add to `.bashrc`, `.zshrc`, or system environment variables).
-
----
-
-## Script Usage
-
-The script is run from the command line, specifying the API to query and other options.
-
-1.  **Activate Virtual Environment:** Ensure your `venv_helix` virtual environment is activated.
-2.  **Run the Script:**
-    *   Navigate to the project's root directory (`Verkada`) in your terminal.
-    *   Execute the script using the `src_helix` module, specifying the API:
-        ```bash
-        # Example: Fetch LPR events for LPOIs with 7 days of history
-        python -m src_helix.lpoi --api lpr_events --history_days 7 --log_level INFO
-        ```
-    *   Replace `lpr_events` with the desired API name if more handlers are added to `src_helix/lpoi.py`.
-    *   Adjust `--history_days` to specify the time range for LPR event queries.
-    *   Adjust `--log_level` (DEBUG, INFO, WARNING, ERROR, CRITICAL) for desired logging verbosity. Use `DEBUG` to see detailed request/response information.
-
+Ensure your `API_KEY` environment variable is set correctly and that the corresponding API Key in Verkada Command has the necessary permissions for the endpoints being queried.
