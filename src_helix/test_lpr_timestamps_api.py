@@ -77,10 +77,11 @@ def fetch_lpr_timestamps_data(api_token: str, camera_id: str, license_plate: str
 
         response.raise_for_status()
 
-        # Debug the raw response content
+        # Debug the raw response content length, but not the content itself
         raw_content = response.content
         logger.debug(f"Raw response content length: {len(raw_content)} bytes")
-        logger.debug(f"Raw response content preview: {raw_content[:200]}...")
+        # Removed logging of raw_content preview to avoid dumping potential binary data
+
 
         try:
             data = response.json()

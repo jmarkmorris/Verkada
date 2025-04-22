@@ -127,9 +127,30 @@ def fetch_lpr_images_for_camera(api_token: str, camera_id: str, start_time: int,
             response = requests.get(url, headers=headers, params=params)
             logger.debug(f"LPR images response status code for camera {camera_id}, page {page_count + 1}: {response.status_code}")
             response.raise_for_status()
-            data = response.json()
 
-            logger.debug(f"Raw LPR images response data for camera {camera_id}, page {page_count + 1}: {data}")
+            # Debug the raw response content length, but not the content itself
+            raw_content = response.content
+            logger.debug(f"Raw response content length for camera {camera_id}, page {page_count + 1}: {len(raw_content)} bytes")
+            # Removed logging of raw_content preview to avoid dumping potential binary data
+
+            try:
+                data = response.json()
+                logger.debug(f"Response JSON parsed successfully for camera {camera_id}, page {page_count + 1}")
+                logger.debug(f"Response data type: {type(data)}")
+                if isinstance(data, dict):
+                    logger.debug(f"Response data keys: {list(data.keys())}")
+                    if 'detections' in data:
+                        logger.debug(f"Found 'detections' key with {len(data['detections'])} items for camera {camera_id}, page {page_count + 1}")
+                    else:
+                        logger.debug(f"'detections' key not found in response for camera {camera_id}, page {page_count + 1}")
+                else:
+                    logger.debug(f"Response data for camera {camera_id}, page {page_count + 1} is not a dictionary: {type(data)}")
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse JSON response for camera {camera_id}, page {page_count + 1}: {e}")
+                logger.error(f"Response content: {response.content}")
+                # Stop pagination for this camera on JSON error
+                break
+
 
             # The API response structure for /images is a dictionary with 'camera_id', 'detections', 'next_page_token'
             detections = data.get('detections', []) if isinstance(data, dict) else []
@@ -144,11 +165,11 @@ def fetch_lpr_images_for_camera(api_token: str, camera_id: str, start_time: int,
             page_count += 1
 
             if page_token:
-                logger.debug(f"Next page token found: {page_token}. Continuing pagination.")
+                logger.debug(f"Next page token found: {page_token}. Continuing pagination for camera {camera_id}.")
                 # Optional: Add a small delay to avoid hitting rate limits
                 # time.sleep(0.1)
             else:
-                logger.debug("No next page token found. Ending pagination for this camera.")
+                logger.debug(f"No next page token found. Ending pagination for camera {camera_id}.")
                 break # No more pages
 
         except requests.exceptions.HTTPError as e:

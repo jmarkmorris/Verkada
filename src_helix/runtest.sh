@@ -32,7 +32,8 @@ show_menu() {
   echo " 7) /cameras/v1/devices (test_cameras_api.py)"
   echo " 8! /cameras/v1/notifications (test_notifications_api.py)"
   echo " 9) /token (test_token_api.py)"
-  echo " 10) /cameras/v1/analytics/lpr/images (All LPR Cameras) (test_lpr_images_api_all_cameras.py)" # New test case
+  echo " 10) /cameras/v1/analytics/lpr/images (All LPR Cameras) (test_lpr_images_api_all_cameras.py)"
+  echo " 11) /cameras/v1/analytics/lpr/images (LPOI Match) (test_lpr_lpoi_match_api.py)" # Updated script name
   echo "--------------------------------------------------------------------------------"
   echo " L) Change Log Level (Current: $LOG_LEVEL)"
   echo " 0) Exit"
@@ -50,7 +51,7 @@ change_log_level() {
   echo " 5) CRITICAL - Serious error, program may be unable to continue"
   echo "--------------------------------------------------------------------------------"
   read -p "Enter your choice [1-5]: " level_choice
-  
+
   case $level_choice in
     1) LOG_LEVEL="DEBUG" ;;
     2) LOG_LEVEL="INFO" ;;
@@ -59,7 +60,7 @@ change_log_level() {
     5) LOG_LEVEL="CRITICAL" ;;
     *) echo "Invalid choice. Log level unchanged." ;;
   esac
-  
+
   echo "Log level set to: $LOG_LEVEL"
   read -n 1 -s -r -p "Press any key to return to the menu..."
   echo
@@ -84,8 +85,9 @@ run_test() {
     extra_args+=("--history_days" "$history_days")
   fi
 
-  # Handle script requiring history_hours (New test case 10)
-  if [[ "$script_name" == "src_helix/test_lpr_images_api_all_cameras.py" ]]; then
+  # Handle scripts requiring history_hours (Test cases 10 and 11)
+  if [[ "$script_name" == "src_helix/test_lpr_images_api_all_cameras.py" || \
+        "$script_name" == "src_helix/test_lpr_lpoi_match_api.py" ]]; then # Added new script
     read -p "Enter history_hours (default: 1): " history_hours
     history_hours=${history_hours:-1} # Set default if empty
     if ! [[ "$history_hours" =~ ^[0-9]+$ ]]; then
@@ -323,8 +325,8 @@ run_test() {
 while true; do
   clear # Clear screen for better readability
   show_menu
-  read -p "Enter your choice [0-10 or L] (default: 0): " choice
-  
+  read -p "Enter your choice [0-11 or L] (default: 0): " choice
+
   # Set default choice to 0 (Exit) if empty
   choice=${choice:-0}
 
@@ -339,6 +341,7 @@ while true; do
     8) run_test "src_helix/test_notifications_api.py" ;; # /cameras/v1/notifications
     9) run_test "src_helix/test_token_api.py" ;; # /token
     10) run_test "src_helix/test_lpr_images_api_all_cameras.py" ;; # /cameras/v1/analytics/lpr/images (All LPR Cameras)
+    11) run_test "src_helix/test_lpr_lpoi_match_api.py" ;; # /cameras/v1/analytics/lpr/images (LPOI Match)
     [Ll]) change_log_level ;;
     0) echo "Exiting."; exit 0 ;;
     *) echo "Invalid choice. Please try again." ;;
