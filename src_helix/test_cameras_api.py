@@ -99,17 +99,25 @@ def _list_cameras_for_menu(api_key: str):
     root_logger = logging.getLogger()
     stream_handler = None
     for handler in root_logger.handlers:
-        if isinstance(handler, logging.StreamHandler):
+        if isinstance(handler, logging.StreamHandler) and handler.stream == sys.stdout:
             stream_handler = handler
             root_logger.removeHandler(handler)
-            break # Assuming only one StreamHandler
+            break # Assuming only one StreamHandler for stdout
 
     try:
         # Get API token
         api_token = get_api_token(api_key)
 
         # Fetch camera data (errors will be logged to file by fetch_cameras_data)
-        cameras = fetch_cameras_data(api_token)
+        url = f"{VERKADA_API_BASE_URL}{CAMERAS_ENDPOINT}"
+        headers = {
+            "Accept": "application/json",
+            "x-verkada-auth": api_token,
+        }
+        
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        cameras = response.json()
 
         # Filter for cameras with 'name' and 'id'
         all_cameras = [
@@ -120,7 +128,9 @@ def _list_cameras_for_menu(api_key: str):
         # Print cameras in a parsable format: index,id,name
         # Print nothing if the list is empty
         for i, cam in enumerate(all_cameras):
-            print(f"{i+1},{cam['id']},{cam['name']}")
+            # Clean the camera name to remove any commas that could break parsing
+            clean_name = cam['name'].replace(',', ' ')
+            print(f"{i+1},{cam['id']},{clean_name}")
 
     except Exception as e:
         # Log the error to the file handler

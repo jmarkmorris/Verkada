@@ -78,7 +78,14 @@ def fetch_lpoi_data(api_token: str):
         
         # Print the response in pretty format with increased indent width for better readability
         print("\n--- License Plates of Interest API Response ---")
-        print(json.dumps(data, indent=4, ensure_ascii=False))
+        
+        # Use ensure_ascii=False to properly handle special characters
+        # Use a larger indent for better readability
+        formatted_json = json.dumps(data, indent=2, ensure_ascii=False)
+        
+        # Print each line separately to avoid truncation issues
+        for line in formatted_json.split('\n'):
+            print(line)
         
         return data
     except requests.exceptions.HTTPError as e:

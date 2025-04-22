@@ -177,7 +177,10 @@ run_test() {
 while true; do
   clear # Clear screen for better readability
   show_menu
-  read -p "Enter your choice [0-9 or L]: " choice
+  read -p "Enter your choice [0-9 or L] (default: 0): " choice
+  
+  # Set default choice to 0 (Exit) if empty
+  choice=${choice:-0}
 
   case $choice in
     1) run_test "test_token_api.py" ;;
