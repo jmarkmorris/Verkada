@@ -8,6 +8,7 @@ import requests
 import argparse
 import datetime
 import time
+import inspect
 from typing import List, Dict, Any, Callable
 
 # Configure basic logging (level will be set by argparse later)
@@ -44,6 +45,101 @@ API_ENDPOINTS = {
     }
     # Add other APIs here as needed
 }
+
+def handle_alerts_api(api_token: str, history_days: int) -> None:
+    """
+    Attempts to fetch alerts or access events using alternative endpoints.
+
+    Args:
+        api_token: The short-lived Verkada API Token.
+        history_days: The number of days of history to query for events.
+    """
+    try:
+        # Calculate start and end time based on history_days
+        end_time = int(time.time())
+        start_time = end_time - (history_days * 24 * 60 * 60)
+        logger.info(f"Querying events for the last {history_days} days (from {datetime.datetime.fromtimestamp(start_time)} to {datetime.datetime.fromtimestamp(end_time)})")
+
+        # Try multiple endpoints in case of permission issues
+        endpoints_to_try = [
+            ("/access/v1/events", "access_events"),
+            ("/cameras/v1/notifications", "camera_notifications"),
+            ("/cameras/v1/analytics/lpr/imagesview", "lpr_images")
+        ]
+
+        failed_endpoints = []
+
+        for endpoint, endpoint_name in endpoints_to_try:
+            try:
+                logger.info(f"Attempting to fetch events from {endpoint}...")
+
+                all_events = []
+                page_token = None
+
+                while True:
+                    events_params = {
+                        "start_time": start_time,
+                        "end_time": end_time,
+                        "page_size": 200 # Max page size for this endpoint
+                    }
+                    if page_token:
+                        events_params["page_token"] = page_token
+
+                    try:
+                        events_data = fetch_api_data(api_token, endpoint, params=events_params)
+                    except requests.exceptions.HTTPError as http_err:
+                        logger.warning(f"Failed to fetch from {endpoint}: {http_err}")
+                        failed_endpoints.append((endpoint, str(http_err)))
+                        break  # Try next endpoint or continue to next iteration
+
+                    # Dynamically determine the events list key based on the endpoint
+                    events_key = 'events' if endpoint == "/access/v1/events" else \
+                                 'notifications' if endpoint == "/cameras/v1/notifications" else \
+                                 'license_plates'
+
+                    if events_key not in events_data or not isinstance(events_data[events_key], list):
+                        logger.warning(f"Unexpected API response format for {endpoint_name}: missing or invalid '{events_key}' list. Raw data: {events_data}. Stopping pagination.")
+                        break
+
+                    events_page = events_data[events_key]
+                    all_events.extend(events_page)
+
+                    page_token = events_data.get('next_page_token')
+                    if not page_token:
+                        break  # Stop if there are no more pages
+
+                    logger.info(f"Fetched {len(events_page)} {endpoint_name} events, fetching next page with token: {page_token}")
+
+                # If we successfully fetched events, print and return
+                if all_events:
+                    logger.info(f"Fetched a total of {len(all_events)} {endpoint_name} events within the specified time range.")
+
+                    print(f"\n--- {endpoint_name.upper()} Events ---")
+                    for event in all_events:
+                        print(f"  Event: {event}")
+                        print("-" * 20)
+                    return
+
+            except Exception as e:
+                logger.warning(f"Error fetching from {endpoint}: {e}")
+                failed_endpoints.append((endpoint, str(e)))
+                continue
+
+        # If no events were found in any endpoint
+        logger.error("No events found from any attempted endpoint.")
+        print("\n--- API Access Troubleshooting ---")
+        print("Unable to fetch events. Possible reasons:")
+        for endpoint, error in failed_endpoints:
+            print(f"- {endpoint}: {error}")
+        print("\nTroubleshooting steps:")
+        print("1. Verify your API key has the correct permissions")
+        print("2. Check Verkada Command -> Integrations -> API")
+        print("3. Ensure you have read access to Access, Camera, and Notification APIs")
+        print("4. Confirm the API key is not expired")
+
+    except Exception as e:
+        logger.error(f"Failed during events processing: {e}", exc_info=True)
+        raise  # Re-raise to be caught by the main error handler
 
 def get_api_token(api_key: str) -> str:
     """
@@ -139,89 +235,6 @@ def fetch_api_data(api_token: str, endpoint: str, params: Dict[str, Any] = None)
         logger.error(f"Failed to parse API response from {url}: {e}")
         raise # Re-raise the exception after logging
 
-def handle_alerts_api(api_token: str, history_days: int) -> None:
-    """
-    Attempts to fetch alerts or access events using alternative endpoints.
-
-    Args:
-        api_token: The short-lived Verkada API Token.
-        history_days: The number of days of history to query for events.
-    """
-    try:
-        # Calculate start and end time based on history_days
-        end_time = int(time.time())
-        start_time = end_time - (history_days * 24 * 60 * 60)
-        logger.info(f"Querying events for the last {history_days} days (from {datetime.datetime.fromtimestamp(start_time)} to {datetime.datetime.fromtimestamp(end_time)})")
-
-        # Try multiple endpoints in case of permission issues
-        endpoints_to_try = [
-            ("/access/v1/events", "access_events"),
-            ("/cameras/v1/notifications", "camera_notifications"),
-            ("/cameras/v1/analytics/lpr/imagesview", "lpr_images")
-        ]
-
-        for endpoint, endpoint_name in endpoints_to_try:
-            try:
-                logger.info(f"Attempting to fetch events from {endpoint}...")
-
-                all_events = []
-                page_token = None
-
-                while True:
-                    events_params = {
-                        "start_time": start_time,
-                        "end_time": end_time,
-                        "page_size": 200 # Max page size for this endpoint
-                    }
-                    if page_token:
-                        events_params["page_token"] = page_token
-
-                    try:
-                        events_data = fetch_api_data(api_token, endpoint, params=events_params)
-                    except requests.exceptions.HTTPError as http_err:
-                        logger.warning(f"Failed to fetch from {endpoint}: {http_err}")
-                        break  # Try next endpoint or continue to next iteration
-
-                    # Dynamically determine the events list key based on the endpoint
-                    events_key = 'events' if endpoint == "/access/v1/events" else \
-                                 'notifications' if endpoint == "/cameras/v1/notifications" else \
-                                 'license_plates'
-
-                    if events_key not in events_data or not isinstance(events_data[events_key], list):
-                        logger.warning(f"Unexpected API response format for {endpoint_name}: missing or invalid '{events_key}' list. Raw data: {events_data}. Stopping pagination.")
-                        break
-
-                    events_page = events_data[events_key]
-                    all_events.extend(events_page)
-
-                    page_token = events_data.get('next_page_token')
-                    if not page_token:
-                        break  # Stop if there are no more pages
-
-                    logger.info(f"Fetched {len(events_page)} {endpoint_name} events, fetching next page with token: {page_token}")
-
-                # If we successfully fetched events, print and return
-                if all_events:
-                    logger.info(f"Fetched a total of {len(all_events)} {endpoint_name} events within the specified time range.")
-
-                    print(f"\n--- {endpoint_name.upper()} Events ---")
-                    for event in all_events:
-                        print(f"  Event: {event}")
-                        print("-" * 20)
-                    return
-
-            except Exception as e:
-                logger.warning(f"Error fetching from {endpoint}: {e}")
-                continue
-
-        # If no events were found in any endpoint
-        logger.info(f"No events found in the last {history_days} days from any attempted endpoint.")
-        print("No events found. This could be due to API permission issues or no events during the specified time range.")
-
-    except Exception as e:
-        logger.error(f"Failed during events processing: {e}", exc_info=True)
-        raise  # Re-raise to be caught by the main error handler
-
 def main():
     """
     Main entry point for the script. Parses command-line arguments and calls the appropriate API handler.
@@ -267,13 +280,21 @@ def main():
         api_name = args.api
         handler_name = API_ENDPOINTS[api_name]['handler']
         
-        # Use globals() to dynamically find the function by its name
-        handler_func = globals().get(handler_name)
+        # Dynamically find the function by searching through all modules
+        handler_func = None
+        for name, obj in globals().items():
+            if name == handler_name and callable(obj):
+                handler_func = obj
+                break
         
-        if not handler_func or not callable(handler_func):
-            logger.error(f"Handler function not found or not callable for API: {api_name} ({handler_name})")
-            logger.error(f"Available global functions: {list(globals().keys())}")
-            raise ValueError(f"Handler function not found or not callable for API: {api_name} ({handler_name})")
+        if not handler_func:
+            # Log all available functions for debugging
+            available_funcs = [
+                name for name, obj in globals().items() 
+                if inspect.isfunction(obj)
+            ]
+            logger.error(f"Handler function {handler_name} not found. Available functions: {available_funcs}")
+            raise ValueError(f"Handler function not found for API: {api_name} ({handler_name})")
 
         # Call the handler function with API token and history days
         handler_func(api_token, args.history_days)
