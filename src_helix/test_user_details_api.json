@@ -6,19 +6,19 @@
         }
     ],
     "ble_unlock": 0,
-    "cards": [],
-    "end_date": "",
-    "entry_code": "",
-    "has_profile_photo": 0,
-    "license_plates": [
+    "cards": [
         {
             "active": 0,
-            "license_plate_number": "",
-            "name": ""
+            "card_id": "",
+            "card_number": "",
+            "facility_code": "",
+            "type": ""
         }
     ],
+    "entry_code": "",
+    "has_profile_photo": 0,
+    "license_plates": [],
     "mfa_codes": [],
     "remote_unlock": 0,
-    "start_date": "",
     "user_id": ""
 }

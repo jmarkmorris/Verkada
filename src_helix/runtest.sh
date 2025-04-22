@@ -11,6 +11,9 @@ fi
 # Default log level - Changed to ERROR
 LOG_LEVEL="ERROR"
 
+# Variable to store the captured user list for selection
+USER_LIST_CACHE=""
+
 # Function to display the menu
 show_menu() {
   echo "================================================================================"
@@ -80,15 +83,107 @@ run_test() {
     extra_args+=("--history_days" "$history_days")
   fi
 
-  # Handle script requiring user_index
+  # Handle script requiring user_index (Test 2: test_user_details_api.py)
   if [[ "$script_name" == "src_helix/test_user_details_api.py" ]]; then
-    read -p "Enter user_index (default: 0): " user_index
-    user_index=${user_index:-0} # Set default if empty
-     if ! [[ "$user_index" =~ ^[0-9]+$ ]]; then
-        echo "Invalid input. Using default user_index=0."
-        user_index=0
+    echo "Fetching list of access users..."
+    # Fetch and list users using test_users_list_api.py as a module with --list-for-selection
+    # Capture both stdout and stderr
+    # Use python -m to ensure imports within test_users_list_api work correctly
+    # Cache the output for potential reuse (though not strictly necessary with current logic)
+    USER_LIST_CACHE=$(python -m src_helix.test_users_list_api --log_level "$LOG_LEVEL" --list-for-selection 2>&1)
+    script_exit_code=$? # Capture exit code
+
+    if [ "$LOG_LEVEL" == "DEBUG" ]; then
+        echo "--- Raw output from test_users_list_api.py ---"
+        echo "$USER_LIST_CACHE"
+        echo "--- End raw output ---"
     fi
-    extra_args+=("--user_index" "$user_index")
+
+    # Extract only the user list lines after the marker using awk
+    # Set flag=1 when marker is found, skip marker line (next), print lines when flag is 1
+    user_list_output=$(echo "$USER_LIST_CACHE" | awk '/---START_USER_LIST---/{flag=1; next} flag')
+
+    if [ "$LOG_LEVEL" == "DEBUG" ]; then
+        echo "--- Filtered user list output ---"
+        echo "$user_list_output"
+        echo "--- End filtered output ---"
+    fi
+
+    # Check if the script failed or returned an empty list
+    if [ $script_exit_code -ne 0 ]; then
+      echo "Failed to fetch user list (exit code $script_exit_code). Aborting."
+      echo "Please check the 'users_list_api_debug.log' file for details."
+      read -n 1 -s -r -p "Press any key to return to the menu..."
+      echo
+      return # Exit the run_test function
+    elif [ -z "$user_list_output" ]; then
+      # Script exited successfully (0), but no users were listed after the marker
+      echo "The API call was successful, but no access users were returned."
+      echo "Please check the 'users_list_api_debug.log' file for details if you expected users."
+      read -n 1 -s -r -p "Press any key to return to the menu..."
+      echo
+      return # Exit the run_test function
+    fi
+
+    # Build user selection menu (only if list is not empty and script succeeded)
+    echo "--------------------------------------------------------------------------------"
+    echo " Select a user for details test:"
+    echo "--------------------------------------------------------------------------------"
+    user_options=() # Array to store user_id
+    user_display_options=() # Array to store display string (index)
+    # Now pipe the filtered output to the while loop
+    while IFS=',' read -r index user_id user_name; do
+      # The filtering should ensure we only get valid lines, but keep the check for safety
+      if [ -n "$index" ] && [ -n "$user_id" ] && [ -n "$user_name" ]; then
+        echo " $index) $user_name (ID: ${user_id:0:5}...)" # Display user name and truncated ID
+        user_options+=("$user_id") # Store user_id in an array
+        user_display_options+=("$index") # Store the display index
+      fi
+    done <<< "$user_list_output" # Use the filtered output
+
+    # This check should technically be redundant now due to the check above,
+    # but keeping it doesn't hurt.
+    if [ ${#user_options[@]} -eq 0 ]; then
+        echo "No users were found or parsed from the list after successful API call."
+        echo "This is unexpected. Please check the 'users_list_api_debug.log' file."
+        read -n 1 -s -r -p "Press any key to return to the menu..."
+        echo
+        return
+    fi
+
+    echo "--------------------------------------------------------------------------------"
+    echo " 0) Cancel"
+    echo "--------------------------------------------------------------------------------"
+
+    read -p "Enter your choice: " user_choice
+
+    if [ "$user_choice" -eq 0 ]; then
+      echo "Operation cancelled."
+      read -n 1 -s -r -p "Press any key to return to the menu..."
+      echo
+      return
+    fi
+
+    # Validate choice and get the corresponding 0-based index
+    # Find the index in user_display_options that matches the user_choice
+    selected_index=-1
+    for i in "${!user_display_options[@]}"; do
+        if [[ "${user_display_options[$i]}" == "$user_choice" ]]; then
+            selected_index=$i
+            break
+        fi
+    done
+
+    if [ "$selected_index" -eq -1 ]; then
+      echo "Invalid choice. Aborting."
+      read -n 1 -s -r -p "Press any key to return to the menu..."
+      echo
+      return
+    fi
+
+    # Pass the 0-based index to the script
+    echo "Selected user index: $selected_index"
+    extra_args+=("--user_index" "$selected_index")
   fi
 
   # Handle script requiring license_plate and camera_id (via selection menu)
