@@ -46,6 +46,17 @@ def fetch_lpr_images_data(api_token: str, history_days: int):
     end_time = int(time.time())
     start_time = end_time - (history_days * 24 * 60 * 60)
 
+    url = f"{VERKADA_API_BASE_URL}{LPR_IMAGES_ENDPOINT}"
+    headers = {
+        "Accept": "application/json",
+        "x-verkada-auth": api_token,
+    }
+    params = {
+        "start_time": start_time,
+        "end_time": end_time,
+        "page_size": 200 # Example page size, adjust as needed
+    }
+
     try:
         logger.info(f"Fetching LPR images from {url} for the last {history_days} days")
         logger.debug(f"Request headers: {headers}") # Added debug log
