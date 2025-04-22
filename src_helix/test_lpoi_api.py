@@ -76,9 +76,9 @@ def fetch_lpoi_data(api_token: str):
         response.raise_for_status()
         data = response.json()
         
-        # Print the response in pretty format
+        # Print the response in pretty format with increased indent width for better readability
         print("\n--- License Plates of Interest API Response ---")
-        print(json.dumps(data, indent=4))
+        print(json.dumps(data, indent=4, ensure_ascii=False))
         
         return data
     except requests.exceptions.HTTPError as e:

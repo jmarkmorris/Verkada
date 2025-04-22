@@ -8,12 +8,16 @@ if [ -z "$API_KEY" ]; then
   exit 1
 fi
 
+# Default log level
+LOG_LEVEL="DEBUG"
+
 # Function to display the menu
 show_menu() {
   echo "========================================"
   echo " Verkada API Test Script Runner"
   echo "========================================"
   echo " API_KEY: ${API_KEY:0:5}...${API_KEY: -4}"
+  echo " Current Log Level: $LOG_LEVEL"
   echo "----------------------------------------"
   echo " Select a test to run:"
   echo " 1) /token (test_token_api.py)"
@@ -26,14 +30,40 @@ show_menu() {
   echo " 8) /access/v1/access_users/user (test_user_details_api.py)"
   echo " 9) /cameras/v1/analytics/lpr/timestamps (test_lpr_timestamps_api.py)"
   echo "----------------------------------------"
+  echo " L) Change Log Level (Current: $LOG_LEVEL)"
   echo " 0) Exit"
   echo "========================================"
+}
+
+# Function to change log level
+change_log_level() {
+  echo "----------------------------------------"
+  echo " Select Log Level:"
+  echo " 1) DEBUG"
+  echo " 2) INFO"
+  echo " 3) WARNING"
+  echo " 4) ERROR"
+  echo " 5) CRITICAL"
+  echo "----------------------------------------"
+  read -p "Enter your choice [1-5]: " level_choice
+  
+  case $level_choice in
+    1) LOG_LEVEL="DEBUG" ;;
+    2) LOG_LEVEL="INFO" ;;
+    3) LOG_LEVEL="WARNING" ;;
+    4) LOG_LEVEL="ERROR" ;;
+    5) LOG_LEVEL="CRITICAL" ;;
+    *) echo "Invalid choice. Log level unchanged." ;;
+  esac
+  
+  echo "Log level set to: $LOG_LEVEL"
+  read -n 1 -s -r -p "Press any key to return to the menu..."
+  echo
 }
 
 # Function to run a test script
 run_test() {
   local script_name="$1"
-  local log_level="INFO" # Default log level
   local extra_args=()
 
   # Handle scripts requiring history_days
@@ -134,27 +164,10 @@ run_test() {
     extra_args+=("--license_plate" "$license_plate")
   fi
 
-
-  # Ask for log level
-  read -p "Enter log level (DEBUG, INFO, WARNING, ERROR, CRITICAL - default: INFO): " input_log_level
-  input_log_level=$(echo "$input_log_level" | tr '[:lower:]' '[:upper:]') # Convert to uppercase
-  case "$input_log_level" in
-    DEBUG|INFO|WARNING|ERROR|CRITICAL)
-      log_level="$input_log_level"
-      ;;
-    "") # Empty input, use default
-      log_level="INFO"
-      ;;
-    *)
-      echo "Invalid log level. Using default INFO."
-      log_level="INFO"
-      ;;
-  esac
-
   echo "----------------------------------------"
-  echo "Running: python src_helix/$script_name --log_level $log_level ${extra_args[@]}"
+  echo "Running: python src_helix/$script_name --log_level $LOG_LEVEL ${extra_args[@]}"
   echo "----------------------------------------"
-  python "src_helix/$script_name" --log_level "$log_level" "${extra_args[@]}"
+  python "src_helix/$script_name" --log_level "$LOG_LEVEL" "${extra_args[@]}"
   echo "----------------------------------------"
   read -n 1 -s -r -p "Press any key to return to the menu..."
   echo # Add a newline after the key press
@@ -164,7 +177,7 @@ run_test() {
 while true; do
   clear # Clear screen for better readability
   show_menu
-  read -p "Enter your choice [0-9]: " choice
+  read -p "Enter your choice [0-9 or L]: " choice
 
   case $choice in
     1) run_test "test_token_api.py" ;;
@@ -176,6 +189,7 @@ while true; do
     7) run_test "test_users_list_api.py" ;;
     8) run_test "test_user_details_api.py" ;;
     9) run_test "test_lpr_timestamps_api.py" ;;
+    [Ll]) change_log_level ;;
     0) echo "Exiting."; exit 0 ;;
     *) echo "Invalid choice. Please try again." ;;
   esac

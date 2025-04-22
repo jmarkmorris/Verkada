@@ -142,6 +142,11 @@ def main():
         default='INFO', 
         help="Set the logging level (default: INFO)"
     )
+    parser.add_argument(
+        "--list-for-menu",
+        action="store_true",
+        help="Fetch and list cameras in a format suitable for the runtest.sh menu"
+    )
 
     # Parse arguments
     args = parser.parse_args()
