@@ -94,9 +94,10 @@ run_test() {
   # Handle script requiring license_plate and camera_id (via selection menu)
   if [[ "$script_name" == "src_helix/test_lpr_timestamps_api.py" ]]; then
     echo "Fetching list of all cameras..."
-    # Fetch and list all cameras using test_cameras_api.py with --list-for-menu
+    # Fetch and list all cameras using test_cameras_api.py as a module with --list-for-menu
     # Capture both stdout and stderr
-    all_cameras_raw_output=$(python src_helix/test_cameras_api.py --log_level "$LOG_LEVEL" --list-for-menu 2>&1)
+    # Use python -m to ensure imports within test_cameras_api work correctly
+    all_cameras_raw_output=$(python -m src_helix.test_cameras_api --log_level "$LOG_LEVEL" --list-for-menu 2>&1)
     script_exit_code=$? # Capture exit code
 
     if [ "$LOG_LEVEL" == "DEBUG" ]; then

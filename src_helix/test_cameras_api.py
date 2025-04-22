@@ -9,6 +9,9 @@ import logging
 import requests
 import argparse
 
+# Import shared utility functions and constants
+from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, TOKEN_ENDPOINT
+
 # Get the logger for this module
 logger = logging.getLogger(__name__)
 # Set the logger level to DEBUG so it processes all messages
@@ -37,48 +40,48 @@ if not logger.handlers:
 # logging.basicConfig(...)
 
 
-VERKADA_API_BASE_URL = "https://api.verkada.com"
-TOKEN_ENDPOINT = "/token"
+# VERKADA_API_BASE_URL = "https://api.verkada.com" # Removed, imported from api_utils
+# TOKEN_ENDPOINT = "/token" # Removed, imported from api_utils
 CAMERAS_ENDPOINT = "/cameras/v1/devices"
 
-def get_api_token(api_key: str) -> str:
-    """Fetch short-lived API token."""
-    url = f"{VERKADA_API_BASE_URL}{TOKEN_ENDPOINT}"
-    headers = {
-        "Accept": "application/json",
-        "x-api-key": api_key,
-    }
+# def get_api_token(api_key: str) -> str: # Removed, imported from api_utils
+#     """Fetch short-lived API token."""
+#     url = f"{VERKADA_API_BASE_URL}{TOKEN_ENDPOINT}"
+#     headers = {
+#         "Accept": "application/json",
+#         "x-api-key": api_key,
+#     }
+#
+#     try:
+#         # logger.info(f"Requesting token from {url}") # Removed redundant info log
+#         logger.debug(f"Requesting token from {url}") # Keep debug log
+#         response = requests.post(url, headers=headers)
+#         response.raise_for_status()
+#         data = response.json()
+#         return data['token']
+#     except Exception as e:
+#         logger.error(f"API token retrieval failed: {e}")
+#         raise
 
-    try:
-        # logger.info(f"Requesting token from {url}") # Removed redundant info log
-        logger.debug(f"Requesting token from {url}") # Keep debug log
-        response = requests.post(url, headers=headers)
-        response.raise_for_status()
-        data = response.json()
-        return data['token']
-    except Exception as e:
-        logger.error(f"API token retrieval failed: {e}")
-        raise
-
-def create_template(data: dict) -> dict:
-    """Recursively create a template dictionary with empty values."""
-    template = {}
-    for key, value in data.items():
-        if isinstance(value, dict):
-            template[key] = create_template(value)
-        elif isinstance(value, list):
-            # For lists, create a list containing one template item if the list is not empty
-            template[key] = [create_template(value[0])] if value else []
-        elif isinstance(value, str):
-            template[key] = ""
-        elif isinstance(value, (int, float)):
-            template[key] = 0
-        elif isinstance(value, bool):
-            template[key] = False # Or None, depending on desired empty state for boolean
-        else:
-            template[key] = None # Handles None and other types
-
-    return template
+# def create_template(data: dict) -> dict: # Removed, imported from api_utils
+#     """Recursively create a template dictionary with empty values."""
+#     template = {}
+#     for key, value in data.items():
+#         if isinstance(value, dict):
+#             template[key] = create_template(value)
+#         elif isinstance(value, list):
+#             # For lists, create a list containing one template item if the list is not empty
+#             template[key] = [create_template(value[0])] if value else []
+#         elif isinstance(value, str):
+#             template[key] = ""
+#         elif isinstance(value, (int, float)):
+#             template[key] = 0
+#         elif isinstance(value, bool):
+#             template[key] = False # Or None, depending on desired empty state for boolean
+#         else:
+#             template[key] = None # Handles None and other types
+#
+#     return template
 
 
 def fetch_cameras_data(api_token: str):
@@ -143,7 +146,7 @@ def _list_cameras_for_menu(api_key: str):
 
 
     try:
-        # Get API token
+        # Get API token using imported function
         # get_api_token now has debug logging, which goes to the file handler
         api_token = get_api_token(api_key)
 
@@ -234,7 +237,7 @@ def main():
 
     # Otherwise, proceed with the standard test script logic
     try:
-        # Get API token
+        # Get API token using imported function
         api_token = get_api_token(api_key)
         logger.info(f"Successfully retrieved API token: {api_token[:10]}...")
 
@@ -260,7 +263,7 @@ def main():
 
         if cameras_list:
             logger.debug("cameras_list is not empty, attempting to generate template.") # Added debug log
-            template_data = create_template(cameras_list[0])
+            template_data = create_template(cameras_list[0]) # Use imported function
             logger.debug(f"Template data created: {template_data}") # Added debug log for template data
             # Wrap in the expected list structure using the correct key 'cameras'
             template_output = {"cameras": [template_data]}
