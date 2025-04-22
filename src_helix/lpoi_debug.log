@@ -1,0 +1,12 @@
+2025-04-21 20:21:40,459 - INFO - Fetching API token from https://api.verkada.com/token
+2025-04-21 20:21:41,252 - INFO - Successfully fetched API token.
+2025-04-21 20:21:41,252 - INFO - Querying events for the last 7 days (from 2025-04-14 20:21:41 to 2025-04-21 20:21:41)
+2025-04-21 20:21:41,253 - INFO - Attempting to fetch events from /access/v1/events...
+2025-04-21 20:21:41,253 - INFO - Fetching data from https://api.verkada.com/access/v1/events with params: {'start_time': 1744676501, 'end_time': 1745281301, 'page_size': 200}
+2025-04-21 20:21:41,629 - ERROR - API request failed: 403 Forbidden for https://api.verkada.com/access/v1/events. The API Key used to generate the token likely lacks the necessary permissions for this endpoint.
+2025-04-21 20:21:41,630 - WARNING - Failed to fetch from /access/v1/events: 403 Client Error: Forbidden for url: https://api.verkada.com/access/v1/events?start_time=1744676501&end_time=1745281301&page_size=200
+2025-04-21 20:21:41,630 - INFO - Attempting to fetch events from /cameras/v1/notifications...
+2025-04-21 20:21:41,630 - INFO - Fetching data from https://api.verkada.com/cameras/v1/notifications with params: {'start_time': 1744676501, 'end_time': 1745281301, 'page_size': 200}
+2025-04-21 20:21:46,943 - ERROR - API request failed: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+2025-04-21 20:21:46,943 - WARNING - Error fetching from /cameras/v1/notifications: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+2025-04-21 20:21:46,943 - INFO - No events found in the last 7 days from any attempted endpoint.
