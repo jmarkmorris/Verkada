@@ -19,16 +19,16 @@ show_menu() {
   echo " API_KEY: ${API_KEY:0:5}...${API_KEY: -4}"
   echo " Current Log Level: $LOG_LEVEL"
   echo "--------------------------------------------------------------------------------"
-  echo " Select a test to run:"
-  echo " 1) /token (test_token_api.py)"
-  echo " 2) /cameras/v1/analytics/lpr/license_plate_of_interest (test_lpoi_api.py)"
-  echo " 3) /cameras/v1/devices (test_cameras_api.py)"
+  echo " Select a test to run (Alphabetical Order by Endpoint):"
+  echo " 1) /access/v1/access_users (test_users_list_api.py)"
+  echo " 2) /access/v1/access_users/user (test_user_details_api.py)"
+  echo " 3) /access/v1/events (test_access_events_api.py)"
   echo " 4) /cameras/v1/analytics/lpr/imagesview (test_lpr_images_api.py)"
-  echo " 5) /cameras/v1/notifications (test_notifications_api.py)"
-  echo " 6) /access/v1/events (test_access_events_api.py)"
-  echo " 7) /access/v1/access_users (test_users_list_api.py)"
-  echo " 8) /access/v1/access_users/user (test_user_details_api.py)"
-  echo " 9) /cameras/v1/analytics/lpr/timestamps (test_lpr_timestamps_api.py)"
+  echo " 5) /cameras/v1/analytics/lpr/license_plate_of_interest (test_lpoi_api.py)"
+  echo " 6) /cameras/v1/analytics/lpr/timestamps (test_lpr_timestamps_api.py)"
+  echo " 7) /cameras/v1/devices (test_cameras_api.py)"
+  echo " 8) /cameras/v1/notifications (test_notifications_api.py)"
+  echo " 9) /token (test_token_api.py)"
   echo "--------------------------------------------------------------------------------"
   echo " L) Change Log Level (Current: $LOG_LEVEL)"
   echo " 0) Exit"
@@ -208,15 +208,15 @@ while true; do
   choice=${choice:-0}
 
   case $choice in
-    1) run_test "src_helix/test_token_api.py" ;;
-    2) run_test "src_helix/test_lpoi_api.py" ;;
-    3) run_test "src_helix/test_cameras_api.py" ;;
-    4) run_test "src_helix/test_lpr_images_api.py" ;;
-    5) run_test "src_helix/test_notifications_api.py" ;;
-    6) run_test "src_helix/test_access_events_api.py" ;;
-    7) run_test "src_helix/test_users_list_api.py" ;;
-    8) run_test "src_helix/test_user_details_api.py" ;;
-    9) run_test "src_helix/test_lpr_timestamps_api.py" ;;
+    1) run_test "src_helix/test_users_list_api.py" ;; # /access/v1/access_users
+    2) run_test "src_helix/test_user_details_api.py" ;; # /access/v1/access_users/user
+    3) run_test "src_helix/test_access_events_api.py" ;; # /access/v1/events
+    4) run_test "src_helix/test_lpr_images_api.py" ;; # /cameras/v1/analytics/lpr/imagesview
+    5) run_test "src_helix/test_lpoi_api.py" ;; # /cameras/v1/analytics/lpr/license_plate_of_interest
+    6) run_test "src_helix/test_lpr_timestamps_api.py" ;; # /cameras/v1/analytics/lpr/timestamps
+    7) run_test "src_helix/test_cameras_api.py" ;; # /cameras/v1/devices
+    8) run_test "src_helix/test_notifications_api.py" ;; # /cameras/v1/notifications
+    9) run_test "src_helix/test_token_api.py" ;; # /token
     [Ll]) change_log_level ;;
     0) echo "Exiting."; exit 0 ;;
     *) echo "Invalid choice. Please try again." ;;
