@@ -44,6 +44,27 @@ def get_api_token(api_key: str) -> str:
         logger.error(f"API token retrieval failed: {e}")
         raise
 
+def create_template(data: dict) -> dict:
+    """Recursively create a template dictionary with empty values."""
+    template = {}
+    for key, value in data.items():
+        if isinstance(value, dict):
+            template[key] = create_template(value)
+        elif isinstance(value, list):
+            # For lists, create a list containing one template item if the list is not empty
+            template[key] = [create_template(value[0])] if value else []
+        elif isinstance(value, str):
+            template[key] = ""
+        elif isinstance(value, (int, float)):
+            template[key] = 0
+        elif isinstance(value, bool):
+            template[key] = False # Or None, depending on desired empty state for boolean
+        else:
+            template[key] = None # Handles None and other types
+
+    return template
+
+
 def fetch_lpr_timestamps_data(api_token: str, camera_id: str, license_plate: str, history_days: int):
     """Fetch LPR timestamps data for a specific license plate from Verkada API."""
     end_time = int(time.time())
@@ -132,6 +153,21 @@ def main():
         # Fetch LPR timestamps data
         lpr_timestamps_data = fetch_lpr_timestamps_data(api_token, args.camera_id, args.license_plate, args.history_days)
         logger.info(f"Successfully retrieved LPR timestamps data for plate '{args.license_plate}' on camera '{args.camera_id}'")
+
+        # Generate and save JSON template if data is available
+        # Assuming the key for the list of timestamps is 'timestamps'
+        timestamps_list = lpr_timestamps_data.get('timestamps', []) if isinstance(lpr_timestamps_data, dict) else []
+        if timestamps_list:
+            template_data = create_template(timestamps_list[0])
+            template_output = {"timestamps": [template_data]} # Wrap in the expected list structure
+
+            output_filename = "test_lpr_timestamps_api.json"
+            with open(output_filename, 'w') as f:
+                json.dump(template_output, f, indent=4)
+            logger.info(f"Generated JSON template: {output_filename}")
+        else:
+            logger.warning(f"No timestamps found for plate '{args.license_plate}' on camera '{args.camera_id}' to generate a template.")
+
     except Exception as e:
         logger.error(f"Script execution failed: {e}", exc_info=True)
         sys.exit(1)

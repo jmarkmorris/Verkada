@@ -42,6 +42,27 @@ def get_api_token(api_key: str) -> str:
         logger.error(f"API token retrieval failed: {e}")
         raise
 
+def create_template(data: dict) -> dict:
+    """Recursively create a template dictionary with empty values."""
+    template = {}
+    for key, value in data.items():
+        if isinstance(value, dict):
+            template[key] = create_template(value)
+        elif isinstance(value, list):
+            # For lists, create a list containing one template item if the list is not empty
+            template[key] = [create_template(value[0])] if value else []
+        elif isinstance(value, str):
+            template[key] = ""
+        elif isinstance(value, (int, float)):
+            template[key] = 0
+        elif isinstance(value, bool):
+            template[key] = False # Or None, depending on desired empty state for boolean
+        else:
+            template[key] = None # Handles None and other types
+
+    return template
+
+
 def fetch_users_list(api_token: str) -> list:
     """Fetch list of access users from Verkada API."""
     url = f"{VERKADA_API_BASE_URL}{USERS_LIST_ENDPOINT}"
@@ -74,7 +95,7 @@ def fetch_users_list(api_token: str) -> list:
         if not users:
             logger.warning("No access members found in the response.") # Updated warning message
 
-        return users
+        return data # Return the full data dictionary
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 403:
             logger.error(f"403 Forbidden error for {USERS_LIST_ENDPOINT}. Possible permission issue.")
@@ -113,9 +134,21 @@ def main():
         logger.info(f"Successfully retrieved API token: {api_token[:10]}...")
         
         # Fetch users list
-        users_list = fetch_users_list(api_token)
+        users_data = fetch_users_list(api_token) # Capture the full data
+        users_list = users_data.get('access_members', []) if isinstance(users_data, dict) else []
         logger.info(f"Successfully retrieved access users list. Found {len(users_list)} users.")
-        # Removed the user details fetching logic
+
+        # Generate and save JSON template if data is available
+        if users_list:
+            template_data = create_template(users_list[0])
+            template_output = {"access_members": [template_data]} # Wrap in the expected list structure
+
+            output_filename = "test_users_list_api.json"
+            with open(output_filename, 'w') as f:
+                json.dump(template_output, f, indent=4)
+            logger.info(f"Generated JSON template: {output_filename}")
+        else:
+            logger.warning("No access users found to generate a template.")
 
     except Exception as e:
         logger.error(f"Script execution failed: {e}", exc_info=True)

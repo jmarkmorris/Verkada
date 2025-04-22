@@ -41,6 +41,27 @@ def get_api_token(api_key: str) -> str:
         logger.error(f"API token retrieval failed: {e}")
         raise
 
+def create_template(data: dict) -> dict:
+    """Recursively create a template dictionary with empty values."""
+    template = {}
+    for key, value in data.items():
+        if isinstance(value, dict):
+            template[key] = create_template(value)
+        elif isinstance(value, list):
+            # For lists, create a list containing one template item if the list is not empty
+            template[key] = [create_template(value[0])] if value else []
+        elif isinstance(value, str):
+            template[key] = ""
+        elif isinstance(value, (int, float)):
+            template[key] = 0
+        elif isinstance(value, bool):
+            template[key] = False # Or None, depending on desired empty state for boolean
+        else:
+            template[key] = None # Handles None and other types
+
+    return template
+
+
 def fetch_cameras_data(api_token: str):
     """Fetch camera data from Verkada API."""
     url = f"{VERKADA_API_BASE_URL}{CAMERAS_ENDPOINT}"
@@ -100,6 +121,20 @@ def main():
         # Fetch camera data
         cameras_data = fetch_cameras_data(api_token)
         logger.info("Successfully retrieved camera data")
+
+        # Generate and save JSON template if data is available
+        cameras_list = cameras_data.get('devices', []) if isinstance(cameras_data, dict) else []
+        if cameras_list:
+            template_data = create_template(cameras_list[0])
+            template_output = {"devices": [template_data]} # Wrap in the expected list structure
+
+            output_filename = "test_cameras_api.json"
+            with open(output_filename, 'w') as f:
+                json.dump(template_output, f, indent=4)
+            logger.info(f"Generated JSON template: {output_filename}")
+        else:
+            logger.warning("No cameras found to generate a template.")
+
     except Exception as e:
         logger.error(f"Script execution failed: {e}", exc_info=True)
         sys.exit(1)

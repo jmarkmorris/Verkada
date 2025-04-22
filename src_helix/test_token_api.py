@@ -46,6 +46,27 @@ def get_api_token(api_key: str) -> str:
         logger.error(f"API token retrieval failed: {e}")
         raise
 
+def create_template(data: dict) -> dict:
+    """Recursively create a template dictionary with empty values."""
+    template = {}
+    for key, value in data.items():
+        if isinstance(value, dict):
+            template[key] = create_template(value)
+        elif isinstance(value, list):
+            # For lists, create a list containing one template item if the list is not empty
+            template[key] = [create_template(value[0])] if value else []
+        elif isinstance(value, str):
+            template[key] = ""
+        elif isinstance(value, (int, float)):
+            template[key] = 0
+        elif isinstance(value, bool):
+            template[key] = False # Or None, depending on desired empty state for boolean
+        else:
+            template[key] = None # Handles None and other types
+
+    return template
+
+
 def main():
     """Main entry point for the script."""
     # Set up argument parser
@@ -70,9 +91,38 @@ def main():
         sys.exit(1)
 
     try:
-        # Get API token
+        # Get API token and the full response data
+        # Modify get_api_token to return the full data, not just the token string
+        # Or, fetch data again if get_api_token must return only the token
+        # Let's modify get_api_token to return the full data for simplicity here
+        # NOTE: This requires a change to get_api_token signature/return type
+        # Let's instead fetch the data again in main for clarity.
+
+        # Get API token (assuming get_api_token still returns just the token string)
         api_token = get_api_token(api_key)
         logger.info(f"Successfully retrieved API token: {api_token[:10]}...")
+
+        # Re-fetch the data to get the full response for templating
+        # This is slightly inefficient but keeps get_api_token focused
+        url = f"{VERKADA_API_BASE_URL}{TOKEN_ENDPOINT}"
+        headers = {
+            "Accept": "application/json",
+            "x-api-key": api_key,
+        }
+        response = requests.post(url, headers=headers)
+        response.raise_for_status()
+        token_data = response.json()
+
+        # Generate and save JSON template
+        if token_data:
+            template_data = create_template(token_data)
+            output_filename = "test_token_api.json"
+            with open(output_filename, 'w') as f:
+                json.dump(template_data, f, indent=4)
+            logger.info(f"Generated JSON template: {output_filename}")
+        else:
+            logger.warning("No data returned from Token API to generate a template.")
+
     except Exception as e:
         logger.error(f"Script execution failed: {e}", exc_info=True)
         sys.exit(1)

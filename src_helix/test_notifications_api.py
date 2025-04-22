@@ -43,6 +43,27 @@ def get_api_token(api_key: str) -> str:
         logger.error(f"API token retrieval failed: {e}")
         raise
 
+def create_template(data: dict) -> dict:
+    """Recursively create a template dictionary with empty values."""
+    template = {}
+    for key, value in data.items():
+        if isinstance(value, dict):
+            template[key] = create_template(value)
+        elif isinstance(value, list):
+            # For lists, create a list containing one template item if the list is not empty
+            template[key] = [create_template(value[0])] if value else []
+        elif isinstance(value, str):
+            template[key] = ""
+        elif isinstance(value, (int, float)):
+            template[key] = 0
+        elif isinstance(value, bool):
+            template[key] = False # Or None, depending on desired empty state for boolean
+        else:
+            template[key] = None # Handles None and other types
+
+    return template
+
+
 def fetch_notifications_data(api_token: str, endpoint: str, params=None): # Renamed function
     """Fetch notifications data from Verkada API."""
     url = f"{VERKADA_API_BASE_URL}{endpoint}"
@@ -103,6 +124,7 @@ def handle_notifications_api(api_token: str, history_days: int): # Renamed funct
     except Exception as e:
         logger.error(f"Failed to fetch from {NOTIFICATIONS_ENDPOINT}: {e}")
         # Removed fallback logic and associated error messages
+        return {} # Return empty dict on failure
 
 def main():
     """Main entry point for the script."""
@@ -138,7 +160,21 @@ def main():
         api_token = get_api_token(api_key)
         logger.info(f"Successfully retrieved API token: {api_token[:10]}...")
         # Handle notifications API
-        handle_notifications_api(api_token, args.history_days) # Call renamed function
+        notifications_data = handle_notifications_api(api_token, args.history_days) # Capture the returned data
+
+        # Generate and save JSON template if data is available
+        notifications_list = notifications_data.get('notifications', []) if isinstance(notifications_data, dict) else []
+        if notifications_list:
+            template_data = create_template(notifications_list[0])
+            template_output = {"notifications": [template_data]} # Wrap in the expected list structure
+
+            output_filename = "test_notifications_api.json"
+            with open(output_filename, 'w') as f:
+                json.dump(template_output, f, indent=4)
+            logger.info(f"Generated JSON template: {output_filename}")
+        else:
+            logger.warning("No notifications found to generate a template.")
+
     except Exception as e:
         logger.error(f"Script execution failed: {e}", exc_info=True)
         sys.exit(1)

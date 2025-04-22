@@ -45,6 +45,27 @@ def get_api_token(api_key: str) -> str:
         logger.error(f"API token retrieval failed: {e}")
         raise
 
+def create_template(data: dict) -> dict:
+    """Recursively create a template dictionary with empty values."""
+    template = {}
+    for key, value in data.items():
+        if isinstance(value, dict):
+            template[key] = create_template(value)
+        elif isinstance(value, list):
+            # For lists, create a list containing one template item if the list is not empty
+            template[key] = [create_template(value[0])] if value else []
+        elif isinstance(value, str):
+            template[key] = ""
+        elif isinstance(value, (int, float)):
+            template[key] = 0
+        elif isinstance(value, bool):
+            template[key] = False # Or None, depending on desired empty state for boolean
+        else:
+            template[key] = None # Handles None and other types
+
+    return template
+
+
 def fetch_users_list_silently(api_token: str) -> list:
     """Fetch list of access users from Verkada API without printing full response."""
     url = f"{VERKADA_API_BASE_URL}{USERS_LIST_ENDPOINT}"
@@ -158,11 +179,22 @@ def main():
                 logger.info(f"Attempting to fetch details for user at index {args.user_index} (ID: {user_id_to_fetch})...")
                 user_details = fetch_user_details(api_token, user_id_to_fetch)
                 logger.info(f"Successfully retrieved details for user ID: {user_id_to_fetch}")
+
+                # Generate and save JSON template if details were fetched
+                if user_details:
+                    template_data = create_template(user_details)
+                    output_filename = "test_user_details_api.json"
+                    with open(output_filename, 'w') as f:
+                        json.dump(template_data, f, indent=4)
+                    logger.info(f"Generated JSON template: {output_filename}")
+                else:
+                    logger.warning(f"No details returned for user ID {user_id_to_fetch} to generate a template.")
+
             else:
                 logger.warning(f"Could not find 'user_id' in the user object at index {args.user_index}.")
         else:
             logger.info("Skipping user details fetch because the user list is empty.")
-            
+
     except Exception as e:
         logger.error(f"Script execution failed: {e}", exc_info=True)
         sys.exit(1)

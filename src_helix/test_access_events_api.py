@@ -43,6 +43,27 @@ def get_api_token(api_key: str) -> str:
         logger.error(f"API token retrieval failed: {e}")
         raise
 
+def create_template(data: dict) -> dict:
+    """Recursively create a template dictionary with empty values."""
+    template = {}
+    for key, value in data.items():
+        if isinstance(value, dict):
+            template[key] = create_template(value)
+        elif isinstance(value, list):
+            # For lists, create a list containing one template item if the list is not empty
+            template[key] = [create_template(value[0])] if value else []
+        elif isinstance(value, str):
+            template[key] = ""
+        elif isinstance(value, (int, float)):
+            template[key] = 0
+        elif isinstance(value, bool):
+            template[key] = False # Or None, depending on desired empty state for boolean
+        else:
+            template[key] = None # Handles None and other types
+
+    return template
+
+
 def fetch_access_events_data(api_token: str, endpoint: str, params=None):
     """Fetch access events data from Verkada API."""
     url = f"{VERKADA_API_BASE_URL}{endpoint}"
@@ -98,8 +119,11 @@ def handle_access_events_api(api_token: str, history_days: int):
             events = events_data[events_key]
             logger.info(f"Successfully retrieved {len(events)} access events.")
 
+        return events_data # Return the fetched data
+
     except Exception as e:
         logger.error(f"Failed to fetch from {ACCESS_EVENTS_ENDPOINT}: {e}")
+        return {} # Return empty dict on failure
 
 def main():
     """Main entry point for the script."""
@@ -136,7 +160,21 @@ def main():
         logger.info(f"Successfully retrieved API token: {api_token[:10]}...")
         
         # Handle access events API
-        handle_access_events_api(api_token, args.history_days)
+        events_data = handle_access_events_api(api_token, args.history_days) # Capture the returned data
+
+        # Generate and save JSON template if data is available
+        events_list = events_data.get('events', []) if isinstance(events_data, dict) else []
+        if events_list:
+            template_data = create_template(events_list[0])
+            template_output = {"events": [template_data]} # Wrap in the expected list structure
+
+            output_filename = "test_access_events_api.json"
+            with open(output_filename, 'w') as f:
+                json.dump(template_output, f, indent=4)
+            logger.info(f"Generated JSON template: {output_filename}")
+        else:
+            logger.warning("No access events found to generate a template.")
+
     except Exception as e:
         logger.error(f"Script execution failed: {e}", exc_info=True)
         sys.exit(1)

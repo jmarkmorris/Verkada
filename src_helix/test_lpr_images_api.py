@@ -42,6 +42,27 @@ def get_api_token(api_key: str) -> str:
         logger.error(f"API token retrieval failed: {e}")
         raise
 
+def create_template(data: dict) -> dict:
+    """Recursively create a template dictionary with empty values."""
+    template = {}
+    for key, value in data.items():
+        if isinstance(value, dict):
+            template[key] = create_template(value)
+        elif isinstance(value, list):
+            # For lists, create a list containing one template item if the list is not empty
+            template[key] = [create_template(value[0])] if value else []
+        elif isinstance(value, str):
+            template[key] = ""
+        elif isinstance(value, (int, float)):
+            template[key] = 0
+        elif isinstance(value, bool):
+            template[key] = False # Or None, depending on desired empty state for boolean
+        else:
+            template[key] = None # Handles None and other types
+
+    return template
+
+
 def fetch_lpr_images_data(api_token: str, history_days: int):
     """Fetch LPR images data from Verkada API."""
     end_time = int(time.time())
@@ -116,6 +137,25 @@ def main():
         # Fetch LPR images data
         lpr_images_data = fetch_lpr_images_data(api_token, args.history_days)
         logger.info("Successfully retrieved LPR images data")
+
+        # Generate and save JSON template if data is available
+        # Assuming the key for the list of LPR images/events is 'lpr_events' or similar
+        # Based on API docs, it seems the response is a list directly, not wrapped in a dict.
+        # Let's assume it's a list of dictionaries.
+        lpr_images_list = lpr_images_data if isinstance(lpr_images_data, list) else []
+
+        if lpr_images_list:
+            template_data = create_template(lpr_images_list[0])
+            # Wrap in a list for the template output
+            template_output = [template_data]
+
+            output_filename = "test_lpr_images_api.json"
+            with open(output_filename, 'w') as f:
+                json.dump(template_output, f, indent=4)
+            logger.info(f"Generated JSON template: {output_filename}")
+        else:
+            logger.warning("No LPR images found to generate a template.")
+
     except Exception as e:
         logger.error(f"Script execution failed: {e}", exc_info=True)
         sys.exit(1)
