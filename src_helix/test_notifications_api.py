@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script to test the Verkada Alerts API endpoint.
+Script to test the Verkada Notifications API endpoint.
 """
 import os
 import sys
@@ -17,18 +17,14 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler('alerts_api_debug.log')
+        logging.FileHandler('notifications_api_debug.log') # Renamed log file
     ]
 )
 logger = logging.getLogger(__name__)
 
 VERKADA_API_BASE_URL = "https://api.verkada.com"
 TOKEN_ENDPOINT = "/token"
-ALERTS_ENDPOINT = "/cameras/v1/notifications"
-ALTERNATIVE_ENDPOINTS = [
-    "/access/v1/events",
-    "/cameras/v1/analytics/lpr/imagesview"
-]
+NOTIFICATIONS_ENDPOINT = "/cameras/v1/notifications" # Renamed constant
 
 def get_api_token(api_key: str) -> str:
     """Fetch short-lived API token."""
@@ -47,8 +43,8 @@ def get_api_token(api_key: str) -> str:
         logger.error(f"API token retrieval failed: {e}")
         raise
 
-def fetch_api_data(api_token: str, endpoint: str, params=None):
-    """Fetch data from Verkada API."""
+def fetch_notifications_data(api_token: str, endpoint: str, params=None): # Renamed function
+    """Fetch notifications data from Verkada API."""
     url = f"{VERKADA_API_BASE_URL}{endpoint}"
     headers = {
         "Accept": "application/json",
@@ -62,7 +58,7 @@ def fetch_api_data(api_token: str, endpoint: str, params=None):
         data = response.json()
         
         # Print the response in pretty format
-        print(f"\n--- API Response from {endpoint} ---")
+        print(f"\n--- Notifications API Response from {endpoint} ---") # Updated print message
         print(json.dumps(data, indent=4))
         
         return data
@@ -75,12 +71,11 @@ def fetch_api_data(api_token: str, endpoint: str, params=None):
             logger.error("3. Verify the API key is not expired")
         raise
 
-def handle_alerts_api(api_token: str, history_days: int):
-    """Fetch alerts from Verkada API with fallback mechanisms."""
+def handle_notifications_api(api_token: str, history_days: int): # Renamed function
+    """Fetch notifications from Verkada API."""
     end_time = int(time.time())
     start_time = end_time - (history_days * 24 * 60 * 60)
-    
-    logger.info(f"Querying alerts for the last {history_days} days (from {datetime.datetime.fromtimestamp(start_time)} to {datetime.datetime.fromtimestamp(end_time)})")
+    logger.info(f"Querying notifications for the last {history_days} days (from {datetime.datetime.fromtimestamp(start_time)} to {datetime.datetime.fromtimestamp(end_time)})") # Updated log message
 
     params = {
         "start_time": start_time,
@@ -88,46 +83,31 @@ def handle_alerts_api(api_token: str, history_days: int):
         "page_size": 200
     }
 
-    # List of endpoints to try
-    endpoints_to_try = [ALERTS_ENDPOINT] + ALTERNATIVE_ENDPOINTS
+    # Directly call the notifications endpoint without fallback
+    try:
+        logger.info(f"Attempting to fetch notifications from {NOTIFICATIONS_ENDPOINT}")
+        
+        notifications_data = fetch_notifications_data(api_token, NOTIFICATIONS_ENDPOINT, params)
+        
+        notifications_key = 'notifications' 
 
-    for endpoint in endpoints_to_try:
-        try:
-            logger.info(f"Attempting to fetch events from {endpoint}")
-            
-            events_data = fetch_api_data(api_token, endpoint, params)
-            
-            # Determine the correct key based on the endpoint
-            events_key = 'notifications' if endpoint == ALERTS_ENDPOINT else \
-                         'events' if endpoint == "/access/v1/events" else \
-                         'license_plates'
+        if notifications_key not in notifications_data or not notifications_data[notifications_key]:
+            logger.warning(f"No {notifications_key} found in {NOTIFICATIONS_ENDPOINT} response")
+        else:
+            notifications = notifications_data[notifications_key]
+            # Optional: print details if needed, already printed in fetch function
+            # print(f"\n--- Notifications from {NOTIFICATIONS_ENDPOINT} ---")
+            # print(json.dumps(notifications, indent=4))
+            logger.info(f"Successfully retrieved {len(notifications)} notifications.")
 
-            if events_key not in events_data or not events_data[events_key]:
-                logger.warning(f"No {events_key} found in {endpoint} response")
-                continue
-
-            events = events_data[events_key]
-            
-            print(f"\n--- Events from {endpoint} ---")
-            print(json.dumps(events, indent=4))
-            
-            return
-
-        except Exception as e:
-            logger.warning(f"Failed to fetch from {endpoint}: {e}")
-            continue
-
-    # If all endpoints fail
-    logger.error("Unable to fetch events from any endpoint")
-    print("\nTroubleshooting:")
-    print("1. Verify API key permissions")
-    print("2. Check network connectivity")
-    print("3. Confirm Verkada API is accessible")
+    except Exception as e:
+        logger.error(f"Failed to fetch from {NOTIFICATIONS_ENDPOINT}: {e}")
+        # Removed fallback logic and associated error messages
 
 def main():
     """Main entry point for the script."""
     # Set up argument parser
-    parser = argparse.ArgumentParser(description="Test Verkada Alerts API")
+    parser = argparse.ArgumentParser(description="Test Verkada Notifications API") # Updated description
     parser.add_argument(
         "--history_days", 
         type=int, 
@@ -157,9 +137,8 @@ def main():
         # Get API token
         api_token = get_api_token(api_key)
         logger.info(f"Successfully retrieved API token: {api_token[:10]}...")
-        
-        # Handle alerts API
-        handle_alerts_api(api_token, args.history_days)
+        # Handle notifications API
+        handle_notifications_api(api_token, args.history_days) # Call renamed function
     except Exception as e:
         logger.error(f"Script execution failed: {e}", exc_info=True)
         sys.exit(1)

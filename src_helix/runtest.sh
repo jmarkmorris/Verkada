@@ -1,0 +1,106 @@
+#!/bin/bash
+
+# Check if API_KEY is set
+if [ -z "$API_KEY" ]; then
+  echo "Error: API_KEY environment variable is not set."
+  echo "Please set it before running this script:"
+  echo "  export API_KEY=\"your_verkada_api_key\""
+  exit 1
+fi
+
+# Function to display the menu
+show_menu() {
+  echo "========================================"
+  echo " Verkada API Test Script Runner"
+  echo "========================================"
+  echo " API_KEY: ${API_KEY:0:5}...${API_KEY: -4}"
+  echo "----------------------------------------"
+  echo " Select a test to run:"
+  echo " 1) /token (test_token_api.py)"
+  echo " 2) /cameras/v1/analytics/lpr/license_plate_of_interest (test_lpoi_api.py)"
+  echo " 3) /cameras/v1/devices (test_cameras_api.py)"
+  echo " 4) /cameras/v1/analytics/lpr/imagesview (test_lpr_images_api.py)"
+  echo " 5) /cameras/v1/notifications (test_notifications_api.py)"
+  echo " 6) /access/v1/events (test_access_events_api.py)"
+  echo " 7) /access/v1/access_users (test_users_list_api.py)"
+  echo " 8) /access/v1/access_users/user (test_user_details_api.py)"
+  echo "----------------------------------------"
+  echo " 0) Exit"
+  echo "========================================"
+}
+
+# Function to run a test script
+run_test() {
+  local script_name="$1"
+  local log_level="INFO" # Default log level
+  local extra_args=()
+
+  # Handle scripts requiring history_days
+  if [[ "$script_name" == "test_lpr_images_api.py" || \
+        "$script_name" == "test_notifications_api.py" || \
+        "$script_name" == "test_access_events_api.py" ]]; then
+    read -p "Enter history_days (default: 7): " history_days
+    history_days=${history_days:-7} # Set default if empty
+    if ! [[ "$history_days" =~ ^[0-9]+$ ]]; then
+        echo "Invalid input. Using default history_days=7."
+        history_days=7
+    fi
+    extra_args+=("--history_days" "$history_days")
+  fi
+
+  # Handle script requiring user_index
+  if [[ "$script_name" == "test_user_details_api.py" ]]; then
+    read -p "Enter user_index (default: 0): " user_index
+    user_index=${user_index:-0} # Set default if empty
+     if ! [[ "$user_index" =~ ^[0-9]+$ ]]; then
+        echo "Invalid input. Using default user_index=0."
+        user_index=0
+    fi
+    extra_args+=("--user_index" "$user_index")
+  fi
+
+  # Ask for log level
+  read -p "Enter log level (DEBUG, INFO, WARNING, ERROR, CRITICAL - default: INFO): " input_log_level
+  input_log_level=$(echo "$input_log_level" | tr '[:lower:]' '[:upper:]') # Convert to uppercase
+  case "$input_log_level" in
+    DEBUG|INFO|WARNING|ERROR|CRITICAL)
+      log_level="$input_log_level"
+      ;;
+    "") # Empty input, use default
+      log_level="INFO"
+      ;;
+    *)
+      echo "Invalid log level. Using default INFO."
+      log_level="INFO"
+      ;;
+  esac
+
+  echo "----------------------------------------"
+  echo "Running: python src_helix/$script_name --log_level $log_level ${extra_args[@]}"
+  echo "----------------------------------------"
+  python "src_helix/$script_name" --log_level "$log_level" "${extra_args[@]}"
+  echo "----------------------------------------"
+  read -n 1 -s -r -p "Press any key to return to the menu..."
+  echo # Add a newline after the key press
+}
+
+# Main loop
+while true; do
+  clear # Clear screen for better readability
+  show_menu
+  read -p "Enter your choice [0-8]: " choice
+
+  case $choice in
+    1) run_test "test_token_api.py" ;;
+    2) run_test "test_lpoi_api.py" ;;
+    3) run_test "test_cameras_api.py" ;;
+    4) run_test "test_lpr_images_api.py" ;;
+    5) run_test "test_notifications_api.py" ;;
+    6) run_test "test_access_events_api.py" ;;
+    7) run_test "test_users_list_api.py" ;;
+    8) run_test "test_user_details_api.py" ;;
+    0) echo "Exiting."; exit 0 ;;
+    *) echo "Invalid choice. Please try again." ;;
+  esac
+  echo # Add a newline for spacing before next menu display
+done

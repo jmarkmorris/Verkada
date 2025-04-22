@@ -1,67 +1,96 @@
-1,2,3 pass. Forbidden after that.
+**Note:** Before running any tests, ensure your Verkada API key is set as an environment variable:
+```bash
+export API_KEY="your_verkada_api_key"
+```
 
 ---
 
-Here are the command lines to test each of the API scripts:
+Here are the command lines to test each of the API endpoints using the provided scripts:
 
-1. To test the Token API:
-```bash
-export API_KEY="your_verkada_api_key"
-python src_helix/test_token_api.py --log_level INFO
-```
+### `/token`
 
-2. To test the License Plates of Interest API:
-```bash
-export API_KEY="your_verkada_api_key"
-python src_helix/test_lpoi_api.py --log_level INFO
-```
+*   **Script:** `src_helix/test_token_api.py`
+*   **Command:**
+    ```bash
+    python src_helix/test_token_api.py --log_level INFO
+    ```
 
-3. To test the Cameras API:
-```bash
-export API_KEY="your_verkada_api_key"
-python src_helix/test_cameras_api.py --log_level INFO
-```
+### `/cameras/v1/analytics/lpr/license_plate_of_interest`
 
-4. To test the LPR Images API (with default 7 days of history):
-```bash
-export API_KEY="your_verkada_api_key"
-python src_helix/test_lpr_images_api.py --log_level INFO
-```
+*   **Script:** `src_helix/test_lpoi_api.py`
+*   **Command:**
+    ```bash
+    python src_helix/test_lpoi_api.py --log_level INFO
+    ```
 
-5. To test the LPR Images API with a custom history period (e.g., 3 days):
-```bash
-export API_KEY="your_verkada_api_key"
-python src_helix/test_lpr_images_api.py --history_days 3 --log_level INFO
-```
+### `/cameras/v1/devices`
 
-6. To test the Alerts API (with default 7 days of history):
-```bash
-export API_KEY="your_verkada_api_key"
-python src_helix/test_alerts_api.py --log_level INFO
-```
+*   **Script:** `src_helix/test_cameras_api.py`
+*   **Command:**
+    ```bash
+    python src_helix/test_cameras_api.py --log_level INFO
+    ```
 
-7. To test the Alerts API with a custom history period (e.g., 14 days):
-```bash
-export API_KEY="your_verkada_api_key"
-python src_helix/test_alerts_api.py --history_days 14 --log_level INFO
-```
+### `/cameras/v1/analytics/lpr/imagesview`
 
-8. To test the Users List API:
-```bash
-export API_KEY="your_verkada_api_key"
-python src_helix/test_users_list_api.py --log_level INFO
-```
+*   **Script:** `src_helix/test_lpr_images_api.py`
+*   **Commands:**
+    a.  Test with default 7 days of history:
+        ```bash
+        python src_helix/test_lpr_images_api.py --log_level INFO
+        ```
+    b.  Test with a custom history period (e.g., 3 days):
+        ```bash
+        python src_helix/test_lpr_images_api.py --history_days 3 --log_level INFO
+        ```
 
-9. To test the User Details API (fetching details for the first user in the list):
-```bash
-export API_KEY="your_verkada_api_key"
-python src_helix/test_user_details_api.py --log_level INFO
-```
+### `/cameras/v1/notifications`
 
-10. To test the User Details API for a specific user index (e.g., the third user, index 2):
-```bash
-export API_KEY="your_verkada_api_key"
-python src_helix/test_user_details_api.py --user_index 2 --log_level INFO
-```
+*   **Script:** `src_helix/test_notifications_api.py`
+*   **Commands:**
+    a.  Test with default 7 days of history:
+        ```bash
+        python src_helix/test_notifications_api.py --log_level INFO
+        ```
+    b.  Test with a custom history period (e.g., 14 days):
+        ```bash
+        python src_helix/test_notifications_api.py --history_days 14 --log_level INFO
+        ```
+
+### `/access/v1/events`
+
+*   **Script:** `src_helix/test_access_events_api.py`
+*   **Commands:**
+    a.  Test with default 7 days of history:
+        ```bash
+        python src_helix/test_access_events_api.py --log_level INFO
+        ```
+    b.  Test with a custom history period (e.g., 14 days):
+        ```bash
+        python src_helix/test_access_events_api.py --history_days 14 --log_level INFO
+        ```
+
+### `/access/v1/access_users`
+
+*   **Script:** `src_helix/test_users_list_api.py`
+*   **Command:**
+    ```bash
+    python src_helix/test_users_list_api.py --log_level INFO
+    ```
+
+### `/access/v1/access_users/user`
+
+*   **Script:** `src_helix/test_user_details_api.py`
+*   **Commands:**
+    a.  Test fetching details for the first user (index 0):
+        ```bash
+        python src_helix/test_user_details_api.py --log_level INFO
+        ```
+    b.  Test fetching details for a specific user index (e.g., the third user, index 2):
+        ```bash
+        python src_helix/test_user_details_api.py --user_index 2 --log_level INFO
+        ```
+
+---
 
 For more detailed logging, you can change `--log_level INFO` to `--log_level DEBUG` in any of these commands.
