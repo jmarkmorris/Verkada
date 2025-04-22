@@ -54,3 +54,51 @@
 2025-04-21 20:33:53,739 - ERROR - API request failed: 403 Forbidden for https://api.verkada.com/cameras/v1/analytics/lpr/imagesview. The API Key used to generate the token likely lacks the necessary permissions for this endpoint.
 2025-04-21 20:33:53,739 - WARNING - Failed to fetch from /cameras/v1/analytics/lpr/imagesview: 403 Client Error: Forbidden for url: https://api.verkada.com/cameras/v1/analytics/lpr/imagesview?start_time=1744677232&end_time=1745282032&page_size=200
 2025-04-21 20:33:53,740 - ERROR - No events found from any attempted endpoint.
+2025-04-21 20:36:26,555 - INFO - Fetching API token from https://api.verkada.com/token
+2025-04-21 20:36:27,405 - INFO - Successfully fetched API token.
+2025-04-21 20:36:27,406 - INFO - Querying events for the last 7 days (from 2025-04-14 20:36:27 to 2025-04-21 20:36:27)
+2025-04-21 20:36:27,406 - INFO - Attempting to fetch events from /access/v1/events...
+2025-04-21 20:36:27,407 - INFO - Fetching data from https://api.verkada.com/access/v1/events with params: {'start_time': 1744677387, 'end_time': 1745282187, 'page_size': 200}
+2025-04-21 20:36:27,769 - ERROR - API request failed: 403 Forbidden for https://api.verkada.com/access/v1/events. The API Key used to generate the token likely lacks the necessary permissions for this endpoint.
+2025-04-21 20:36:27,769 - WARNING - Failed to fetch from /access/v1/events: 403 Client Error: Forbidden for url: https://api.verkada.com/access/v1/events?start_time=1744677387&end_time=1745282187&page_size=200
+2025-04-21 20:36:27,770 - INFO - Attempting to fetch events from /cameras/v1/notifications...
+2025-04-21 20:36:27,770 - INFO - Fetching data from https://api.verkada.com/cameras/v1/notifications with params: {'start_time': 1744677387, 'end_time': 1745282187, 'page_size': 200}
+2025-04-21 20:36:28,114 - ERROR - API request failed: 403 Forbidden for https://api.verkada.com/cameras/v1/notifications. The API Key used to generate the token likely lacks the necessary permissions for this endpoint.
+2025-04-21 20:36:28,115 - WARNING - Failed to fetch from /cameras/v1/notifications: 403 Client Error: Forbidden for url: https://api.verkada.com/cameras/v1/notifications?start_time=1744677387&end_time=1745282187&page_size=200
+2025-04-21 20:36:28,115 - INFO - Attempting to fetch events from /cameras/v1/analytics/lpr/imagesview...
+2025-04-21 20:36:28,115 - INFO - Fetching data from https://api.verkada.com/cameras/v1/analytics/lpr/imagesview with params: {'start_time': 1744677387, 'end_time': 1745282187, 'page_size': 200}
+2025-04-21 20:36:28,467 - ERROR - API request failed: 403 Forbidden for https://api.verkada.com/cameras/v1/analytics/lpr/imagesview. The API Key used to generate the token likely lacks the necessary permissions for this endpoint.
+2025-04-21 20:36:28,468 - WARNING - Failed to fetch from /cameras/v1/analytics/lpr/imagesview: 403 Client Error: Forbidden for url: https://api.verkada.com/cameras/v1/analytics/lpr/imagesview?start_time=1744677387&end_time=1745282187&page_size=200
+2025-04-21 20:36:28,468 - ERROR - No events found from any attempted endpoint.
+2025-04-21 20:36:41,166 - INFO - Fetching API token from https://api.verkada.com/token
+2025-04-21 20:36:42,049 - INFO - Successfully fetched API token.
+2025-04-21 20:36:42,050 - INFO - Querying events for the last 7 days (from 2025-04-14 20:36:42 to 2025-04-21 20:36:42)
+2025-04-21 20:36:42,050 - INFO - Attempting to fetch events from /access/v1/events...
+2025-04-21 20:36:42,050 - INFO - Fetching data from https://api.verkada.com/access/v1/events with params: {'start_time': 1744677402, 'end_time': 1745282202, 'page_size': 200}
+2025-04-21 20:36:42,402 - ERROR - API request failed: 403 Forbidden for https://api.verkada.com/access/v1/events. The API Key used to generate the token likely lacks the necessary permissions for this endpoint.
+2025-04-21 20:36:42,402 - WARNING - Failed to fetch from /access/v1/events: 403 Client Error: Forbidden for url: https://api.verkada.com/access/v1/events?start_time=1744677402&end_time=1745282202&page_size=200
+2025-04-21 20:36:42,403 - INFO - Attempting to fetch events from /cameras/v1/notifications...
+2025-04-21 20:36:42,403 - INFO - Fetching data from https://api.verkada.com/cameras/v1/notifications with params: {'start_time': 1744677402, 'end_time': 1745282202, 'page_size': 200}
+2025-04-21 20:36:42,765 - ERROR - API request failed: 403 Forbidden for https://api.verkada.com/cameras/v1/notifications. The API Key used to generate the token likely lacks the necessary permissions for this endpoint.
+2025-04-21 20:36:42,765 - WARNING - Failed to fetch from /cameras/v1/notifications: 403 Client Error: Forbidden for url: https://api.verkada.com/cameras/v1/notifications?start_time=1744677402&end_time=1745282202&page_size=200
+2025-04-21 20:36:42,766 - INFO - Attempting to fetch events from /cameras/v1/analytics/lpr/imagesview...
+2025-04-21 20:36:42,766 - INFO - Fetching data from https://api.verkada.com/cameras/v1/analytics/lpr/imagesview with params: {'start_time': 1744677402, 'end_time': 1745282202, 'page_size': 200}
+2025-04-21 20:36:43,111 - ERROR - API request failed: 403 Forbidden for https://api.verkada.com/cameras/v1/analytics/lpr/imagesview. The API Key used to generate the token likely lacks the necessary permissions for this endpoint.
+2025-04-21 20:36:43,111 - WARNING - Failed to fetch from /cameras/v1/analytics/lpr/imagesview: 403 Client Error: Forbidden for url: https://api.verkada.com/cameras/v1/analytics/lpr/imagesview?start_time=1744677402&end_time=1745282202&page_size=200
+2025-04-21 20:36:43,112 - ERROR - No events found from any attempted endpoint.
+2025-04-21 20:38:42,510 - INFO - Fetching API token from https://api.verkada.com/token
+2025-04-21 20:38:43,392 - INFO - Successfully fetched API token.
+2025-04-21 20:38:43,393 - INFO - Querying events for the last 7 days (from 2025-04-14 20:38:43 to 2025-04-21 20:38:43)
+2025-04-21 20:38:43,393 - INFO - Attempting to fetch events from /access/v1/events...
+2025-04-21 20:38:43,394 - INFO - Fetching data from https://api.verkada.com/access/v1/events with params: {'start_time': 1744677523, 'end_time': 1745282323, 'page_size': 200}
+2025-04-21 20:38:43,743 - ERROR - API request failed: 403 Forbidden for https://api.verkada.com/access/v1/events. The API Key used to generate the token likely lacks the necessary permissions for this endpoint.
+2025-04-21 20:38:43,744 - WARNING - Failed to fetch from /access/v1/events: 403 Client Error: Forbidden for url: https://api.verkada.com/access/v1/events?start_time=1744677523&end_time=1745282323&page_size=200
+2025-04-21 20:38:43,744 - INFO - Attempting to fetch events from /cameras/v1/notifications...
+2025-04-21 20:38:43,745 - INFO - Fetching data from https://api.verkada.com/cameras/v1/notifications with params: {'start_time': 1744677523, 'end_time': 1745282323, 'page_size': 200}
+2025-04-21 20:38:44,083 - ERROR - API request failed: 403 Forbidden for https://api.verkada.com/cameras/v1/notifications. The API Key used to generate the token likely lacks the necessary permissions for this endpoint.
+2025-04-21 20:38:44,083 - WARNING - Failed to fetch from /cameras/v1/notifications: 403 Client Error: Forbidden for url: https://api.verkada.com/cameras/v1/notifications?start_time=1744677523&end_time=1745282323&page_size=200
+2025-04-21 20:38:44,084 - INFO - Attempting to fetch events from /cameras/v1/analytics/lpr/imagesview...
+2025-04-21 20:38:44,084 - INFO - Fetching data from https://api.verkada.com/cameras/v1/analytics/lpr/imagesview with params: {'start_time': 1744677523, 'end_time': 1745282323, 'page_size': 200}
+2025-04-21 20:38:44,438 - ERROR - API request failed: 403 Forbidden for https://api.verkada.com/cameras/v1/analytics/lpr/imagesview. The API Key used to generate the token likely lacks the necessary permissions for this endpoint.
+2025-04-21 20:38:44,438 - WARNING - Failed to fetch from /cameras/v1/analytics/lpr/imagesview: 403 Client Error: Forbidden for url: https://api.verkada.com/cameras/v1/analytics/lpr/imagesview?start_time=1744677523&end_time=1745282323&page_size=200
+2025-04-21 20:38:44,439 - ERROR - No events found from any attempted endpoint.
