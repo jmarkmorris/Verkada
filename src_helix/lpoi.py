@@ -156,7 +156,8 @@ def handle_alerts_api(api_token: str, history_days: int) -> None:
         # Try multiple endpoints in case of permission issues
         endpoints_to_try = [
             ("/access/v1/events", "access_events"),
-            ("/cameras/v1/notifications", "camera_notifications")
+            ("/cameras/v1/notifications", "camera_notifications"),
+            ("/cameras/v1/analytics/lpr/imagesview", "lpr_images")
         ]
 
         for endpoint, endpoint_name in endpoints_to_try:
@@ -182,7 +183,9 @@ def handle_alerts_api(api_token: str, history_days: int) -> None:
                         break  # Try next endpoint or continue to next iteration
 
                     # Dynamically determine the events list key based on the endpoint
-                    events_key = 'events' if endpoint == "/access/v1/events" else 'notifications'
+                    events_key = 'events' if endpoint == "/access/v1/events" else \
+                                 'notifications' if endpoint == "/cameras/v1/notifications" else \
+                                 'license_plates'
 
                     if events_key not in events_data or not isinstance(events_data[events_key], list):
                         logger.warning(f"Unexpected API response format for {endpoint_name}: missing or invalid '{events_key}' list. Raw data: {events_data}. Stopping pagination.")
@@ -213,6 +216,7 @@ def handle_alerts_api(api_token: str, history_days: int) -> None:
 
         # If no events were found in any endpoint
         logger.info(f"No events found in the last {history_days} days from any attempted endpoint.")
+        print("No events found. This could be due to API permission issues or no events during the specified time range.")
 
     except Exception as e:
         logger.error(f"Failed during events processing: {e}", exc_info=True)
