@@ -11,7 +11,7 @@ import argparse
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, 
+    level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(sys.stdout),
@@ -75,11 +75,12 @@ def fetch_cameras_data(api_token: str):
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         data = response.json()
-        
+
         # Print the response in pretty format
         print("\n--- Cameras API Response ---")
         print(json.dumps(data, indent=4))
-        
+        sys.stdout.flush() # Explicitly flush stdout after printing JSON
+
         return data
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 403:
@@ -114,7 +115,7 @@ def _list_cameras_for_menu(api_key: str):
             "Accept": "application/json",
             "x-verkada-auth": api_token,
         }
-        
+
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         cameras = response.json()
@@ -131,6 +132,7 @@ def _list_cameras_for_menu(api_key: str):
             # Clean the camera name to remove any commas that could break parsing
             clean_name = cam['name'].replace(',', ' ')
             print(f"{i+1},{cam['id']},{clean_name}")
+        sys.stdout.flush() # Explicitly flush stdout after printing the list
 
     except Exception as e:
         # Log the error to the file handler
@@ -147,9 +149,9 @@ def main():
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Test Verkada Cameras API")
     parser.add_argument(
-        "--log_level", 
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], 
-        default='INFO', 
+        "--log_level",
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+        default='INFO',
         help="Set the logging level (default: INFO)"
     )
     parser.add_argument(
@@ -191,7 +193,8 @@ def main():
             template_data = create_template(cameras_list[0])
             template_output = {"devices": [template_data]} # Wrap in the expected list structure
 
-            output_filename = "test_cameras_api.json"
+            # Save the template to the src_helix directory
+            output_filename = "src_helix/test_cameras_api.json"
             with open(output_filename, 'w') as f:
                 json.dump(template_output, f, indent=4)
             logger.info(f"Generated JSON template: {output_filename}")

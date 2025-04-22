@@ -11,7 +11,7 @@ import argparse
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, 
+    level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(sys.stdout),
@@ -36,11 +36,12 @@ def get_api_token(api_key: str) -> str:
         response = requests.post(url, headers=headers)
         response.raise_for_status()
         data = response.json()
-        
+
         # Print the response in pretty format
         print("\n--- Token API Response ---")
         print(json.dumps(data, indent=4))
-        
+        sys.stdout.flush() # Explicitly flush stdout after printing JSON
+
         return data['token']
     except Exception as e:
         logger.error(f"API token retrieval failed: {e}")
@@ -72,9 +73,9 @@ def main():
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Test Verkada Token API")
     parser.add_argument(
-        "--log_level", 
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], 
-        default='INFO', 
+        "--log_level",
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+        default='INFO',
         help="Set the logging level (default: INFO)"
     )
 
@@ -116,7 +117,8 @@ def main():
         # Generate and save JSON template
         if token_data:
             template_data = create_template(token_data)
-            output_filename = "test_token_api.json"
+            # Save the template to the src_helix directory
+            output_filename = "src_helix/test_token_api.json"
             with open(output_filename, 'w') as f:
                 json.dump(template_data, f, indent=4)
             logger.info(f"Generated JSON template: {output_filename}")

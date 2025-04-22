@@ -13,7 +13,7 @@ import datetime
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, 
+    level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(sys.stdout),
@@ -77,11 +77,12 @@ def fetch_access_events_data(api_token: str, endpoint: str, params=None):
         response = requests.get(url, headers=headers, params=params)
         response.raise_for_status()
         data = response.json()
-        
+
         # Print the response in pretty format
         print(f"\n--- Access Events API Response from {endpoint} ---")
         print(json.dumps(data, indent=4))
-        
+        sys.stdout.flush() # Explicitly flush stdout after printing JSON
+
         return data
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 403:
@@ -96,7 +97,7 @@ def handle_access_events_api(api_token: str, history_days: int):
     """Fetch access events from Verkada API."""
     end_time = int(time.time())
     start_time = end_time - (history_days * 24 * 60 * 60)
-    
+
     logger.info(f"Querying access events for the last {history_days} days (from {datetime.datetime.fromtimestamp(start_time)} to {datetime.datetime.fromtimestamp(end_time)})")
 
     params = {
@@ -108,10 +109,10 @@ def handle_access_events_api(api_token: str, history_days: int):
     # Directly call the access events endpoint
     try:
         logger.info(f"Attempting to fetch access events from {ACCESS_EVENTS_ENDPOINT}")
-        
+
         events_data = fetch_access_events_data(api_token, ACCESS_EVENTS_ENDPOINT, params)
-        
-        events_key = 'events' 
+
+        events_key = 'events'
 
         if events_key not in events_data or not events_data[events_key]:
             logger.warning(f"No {events_key} found in {ACCESS_EVENTS_ENDPOINT} response")
@@ -130,15 +131,15 @@ def main():
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Test Verkada Access Events API") # Updated description
     parser.add_argument(
-        "--history_days", 
-        type=int, 
-        default=7, 
+        "--history_days",
+        type=int,
+        default=7,
         help="Number of days of history to query (default: 7)"
     )
     parser.add_argument(
-        "--log_level", 
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], 
-        default='INFO', 
+        "--log_level",
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+        default='INFO',
         help="Set the logging level (default: INFO)"
     )
 
@@ -158,7 +159,7 @@ def main():
         # Get API token
         api_token = get_api_token(api_key)
         logger.info(f"Successfully retrieved API token: {api_token[:10]}...")
-        
+
         # Handle access events API
         events_data = handle_access_events_api(api_token, args.history_days) # Capture the returned data
 
@@ -168,7 +169,8 @@ def main():
             template_data = create_template(events_list[0])
             template_output = {"events": [template_data]} # Wrap in the expected list structure
 
-            output_filename = "test_access_events_api.json"
+            # Save the template to the src_helix directory
+            output_filename = "src_helix/test_access_events_api.json"
             with open(output_filename, 'w') as f:
                 json.dump(template_output, f, indent=4)
             logger.info(f"Generated JSON template: {output_filename}")

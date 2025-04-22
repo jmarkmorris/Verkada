@@ -250,7 +250,8 @@ def main():
             # Keep the output key as plural for consistency with potential future use, but get data from singular key
             template_output = {"license_plates_of_interest": [template_data]}
 
-            output_filename = "test_lpoi_api.json"
+            # Save the template to the src_helix directory
+            output_filename = "src_helix/test_lpoi_api.json"
             logger.debug(f"Writing template to {output_filename}")
             with open(output_filename, 'w') as f:
                 json.dump(template_output, f, indent=4)

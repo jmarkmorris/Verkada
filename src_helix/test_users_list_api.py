@@ -11,7 +11,7 @@ import argparse
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, 
+    level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(sys.stdout),
@@ -76,17 +76,18 @@ def fetch_users_list(api_token: str) -> list:
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         data = response.json()
-        
+
         # Print the response in pretty format
         print("\n--- Access Users List API Response ---")
         print(json.dumps(data, indent=4))
+        sys.stdout.flush() # Explicitly flush stdout after printing JSON
 
         # Add debugging
         logger.debug(f"Type of data variable: {type(data)}")
         if isinstance(data, dict):
             logger.debug(f"Keys in data: {list(data.keys())}")
             # Corrected key check for debugging
-            logger.debug(f"Value for 'access_members' key: {data.get('access_members')}") 
+            logger.debug(f"Value for 'access_members' key: {data.get('access_members')}")
         else:
             logger.debug("Data variable is not a dictionary.")
 
@@ -110,9 +111,9 @@ def main():
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Test Verkada Access Users List API") # Updated description
     parser.add_argument(
-        "--log_level", 
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], 
-        default='INFO', 
+        "--log_level",
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+        default='INFO',
         help="Set the logging level (default: INFO)"
     )
 
@@ -132,7 +133,7 @@ def main():
         # Get API token
         api_token = get_api_token(api_key)
         logger.info(f"Successfully retrieved API token: {api_token[:10]}...")
-        
+
         # Fetch users list
         users_data = fetch_users_list(api_token) # Capture the full data
         users_list = users_data.get('access_members', []) if isinstance(users_data, dict) else []
@@ -143,7 +144,8 @@ def main():
             template_data = create_template(users_list[0])
             template_output = {"access_members": [template_data]} # Wrap in the expected list structure
 
-            output_filename = "test_users_list_api.json"
+            # Save the template to the src_helix directory
+            output_filename = "src_helix/test_users_list_api.json"
             with open(output_filename, 'w') as f:
                 json.dump(template_output, f, indent=4)
             logger.info(f"Generated JSON template: {output_filename}")

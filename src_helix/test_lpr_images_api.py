@@ -12,7 +12,7 @@ import time
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, 
+    level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(sys.stdout),
@@ -67,13 +67,13 @@ def fetch_lpr_images_data(api_token: str, history_days: int):
     """Fetch LPR images data from Verkada API."""
     end_time = int(time.time())
     start_time = end_time - (history_days * 24 * 60 * 60)
-    
+
     url = f"{VERKADA_API_BASE_URL}{LPR_IMAGES_ENDPOINT}"
     headers = {
         "Accept": "application/json",
         "x-verkada-auth": api_token,
     }
-    
+
     params = {
         "start_time": start_time,
         "end_time": end_time,
@@ -85,11 +85,12 @@ def fetch_lpr_images_data(api_token: str, history_days: int):
         response = requests.get(url, headers=headers, params=params)
         response.raise_for_status()
         data = response.json()
-        
+
         # Print the response in pretty format
         print("\n--- LPR Images API Response ---")
         print(json.dumps(data, indent=4))
-        
+        sys.stdout.flush() # Explicitly flush stdout after printing JSON
+
         return data
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 403:
@@ -105,15 +106,15 @@ def main():
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Test Verkada LPR Images API")
     parser.add_argument(
-        "--history_days", 
-        type=int, 
-        default=7, 
+        "--history_days",
+        type=int,
+        default=7,
         help="Number of days of history to query (default: 7)"
     )
     parser.add_argument(
-        "--log_level", 
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], 
-        default='INFO', 
+        "--log_level",
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+        default='INFO',
         help="Set the logging level (default: INFO)"
     )
 
@@ -133,7 +134,7 @@ def main():
         # Get API token
         api_token = get_api_token(api_key)
         logger.info(f"Successfully retrieved API token: {api_token[:10]}...")
-        
+
         # Fetch LPR images data
         lpr_images_data = fetch_lpr_images_data(api_token, args.history_days)
         logger.info("Successfully retrieved LPR images data")
@@ -149,7 +150,8 @@ def main():
             # Wrap in a list for the template output
             template_output = [template_data]
 
-            output_filename = "test_lpr_images_api.json"
+            # Save the template to the src_helix directory
+            output_filename = "src_helix/test_lpr_images_api.json"
             with open(output_filename, 'w') as f:
                 json.dump(template_output, f, indent=4)
             logger.info(f"Generated JSON template: {output_filename}")

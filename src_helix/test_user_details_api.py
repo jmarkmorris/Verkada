@@ -12,7 +12,7 @@ import argparse
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, 
+    level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(sys.stdout),
@@ -36,7 +36,7 @@ def get_api_token(api_key: str) -> str:
 
     try:
         # Keep token request logging minimal for this script
-        # logger.info(f"Requesting token from {url}") 
+        # logger.info(f"Requesting token from {url}")
         response = requests.post(url, headers=headers)
         response.raise_for_status()
         data = response.json()
@@ -79,7 +79,7 @@ def fetch_users_list_silently(api_token: str) -> list:
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         data = response.json()
-        
+
         # Don't print the full list here
         # print("\n--- Access Users List API Response ---")
         # print(json.dumps(data, indent=4))
@@ -87,7 +87,7 @@ def fetch_users_list_silently(api_token: str) -> list:
         users = data.get('access_members', []) if isinstance(data, dict) else []
         if not users:
             logger.warning("No access members found in the response.")
-        
+
         return users
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 403:
@@ -111,11 +111,12 @@ def fetch_user_details(api_token: str, user_id: str):
         response = requests.get(url, headers=headers, params=params)
         response.raise_for_status()
         data = response.json()
-        
+
         # Print the details response in pretty format
         print(f"\n--- Access User Details API Response (User ID: {user_id}) ---")
         print(json.dumps(data, indent=4))
-        
+        sys.stdout.flush() # Explicitly flush stdout after printing JSON
+
         return data
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 403:
@@ -133,9 +134,9 @@ def main():
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Test Verkada Access User Details API") # Updated description
     parser.add_argument(
-        "--log_level", 
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], 
-        default='INFO', 
+        "--log_level",
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+        default='INFO',
         help="Set the logging level (default: INFO)"
     )
     parser.add_argument(
@@ -161,7 +162,7 @@ def main():
         # Get API token
         api_token = get_api_token(api_key)
         logger.info(f"Successfully retrieved API token: {api_token[:10]}...")
-        
+
         # Fetch users list silently
         users_list = fetch_users_list_silently(api_token)
         logger.info(f"Silently retrieved access users list. Found {len(users_list)} users.")
@@ -171,10 +172,10 @@ def main():
             if args.user_index < 0 or args.user_index >= len(users_list):
                 logger.error(f"Invalid user_index {args.user_index}. Must be between 0 and {len(users_list) - 1}.")
                 sys.exit(1)
-                
+
             selected_user = users_list[args.user_index]
             user_id_to_fetch = selected_user.get('user_id')
-            
+
             if user_id_to_fetch:
                 logger.info(f"Attempting to fetch details for user at index {args.user_index} (ID: {user_id_to_fetch})...")
                 user_details = fetch_user_details(api_token, user_id_to_fetch)
@@ -183,7 +184,8 @@ def main():
                 # Generate and save JSON template if details were fetched
                 if user_details:
                     template_data = create_template(user_details)
-                    output_filename = "test_user_details_api.json"
+                    # Save the template to the src_helix directory
+                    output_filename = "src_helix/test_user_details_api.json"
                     with open(output_filename, 'w') as f:
                         json.dump(template_data, f, indent=4)
                     logger.info(f"Generated JSON template: {output_filename}")

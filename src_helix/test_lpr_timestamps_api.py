@@ -241,7 +241,8 @@ def main():
 
             template_output = {"timestamps": [template_data]} # Wrap in the expected list structure
 
-            output_filename = "test_lpr_timestamps_api.json"
+            # Save the template to the src_helix directory
+            output_filename = "src_helix/test_lpr_timestamps_api.json"
             logger.debug(f"Writing template to {output_filename}")
             with open(output_filename, 'w') as f:
                 json.dump(template_output, f, indent=4)

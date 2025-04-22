@@ -13,7 +13,7 @@ import datetime
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, 
+    level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(sys.stdout),
@@ -77,11 +77,12 @@ def fetch_notifications_data(api_token: str, endpoint: str, params=None): # Rena
         response = requests.get(url, headers=headers, params=params)
         response.raise_for_status()
         data = response.json()
-        
+
         # Print the response in pretty format
         print(f"\n--- Notifications API Response from {endpoint} ---") # Updated print message
         print(json.dumps(data, indent=4))
-        
+        sys.stdout.flush() # Explicitly flush stdout after printing JSON
+
         return data
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 403:
@@ -107,10 +108,10 @@ def handle_notifications_api(api_token: str, history_days: int): # Renamed funct
     # Directly call the notifications endpoint without fallback
     try:
         logger.info(f"Attempting to fetch notifications from {NOTIFICATIONS_ENDPOINT}")
-        
+
         notifications_data = fetch_notifications_data(api_token, NOTIFICATIONS_ENDPOINT, params)
-        
-        notifications_key = 'notifications' 
+
+        notifications_key = 'notifications'
 
         if notifications_key not in notifications_data or not notifications_data[notifications_key]:
             logger.warning(f"No {notifications_key} found in {NOTIFICATIONS_ENDPOINT} response")
@@ -120,6 +121,8 @@ def handle_notifications_api(api_token: str, history_days: int): # Renamed funct
             # print(f"\n--- Notifications from {NOTIFICATIONS_ENDPOINT} ---")
             # print(json.dumps(notifications, indent=4))
             logger.info(f"Successfully retrieved {len(notifications)} notifications.")
+
+        return notifications_data # Return the fetched data
 
     except Exception as e:
         logger.error(f"Failed to fetch from {NOTIFICATIONS_ENDPOINT}: {e}")
@@ -131,15 +134,15 @@ def main():
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Test Verkada Notifications API") # Updated description
     parser.add_argument(
-        "--history_days", 
-        type=int, 
-        default=7, 
+        "--history_days",
+        type=int,
+        default=7,
         help="Number of days of history to query (default: 7)"
     )
     parser.add_argument(
-        "--log_level", 
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], 
-        default='INFO', 
+        "--log_level",
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+        default='INFO',
         help="Set the logging level (default: INFO)"
     )
 
@@ -168,7 +171,8 @@ def main():
             template_data = create_template(notifications_list[0])
             template_output = {"notifications": [template_data]} # Wrap in the expected list structure
 
-            output_filename = "test_notifications_api.json"
+            # Save the template to the src_helix directory
+            output_filename = "src_helix/test_notifications_api.json"
             with open(output_filename, 'w') as f:
                 json.dump(template_output, f, indent=4)
             logger.info(f"Generated JSON template: {output_filename}")
