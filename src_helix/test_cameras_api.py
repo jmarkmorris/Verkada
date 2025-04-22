@@ -74,14 +74,20 @@ def fetch_cameras_data(api_token: str):
     try:
         logger.info(f"Fetching camera data from {url}")
         response = requests.get(url, headers=headers)
+        logger.debug(f"Camera response status code: {response.status_code}") # Added debug log
+        logger.debug(f"Camera response headers: {dict(response.headers)}") # Added debug log
+
         response.raise_for_status()
         data = response.json()
+
+        logger.debug(f"Raw camera response data: {data}") # Added debug log for raw data
 
         # Print the response in pretty format
         print("\n--- Cameras API Response ---")
         print(json.dumps(data, indent=4))
         sys.stdout.flush() # Explicitly flush stdout after printing JSON
 
+        logger.debug(f"Returning data from fetch_cameras_data: {data}") # Added debug log before return
         return data
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 403:
@@ -91,6 +97,10 @@ def fetch_cameras_data(api_token: str):
             logger.error("2. Ensure you have the correct access level for this endpoint")
             logger.error("3. Verify the API key is not expired")
         raise
+    except Exception as e: # Catch other potential exceptions during fetch/json parsing
+        logger.error(f"Unexpected error during camera data fetch: {e}", exc_info=True) # Added traceback
+        raise
+
 
 def _list_cameras_for_menu(api_key: str):
     """
@@ -122,8 +132,9 @@ def _list_cameras_for_menu(api_key: str):
         cameras = response.json()
 
         # Filter for cameras with 'name' and 'id'
+        # Corrected key from 'devices' to 'cameras'
         all_cameras = [
-            cam for cam in cameras.get('devices', []) # Use .get with default empty list
+            cam for cam in cameras.get('cameras', []) # Use .get with default empty list
             if isinstance(cam, dict) and 'name' in cam and 'id' in cam
         ]
 
@@ -188,14 +199,32 @@ def main():
         cameras_data = fetch_cameras_data(api_token)
         logger.info("Successfully retrieved camera data")
 
+        # Debugging the data received and extracted list
+        logger.debug(f"Data received in main: {cameras_data}")
+        logger.debug(f"Type of data received in main: {type(cameras_data)}")
+
         # Generate and save JSON template if data is available
-        cameras_list = cameras_data.get('devices', []) if isinstance(cameras_data, dict) else []
+        # Get the raw value of the 'cameras' key first for debugging (Corrected key)
+        raw_cameras_list = cameras_data.get('cameras')
+        logger.debug(f"Raw value of 'cameras' key: {raw_cameras_list}")
+
+        # Extract the list, defaulting to empty list if not found or not a list (Corrected key)
+        cameras_list = raw_cameras_list if isinstance(raw_cameras_list, list) else []
+
+        logger.debug(f"Extracted cameras_list in main: {cameras_list}")
+        logger.debug(f"Length of cameras_list in main: {len(cameras_list)}")
+
+
         if cameras_list:
+            logger.debug("cameras_list is not empty, attempting to generate template.") # Added debug log
             template_data = create_template(cameras_list[0])
-            template_output = {"devices": [template_data]} # Wrap in the expected list structure
+            logger.debug(f"Template data created: {template_data}") # Added debug log for template data
+            # Wrap in the expected list structure using the correct key 'cameras'
+            template_output = {"cameras": [template_data]}
 
             # Save the template to the src_helix directory
             output_filename = "src_helix/test_cameras_api.json"
+            logger.debug(f"Writing template to {output_filename}")
             with open(output_filename, 'w') as f:
                 json.dump(template_output, f, indent=4)
             logger.info(f"Generated JSON template: {output_filename}")
