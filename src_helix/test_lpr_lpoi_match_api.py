@@ -30,7 +30,7 @@ except ImportError as e:
 
 # Get the logger for this module
 logger = logging.getLogger(__name__)
-# Set the logger level to DEBUG so it processes all messages
+# Set the logger level initially to DEBUG to capture all messages for the file handler
 logger.setLevel(logging.DEBUG)
 
 # Create handlers
@@ -39,7 +39,7 @@ stream_handler = logging.StreamHandler(sys.stdout)
 # File handler for debug logs - always log DEBUG and above to file
 # Save log file in the src_helix directory
 file_handler = logging.FileHandler('src_helix/lpr_lpoi_match_api_debug.log')
-file_handler.setLevel(logging.DEBUG)
+file_handler.setLevel(logging.DEBUG) # File handler always logs DEBUG and above
 
 # Create formatters and add them to the handlers
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
@@ -51,6 +51,13 @@ file_handler.setFormatter(formatter)
 if not logger.handlers:
     logger.addHandler(stream_handler)
     logger.addHandler(file_handler)
+
+# Get loggers for imported modules to control their output level
+# This is necessary because imported modules configure their own loggers.
+# A more robust logging strategy might configure the root logger or pass levels explicitly.
+lpoi_logger = logging.getLogger('src_helix.test_lpoi_api')
+lpr_images_all_cameras_logger = logging.getLogger('src_helix.test_lpr_images_api_all_cameras')
+api_utils_logger = logging.getLogger('src_helix.api_utils') # Also need api_utils logger
 
 
 def main():
@@ -73,9 +80,23 @@ def main():
     # Parse arguments
     args = parser.parse_args()
 
-    # Set logging level for the stream handler based on the argument.
-    stream_handler.setLevel(getattr(logging, args.log_level))
+    # Set logging level for the logger itself, the stream handler,
+    # AND the loggers of the imported modules based on the argument.
+    log_level = getattr(logging, args.log_level)
+
+    logger.setLevel(log_level) # Set the main script's logger level
+    stream_handler.setLevel(log_level) # Set the main script's stream handler level
+
+    # Set the levels for the imported module loggers
+    lpoi_logger.setLevel(log_level)
+    lpr_images_all_cameras_logger.setLevel(log_level)
+    api_utils_logger.setLevel(log_level) # Set level for api_utils logger
+
+
+    logger.debug(f"Main logger level set to: {args.log_level}")
     logger.debug(f"Stream handler level set to: {args.log_level}")
+    logger.debug(f"Imported logger levels set to: {args.log_level}")
+
 
     # Add debug logging to show the arguments received
     logger.debug(f"Arguments received: history_hours={args.history_hours}, log_level={args.log_level}")
