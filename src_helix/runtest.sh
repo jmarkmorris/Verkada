@@ -61,9 +61,54 @@ run_test() {
     extra_args+=("--user_index" "$user_index")
   fi
 
-  # Handle script requiring license_plate
+  # Handle script requiring license_plate and camera_id (via selection menu)
   if [[ "$script_name" == "test_lpr_timestamps_api.py" ]]; then
-    read -p "Enter license plate: " license_plate
+    echo "Fetching list of all cameras..."
+    # Fetch and list all cameras using the helper script
+    all_cameras_output=$(python src_helix/list_cameras.py) # Renamed script
+    if [ $? -ne 0 ]; then
+      echo "Failed to fetch camera list. Aborting."
+      read -n 1 -s -r -p "Press any key to return to the menu..."
+      echo
+      return
+    fi
+
+    # Build camera selection menu
+    echo "----------------------------------------"
+    echo " Select a camera for LPR timestamps test:"
+    echo " (Choose an LPR-enabled camera)"
+    echo "----------------------------------------"
+    camera_options=()
+    while IFS=',' read -r index camera_id camera_name; do
+      echo " $index) $camera_name"
+      camera_options+=("$camera_id") # Store camera_id in an array
+    done <<< "$all_cameras_output"
+    echo "----------------------------------------"
+    echo " 0) Cancel"
+    echo "----------------------------------------"
+
+    read -p "Enter your choice: " camera_choice
+
+    if [ "$camera_choice" -eq 0 ]; then
+      echo "Operation cancelled."
+      read -n 1 -s -r -p "Press any key to return to the menu..."
+      echo
+      return
+    fi
+
+    # Validate choice and get camera_id
+    if ! [[ "$camera_choice" =~ ^[0-9]+$ ]] || [ "$camera_choice" -lt 1 ] || [ "$camera_choice" -gt ${#camera_options[@]} ]; then
+      echo "Invalid choice. Aborting."
+      read -n 1 -s -r -p "Press any key to return to the menu..."
+      echo
+      return
+    fi
+
+    selected_camera_id="${camera_options[$((camera_choice-1))]}"
+    echo "Selected camera ID: $selected_camera_id"
+    extra_args+=("--camera_id" "$selected_camera_id")
+
+    read -p "Enter license plate (required): " license_plate
     if [ -z "$license_plate" ]; then
       echo "License plate cannot be empty. Aborting."
       read -n 1 -s -r -p "Press any key to return to the menu..."

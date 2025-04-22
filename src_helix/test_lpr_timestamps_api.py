@@ -44,7 +44,7 @@ def get_api_token(api_key: str) -> str:
         logger.error(f"API token retrieval failed: {e}")
         raise
 
-def fetch_lpr_timestamps_data(api_token: str, license_plate: str, history_days: int):
+def fetch_lpr_timestamps_data(api_token: str, camera_id: str, license_plate: str, history_days: int):
     """Fetch LPR timestamps data for a specific license plate from Verkada API."""
     end_time = int(time.time())
     start_time = end_time - (history_days * 24 * 60 * 60)
@@ -56,14 +56,15 @@ def fetch_lpr_timestamps_data(api_token: str, license_plate: str, history_days: 
     }
 
     params = {
+        "camera_id": camera_id, # camera_id is a required parameter
         "license_plate": license_plate,
         "start_time": start_time,
         "end_time": end_time,
-        # Removed page_size as it might not be supported by this endpoint
+        "page_size": 100 # Re-adding page_size, trying a smaller value
     }
 
     try:
-        logger.info(f"Fetching LPR timestamps for plate '{license_plate}' from {url} for the last {history_days} days")
+        logger.info(f"Fetching LPR timestamps for plate '{license_plate}' on camera '{camera_id}' from {url} for the last {history_days} days")
         response = requests.get(url, headers=headers, params=params)
         response.raise_for_status()
         data = response.json()
@@ -89,9 +90,14 @@ def main():
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Test Verkada LPR Timestamps API")
     parser.add_argument(
+        "--camera_id",
+        required=True,
+        help="The unique identifier of the camera (required)"
+    )
+    parser.add_argument(
         "--license_plate",
         required=True,
-        help="The license plate to fetch timestamps for"
+        help="The license plate to fetch timestamps for (required)"
     )
     parser.add_argument(
         "--history_days",
@@ -124,8 +130,8 @@ def main():
         logger.info(f"Successfully retrieved API token: {api_token[:10]}...")
 
         # Fetch LPR timestamps data
-        lpr_timestamps_data = fetch_lpr_timestamps_data(api_token, args.license_plate, args.history_days)
-        logger.info(f"Successfully retrieved LPR timestamps data for plate '{args.license_plate}'")
+        lpr_timestamps_data = fetch_lpr_timestamps_data(api_token, args.camera_id, args.license_plate, args.history_days)
+        logger.info(f"Successfully retrieved LPR timestamps data for plate '{args.license_plate}' on camera '{args.camera_id}'")
     except Exception as e:
         logger.error(f"Script execution failed: {e}", exc_info=True)
         sys.exit(1)
