@@ -65,14 +65,15 @@ def fetch_users_list(api_token: str) -> list:
         logger.debug(f"Type of data variable: {type(data)}")
         if isinstance(data, dict):
             logger.debug(f"Keys in data: {list(data.keys())}")
-            logger.debug(f"Value for 'access_users' key: {data.get('access_users')}")
+            # Corrected key check for debugging
+            logger.debug(f"Value for 'access_members' key: {data.get('access_members')}") 
         else:
             logger.debug("Data variable is not a dictionary.")
 
-        # Assuming the list of users is under the 'access_users' key
-        users = data.get('access_users', []) if isinstance(data, dict) else []
+        # Corrected key to 'access_members'
+        users = data.get('access_members', []) if isinstance(data, dict) else []
         if not users:
-            logger.warning("No access users found in the response.")
+            logger.warning("No access members found in the response.") # Updated warning message
         
         return users
     except requests.exceptions.HTTPError as e:
