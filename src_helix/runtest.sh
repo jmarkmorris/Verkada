@@ -67,10 +67,10 @@ run_test() {
   local extra_args=()
 
   # Handle scripts requiring history_days
-  if [[ "$script_name" == "test_lpr_images_api.py" || \
-        "$script_name" == "test_notifications_api.py" || \
-        "$script_name" == "test_access_events_api.py" || \
-        "$script_name" == "test_lpr_timestamps_api.py" ]]; then
+  if [[ "$script_name" == "src_helix/test_lpr_images_api.py" || \
+        "$script_name" == "src_helix/test_notifications_api.py" || \
+        "$script_name" == "src_helix/test_access_events_api.py" || \
+        "$script_name" == "src_helix/test_lpr_timestamps_api.py" ]]; then
     read -p "Enter history_days (default: 7): " history_days
     history_days=${history_days:-7} # Set default if empty
     if ! [[ "$history_days" =~ ^[0-9]+$ ]]; then
@@ -81,7 +81,7 @@ run_test() {
   fi
 
   # Handle script requiring user_index
-  if [[ "$script_name" == "test_user_details_api.py" ]]; then
+  if [[ "$script_name" == "src_helix/test_user_details_api.py" ]]; then
     read -p "Enter user_index (default: 0): " user_index
     user_index=${user_index:-0} # Set default if empty
      if ! [[ "$user_index" =~ ^[0-9]+$ ]]; then
@@ -92,7 +92,7 @@ run_test() {
   fi
 
   # Handle script requiring license_plate and camera_id (via selection menu)
-  if [[ "$script_name" == "test_lpr_timestamps_api.py" ]]; then
+  if [[ "$script_name" == "src_helix/test_lpr_timestamps_api.py" ]]; then
     echo "Fetching list of all cameras..."
     # Fetch and list all cameras using test_cameras_api.py with --list-for-menu
     # Capture both stdout and stderr
