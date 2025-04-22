@@ -128,9 +128,9 @@ def _list_cameras_for_menu(api_key: str):
     # We get the logger again here to ensure we have the correct instance
     local_logger = logging.getLogger(__name__)
     temp_stream_handler = None
-    original_level = local_logger.level # Store original level
+    # original_level = local_logger.level # Store original level - REMOVED
 
-    # Temporarily remove the stream handler and set level to CRITICAL
+    # Temporarily remove the stream handler
     # *before* any API calls or printing the marker
     for handler in local_logger.handlers:
         if isinstance(handler, logging.StreamHandler) and handler.stream == sys.stdout:
@@ -138,7 +138,7 @@ def _list_cameras_for_menu(api_key: str):
             local_logger.removeHandler(handler)
             break # Assuming only one StreamHandler for stdout
 
-    local_logger.setLevel(logging.CRITICAL) # Temporarily set level to CRITICAL
+    # local_logger.setLevel(logging.CRITICAL) # Temporarily set logger level to CRITICAL - REMOVED
 
 
     try:
@@ -157,15 +157,14 @@ def _list_cameras_for_menu(api_key: str):
         response.raise_for_status()
         cameras = response.json()
 
-        # These debug logs will go to the file handler because level is CRITICAL for stream
+        # These debug logs will now go to the file handler because the logger level is DEBUG
         logger.debug(f"Raw camera response data in _list_for_menu: {cameras}")
         logger.debug(f"Type of data received in _list_for_menu: {type(cameras)}")
 
-        # Filter for cameras with 'name' and 'id'
-        # Corrected key from 'devices' to 'cameras'
+        # Filter for cameras with 'name' and 'camera_id' (Corrected 'id' to 'camera_id')
         all_cameras = [
             cam for cam in cameras.get('cameras', []) # Use .get with default empty list
-            if isinstance(cam, dict) and 'name' in cam and 'id' in cam
+            if isinstance(cam, dict) and 'name' in cam and 'camera_id' in cam # Corrected 'id' to 'camera_id'
         ]
 
         logger.debug(f"Extracted cameras_list in _list_for_menu: {all_cameras}")
@@ -181,7 +180,8 @@ def _list_cameras_for_menu(api_key: str):
         for i, cam in enumerate(all_cameras):
             # Clean the camera name to remove any commas that could break parsing
             clean_name = cam['name'].replace(',', ' ')
-            print(f"{i+1},{cam['id']},{clean_name}", file=sys.stdout)
+            # Use 'camera_id' when printing (Corrected 'id' to 'camera_id')
+            print(f"{i+1},{cam['camera_id']},{clean_name}", file=sys.stdout) # Print camera lines
         sys.stdout.flush() # Explicitly flush stdout after printing the list
 
     except Exception as e:
@@ -192,7 +192,7 @@ def _list_cameras_for_menu(api_key: str):
         # Re-add the stream handler and restore original level
         if temp_stream_handler:
             local_logger.addHandler(temp_stream_handler)
-        local_logger.setLevel(original_level)
+        # local_logger.setLevel(original_level) # Restore logger level - REMOVED
 
 
 def main():

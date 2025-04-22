@@ -95,16 +95,34 @@ run_test() {
   if [[ "$script_name" == "test_lpr_timestamps_api.py" ]]; then
     echo "Fetching list of all cameras..."
     # Fetch and list all cameras using test_cameras_api.py with --list-for-menu
-    all_cameras_output=$(python src_helix/test_cameras_api.py --list-for-menu)
+    # Capture both stdout and stderr
+    all_cameras_raw_output=$(python src_helix/test_cameras_api.py --log_level "$LOG_LEVEL" --list-for-menu 2>&1)
     script_exit_code=$? # Capture exit code
 
+    if [ "$LOG_LEVEL" == "DEBUG" ]; then
+        echo "--- Raw output from test_cameras_api.py ---"
+        echo "$all_cameras_raw_output"
+        echo "--- End raw output ---"
+    fi
+
     if [ $script_exit_code -ne 0 ]; then
-      echo "Failed to fetch camera list. Aborting."
-      echo "Please check the 'cameras_api_debug.log' file for details." # Log file name changed
+      echo "Failed to fetch camera list (exit code $script_exit_code). Aborting."
+      echo "Please check the 'cameras_api_debug.log' file for details."
       read -n 1 -s -r -p "Press any key to return to the menu..."
       echo
       return
     fi
+
+    # Extract only the camera list lines after the marker using awk
+    # The marker is "---START_CAMERA_LIST---"
+    camera_list_output=$(echo "$all_cameras_raw_output" | awk '/---START_CAMERA_LIST---/{flag=1; next} flag')
+
+    if [ "$LOG_LEVEL" == "DEBUG" ]; then
+        echo "--- Filtered camera list output ---"
+        echo "$camera_list_output"
+        echo "--- End filtered output ---"
+    fi
+
 
     # Build camera selection menu
     echo "----------------------------------------"
@@ -112,18 +130,20 @@ run_test() {
     echo " (Choose an LPR-enabled camera)"
     echo "----------------------------------------"
     camera_options=()
+    # Now pipe the filtered output to the while loop
     while IFS=',' read -r index camera_id camera_name; do
-      # Only process lines that have all three fields
+      # The filtering should ensure we only get valid lines, but keep the check for safety
       if [ -n "$index" ] && [ -n "$camera_id" ] && [ -n "$camera_name" ]; then
         echo " $index) $camera_name"
         camera_options+=("$camera_id") # Store camera_id in an array
       fi
-    done <<< "$all_cameras_output"
+    done <<< "$camera_list_output" # Use the filtered output
 
     # Check if any cameras were actually parsed
     if [ ${#camera_options[@]} -eq 0 ]; then
         echo "No cameras were found or parsed from the list."
-        echo "Please check the 'cameras_api_debug.log' file for details." # Log file name changed
+        echo "This could mean the API returned no cameras, or there was an issue parsing the output."
+        echo "Please check the 'cameras_api_debug.log' file for details."
         read -n 1 -s -r -p "Press any key to return to the menu..."
         echo
         return

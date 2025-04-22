@@ -208,7 +208,8 @@ def main():
         stream_handler.setLevel(getattr(logging, args.log_level))
 
     logger.debug("Script started with log level: " + args.log_level)
-    logger.debug(f"Arguments parsed: camera_id={args.camera_id}, license_plate={args.license_plate}, history_days={args.history_days}, log_level={args.log_level}") # Debug parsed args
+    # Add debug logging to show the arguments received
+    logger.debug(f"Arguments received: camera_id='{args.camera_id}', license_plate='{args.license_plate}', history_days={args.history_days}, log_level={args.log_level}") # Debug parsed args
 
     # Get API key from environment variable
     logger.debug("Attempting to get API_KEY environment variable...") # Debug before getting API key
