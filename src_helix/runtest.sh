@@ -254,6 +254,15 @@ run_test() {
 
     read -p "Enter your choice: " camera_choice
 
+    # --- Start of fix for empty input ---
+    if [ -z "$camera_choice" ]; then
+      echo "Invalid choice. Aborting."
+      read -n 1 -s -r -p "Press any key to return to the menu..."
+      echo
+      return # Exit the run_test function
+    fi
+    # --- End of fix for empty input ---
+
     if [ "$camera_choice" -eq 0 ]; then
       echo "Operation cancelled."
       read -n 1 -s -r -p "Press any key to return to the menu..."
@@ -262,6 +271,7 @@ run_test() {
     fi
 
     # Validate choice and get camera_id
+    # The check below now assumes camera_choice is not empty due to the check above
     if ! [[ "$camera_choice" =~ ^[0-9]+$ ]] || [ "$camera_choice" -lt 1 ] || [ "$camera_choice" -gt ${#camera_options[@]} ]; then
       echo "Invalid choice. Aborting."
       read -n 1 -s -r -p "Press any key to return to the menu..."
