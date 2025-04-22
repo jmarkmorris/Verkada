@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Script to test the Verkada LPR Timestamps API endpoint.
-Fetches timestamps for a specific license plate.
+Fetches timestamps (returned under the 'detections' key) for a specific license plate.
 Saves the actual API response to a JSON file if data is returned.
 """
 import os
@@ -46,7 +46,7 @@ LPR_TIMESTAMPS_ENDPOINT = "/cameras/v1/analytics/lpr/timestamps" # Endpoint for 
 
 
 def fetch_lpr_timestamps_data(api_token: str, camera_id: str, license_plate: str, history_days: int):
-    """Fetch LPR timestamps data for a specific license plate from Verkada API."""
+    """Fetch LPR timestamps data (detections) for a specific license plate from Verkada API."""
     end_time = int(time.time())
     start_time = end_time - (history_days * 24 * 60 * 60)
 
@@ -65,7 +65,7 @@ def fetch_lpr_timestamps_data(api_token: str, camera_id: str, license_plate: str
     }
 
     try:
-        logger.info(f"Fetching LPR timestamps for plate '{license_plate}' on camera '{camera_id}' from {url} for the last {history_days} days")
+        logger.info(f"Fetching LPR timestamps (detections) for plate '{license_plate}' on camera '{camera_id}' from {url} for the last {history_days} days")
         logger.debug(f"Request headers: {headers}")
         logger.debug(f"Request parameters: {params}")
         logger.debug(f"Using API token: {api_token[:10]}...")
@@ -88,17 +88,15 @@ def fetch_lpr_timestamps_data(api_token: str, camera_id: str, license_plate: str
             logger.debug(f"Response data type: {type(data)}")
             if isinstance(data, dict):
                 logger.debug(f"Response data keys: {list(data.keys())}")
-                if 'timestamps' in data:
-                    logger.debug(f"Found 'timestamps' key with {len(data['timestamps'])} items")
-                    # Avoid printing potentially large list in debug log
-                    # logger.debug(f"First few timestamps: {data['timestamps'][:3] if len(data['timestamps']) > 0 else 'No timestamps'}")
+                # Check for the actual key 'detections'
+                if 'detections' in data:
+                    logger.debug(f"Found 'detections' key with {len(data['detections'])} items")
                 else:
-                    logger.debug(f"'timestamps' key not found in response")
+                    logger.debug(f"'detections' key not found in response") # Updated log
             elif isinstance(data, list):
+                # This case is unlikely based on observed response, but kept for robustness
                 logger.debug(f"Response data is a list with {len(data)} items")
                 if data:
-                    # Avoid printing potentially large list in debug log
-                    # logger.debug(f"First item keys: {list(data[0].keys()) if isinstance(data[0], dict) else 'Not a dict'}")
                     pass
             else:
                 logger.debug(f"Response data is neither dict nor list: {type(data)}")
@@ -127,7 +125,7 @@ def fetch_lpr_timestamps_data(api_token: str, camera_id: str, license_plate: str
             logger.error("2. Ensure you have the correct access level for this endpoint")
             logger.error("3. Verify the API key is not expired")
         elif e.response.status_code == 404:
-             logger.error(f"404 Not Found error for {LPR_TIMESTAMPS_ENDPOINT}. License plate '{license_plate}' may not exist or have no timestamps in the given range.")
+             logger.error(f"404 Not Found error for {LPR_TIMESTAMPS_ENDPOINT}. License plate '{license_plate}' may not exist or have no detections in the given range.") # Updated log
         # Re-raise the exception after logging
         raise
     except Exception as e:
@@ -200,23 +198,23 @@ def main():
         logger.info(f"Successfully retrieved LPR timestamps data for plate '{args.license_plate}' on camera '{args.camera_id}'")
 
         # Save the actual API response to a JSON file *only if* data was returned
-        timestamps_list = []
+        detections_list = [] # Changed variable name for clarity
         if isinstance(lpr_timestamps_data, dict):
-            # Handle case where response is a dict containing 'timestamps' key
-            timestamps_list = lpr_timestamps_data.get('timestamps', [])
-            logger.debug("Response was a dictionary, extracted 'timestamps' key.")
+            # Handle case where response is a dict containing 'detections' key
+            detections_list = lpr_timestamps_data.get('detections', []) # <-- Use 'detections' key
+            logger.debug("Response was a dictionary, extracted 'detections' key.") # Updated log
         elif isinstance(lpr_timestamps_data, list):
-            # Handle case where response is a list directly
-            timestamps_list = lpr_timestamps_data
+            # Handle case where response is a list directly (unlikely for this endpoint)
+            detections_list = lpr_timestamps_data
             logger.debug("Response was a list directly.")
         else:
             # Log a warning if the data type is unexpected, but don't treat as error unless fetch failed
             if lpr_timestamps_data is not None: # Only warn if fetch didn't raise an exception
                  logger.warning(f"Unexpected data type received for LPR timestamps: {type(lpr_timestamps_data)}")
 
-        logger.debug(f"Number of timestamps found: {len(timestamps_list)}")
+        logger.debug(f"Number of detections found: {len(detections_list)}") # Updated log
 
-        if timestamps_list:
+        if detections_list:
             # Save the actual data returned by the API
             output_filename = "src_helix/test_lpr_timestamps_api.json"
             logger.debug(f"Writing actual API response data to {output_filename}")
@@ -229,7 +227,7 @@ def main():
                 logger.error(f"Failed to write API response to {output_filename}: {write_e}", exc_info=True)
         else:
             # Log if no data was found, but don't create/overwrite the file
-            logger.warning(f"No timestamps found for plate '{args.license_plate}' on camera '{args.camera_id}'. JSON file will not be created/updated.")
+            logger.warning(f"No detections found for plate '{args.license_plate}' on camera '{args.camera_id}'. JSON file will not be created/updated.") # Updated log
 
     except Exception as e:
         # Log the execution failure, but avoid trying to write the file in the except block
