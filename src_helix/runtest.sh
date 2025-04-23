@@ -33,7 +33,8 @@ show_menu() {
   echo " 8! /cameras/v1/notifications (test_notifications_api.py)"
   echo " 9) /token (test_token_api.py)"
   echo " 10) /cameras/v1/analytics/lpr/images (All LPR Cameras) (test_lpr_images_api_all_cameras.py)"
-  echo " 11) /cameras/v1/analytics/lpr/images (LPOI Match) (test_lpr_lpoi_match_api.py)" # Updated script name
+  echo " 11) /cameras/v1/analytics/lpr/images (LPOI Match) (test_lpr_lpoi_match_api.py)"
+  echo " 12) /cameras/v1/analytics/lpr/images (Non-LPOI Report) (test_lpr_non_lpoi_report_api.py)" # Added new script
   echo "--------------------------------------------------------------------------------"
   echo " L) Change Log Level (Current: $LOG_LEVEL)"
   echo " 0) Exit"
@@ -85,9 +86,10 @@ run_test() {
     extra_args+=("--history_days" "$history_days")
   fi
 
-  # Handle scripts requiring history_hours (Test cases 10 and 11)
+  # Handle scripts requiring history_hours (Test cases 10, 11, and 12)
   if [[ "$script_name" == "src_helix/test_lpr_images_api_all_cameras.py" || \
-        "$script_name" == "src_helix/test_lpr_lpoi_match_api.py" ]]; then # Added new script
+        "$script_name" == "src_helix/test_lpr_lpoi_match_api.py" || \
+        "$script_name" == "src_helix/test_lpr_non_lpoi_report_api.py" ]]; then # Added new script
     read -p "Enter history_hours (default: 1): " history_hours
     history_hours=${history_hours:-1} # Set default if empty
     if ! [[ "$history_hours" =~ ^[0-9]+$ ]]; then
@@ -349,6 +351,7 @@ while true; do
     9) run_test "src_helix/test_token_api.py" ;; # /token
     10) run_test "src_helix/test_lpr_images_api_all_cameras.py" ;; # /cameras/v1/analytics/lpr/images (All LPR Cameras)
     11) run_test "src_helix/test_lpr_lpoi_match_api.py" ;; # /cameras/v1/analytics/lpr/images (LPOI Match)
+    12) run_test "src_helix/test_lpr_non_lpoi_report_api.py" ;; # /cameras/v1/analytics/lpr/images (Non-LPOI Report)
     [Ll]) change_log_level ;;
     0) echo "Exiting."; exit 0 ;;
     *) echo "Invalid choice. Please try again." ;;
