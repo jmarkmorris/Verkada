@@ -207,10 +207,11 @@ def main():
             sorted_hours = sorted(hourly_counts.keys())
 
             # Define column widths (adjust as needed)
+            # Define column widths (adjust as needed)
             date_width = 10 # YYYY-MM-DD
-            hour_width = 15 # HH:MM AM/PM to HH:MM AM/PM
-            non_lpoi_width = 15 # Count
-            lpoi_width = 10 # Count
+            hour_width = 15 # HH AM/PM - HH AM/PM
+            non_lpoi_width = 10 # Count (Adjusted)
+            lpoi_width = 10 # Count (Adjusted)
 
             # Calculate total width for separator lines
             # Add 3 for each column separator '|' and 2 for padding ' | '
@@ -222,7 +223,8 @@ def main():
             formatted_start_date = datetime.datetime.fromtimestamp(start_time).strftime('%Y-%m-%d')
             formatted_end_date = datetime.datetime.fromtimestamp(end_time).strftime('%Y-%m-%d')
 
-            print(f"| LPR Hourly Report ::: {formatted_start_date} to {formatted_end_date} |")
+            # Remove leading/trailing '|' from the title line
+            print(f"LPR Hourly Report ::: {formatted_start_date} to {formatted_end_date}")
             print("-" * total_width) # Separator line after title
             # Remove ' Count' from column headers
             print(f"{'Date':<{date_width}} | {'Hour':<{hour_width}} | {'Non-LPOI':<{non_lpoi_width}} | {'LPOI':<{lpoi_width}}")
