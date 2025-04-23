@@ -1,0 +1,7 @@
+- set up a new agentic administrator in Verkada
+- have LPoI events sent to the email address of the agent
+- the agent needs to receive the email in real time
+- scrape the relevant information from the email
+- use the LP string as the key into the LPoI to email table
+- create an email notification with the relevant information
+- send the email
