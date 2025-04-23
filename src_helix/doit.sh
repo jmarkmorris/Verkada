@@ -411,7 +411,8 @@ while true; do
   choice=${choice:-0}
 
   # Find the selected script file based on the choice and the menu_items array
-  local selected_script=""
+  # Removed 'local' keyword to avoid "local: can only be used in a function" error
+  selected_script=""
   if [[ "$choice" =~ ^[0-9]+$ ]]; then
       # Iterate through the menu_items array to find the matching index
       for item_string in "${menu_items[@]}"; do
