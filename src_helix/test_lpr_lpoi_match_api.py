@@ -187,8 +187,10 @@ def main():
             # Using default values for get() to handle potential missing keys gracefully
             matched_detections.sort(key=lambda x: (x.get('license_plate', ''), x.get('timestamp', 0)))
 
-            # Include the count of LPOI plates in the header
-            print(f"\n--- Matched LPR Detections ({len(lpoi_plates)} License Plates of Interest) ---")
+            # Include the count of LPOI plates and the time range in the header
+            formatted_start_time = format_timestamp(start_time)
+            formatted_end_time = format_timestamp(end_time)
+            print(f"\n-- LPR Match to LPoI {{{len(lpoi_plates)}}} -- {formatted_start_time} to {formatted_end_time} --")
             # Define column widths (adjust as needed)
             plate_width = 20
             gate_width = 30
