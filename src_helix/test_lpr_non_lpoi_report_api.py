@@ -200,7 +200,7 @@ def main():
 
             # Print header with surrounding dashed lines - Updated header text
             print("-" * total_width) # Top separator line
-            print(f"| LPR Detections (Non-LPoI) {{{len(non_lpoi_detections)}}} ::::: {formatted_start_time} to {formatted_end_time} |")
+            print(f"| LPR Detections (Non-LPoI) ::: {formatted_start_time} to {formatted_end_time} |")
             print("-" * total_width) # Separator line after title
             print(f"{'License Plate':<{plate_width}} | {'Gate (Camera Name)':<{gate_width}} | {'Day/Time':<{time_width}}")
             print("-" * total_width) # Header separator line
