@@ -88,78 +88,100 @@ LPOI_ENDPOINT = "/cameras/v1/analytics/lpr/license_plate_of_interest"
 #     return template
 
 
-def fetch_lpoi_data(api_token: str):
-    """Fetch License Plates of Interest from Verkada API."""
+def fetch_lpoi_data(api_token: str) -> list:
+    """
+    Fetch ALL License Plates of Interest from Verkada API, handling pagination.
+    Returns a list of LPOI dictionaries.
+    """
     url = f"{VERKADA_API_BASE_URL}{LPOI_ENDPOINT}"
     headers = {
         "Accept": "application/json",
         "x-verkada-auth": api_token,
     }
+    all_lpoi = []
+    page_token = None
+    page_count = 0
 
-    try:
-        logger.info(f"Fetching License Plates of Interest from {url}")
-        logger.debug(f"Request headers: {headers}")
-        logger.debug(f"Using API token: {api_token[:10]}...")
+    logger.info(f"Fetching License Plates of Interest from {url}")
 
-        response = requests.get(url, headers=headers)
-        logger.debug(f"LPOI response status code: {response.status_code}")
-        logger.debug(f"LPOI response headers: {dict(response.headers)}")
-
-        response.raise_for_status()
-
-        # Debug the raw response content
-        raw_content = response.content
-        logger.debug(f"Raw response content length: {len(raw_content)} bytes")
-        logger.debug(f"Raw response content preview: {raw_content[:200]}...")
+    while True:
+        params = {
+            "page_size": 1000 # Use max page size
+        }
+        if page_token:
+            params["page_token"] = page_token
+            logger.debug(f"Fetching page {page_count + 1} with page_token: {page_token}")
+        else:
+             logger.debug(f"Fetching initial page {page_count + 1}")
 
         try:
-            data = response.json()
-            logger.debug(f"Response JSON parsed successfully")
-            logger.debug(f"Response data type: {type(data)}")
-            if isinstance(data, dict):
-                logger.debug(f"Response data keys: {list(data.keys())}")
-                if 'license_plate_of_interest' in data:
-                    logger.debug(f"Found 'license_plate_of_interest' key with {len(data['license_plate_of_interest'])} items")
-                    # Avoid printing potentially large list in debug log
-                    # logger.debug(f"First few items: {data['license_plate_of_interest'][:3]}")
+            logger.debug(f"Request headers: {headers}")
+            logger.debug(f"Request parameters: {params}")
+            logger.debug(f"Using API token: {api_token[:10]}...")
+
+            response = requests.get(url, headers=headers, params=params)
+            logger.debug(f"LPOI response status code for page {page_count + 1}: {response.status_code}")
+            response.raise_for_status()
+
+            # Debug the raw response content length
+            raw_content = response.content
+            logger.debug(f"Raw response content length for page {page_count + 1}: {len(raw_content)} bytes")
+
+            try:
+                data = response.json()
+                logger.debug(f"Response JSON parsed successfully for page {page_count + 1}")
+                logger.debug(f"Response data type: {type(data)}")
+                if isinstance(data, dict):
+                    logger.debug(f"Response data keys: {list(data.keys())}")
+                    # The API response structure is a dictionary with 'license_plate_of_interest' key
+                    current_page_items = data.get('license_plate_of_interest', [])
+                    if not isinstance(current_page_items, list):
+                         logger.warning(f"Expected 'license_plate_of_interest' list in response for page {page_count + 1}, but got {type(current_page_items)}. Stopping pagination.")
+                         break # Stop if the key is not a list
+
+                    logger.debug(f"Found 'license_plate_of_interest' key with {len(current_page_items)} items on page {page_count + 1}")
+                    all_lpoi.extend(current_page_items)
+                    logger.debug(f"Added {len(current_page_items)} items from page {page_count + 1}. Total LPOI fetched so far: {len(all_lpoi)}")
+
+                    page_token = data.get('next_page_token') # Get next page token from the dictionary
                 else:
-                    logger.debug(f"'license_plate_of_interest' key not found in response")
-            elif isinstance(data, list):
-                logger.debug(f"Response data is a list with {len(data)} items")
-                if data:
-                    # Avoid printing potentially large list in debug log
-                    # logger.debug(f"First item keys: {list(data[0].keys()) if isinstance(data[0], dict) else 'Not a dict'}")
-                    pass
+                    logger.warning(f"Response data for page {page_count + 1} is not a dictionary: {type(data)}. Stopping pagination.")
+                    break # Stop if the response is not a dictionary
+
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse JSON response for page {page_count + 1}: {e}")
+                logger.error(f"Response content: {response.content}")
+                # Stop pagination on JSON error
+                break
+
+            page_count += 1
+
+            if page_token:
+                logger.debug(f"Next page token found: {page_token}. Continuing pagination.")
+                # Optional: Add a small delay to avoid hitting rate limits
+                # time.sleep(0.1)
             else:
-                logger.debug(f"Response data is neither dict nor list: {type(data)}")
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse JSON response: {e}")
-            logger.error(f"Response content: {response.content}")
-            raise
+                logger.debug(f"No next page token found. Ending pagination.")
+                break # No more pages
 
-        # The data is returned for processing by the caller.
-        # Avoid printing the full list here to keep output clean when imported.
-        # Debug logs already capture the raw data.
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTP Error fetching LPOI, page {page_count + 1}: {e}")
+            logger.error(f"Response status code: {e.response.status_code}")
+            logger.error(f"Response headers: {dict(e.response.headers)}")
+            logger.error(f"Response content: {e.response.content}")
+            # Decide whether to stop or continue on error
+            # For now, we'll log and stop fetching
+            break
+        except Exception as e:
+            logger.error(f"Unexpected error fetching LPOI, page {page_count + 1}: {e}", exc_info=True)
+            # Stop pagination on unexpected error
+            break
 
-        return data
-    except requests.exceptions.HTTPError as e:
-        logger.error(f"HTTP Error: {e}")
-        logger.error(f"Response status code: {e.response.status_code}")
-        logger.error(f"Response headers: {dict(e.response.headers)}")
-        logger.error(f"Response content: {e.response.content}")
+    logger.info(f"Finished fetching License Plates of Interest. Total LPOI fetched: {len(all_lpoi)}")
+    # Avoid printing the full list here to keep output clean when imported.
+    # Debug logs already capture the raw data per page.
 
-        if e.response.status_code == 403:
-            logger.error(f"403 Forbidden error for {LPOI_ENDPOINT}. Possible permission issue.")
-            logger.error("Troubleshooting steps:")
-            logger.error("1. Check your API key permissions in Verkada Command")
-            logger.error("2. Ensure you have the correct access level for this endpoint")
-            logger.error("3. Verify the API key is not expired")
-        raise
-    except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        logger.error(f"Error type: {type(e)}")
-        logger.error(f"Full exception traceback: {traceback.format_exc()}")
-        raise
+    return all_lpoi # Return the accumulated list
 
 def main():
     """Main entry point for the script."""
