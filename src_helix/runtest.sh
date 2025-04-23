@@ -311,11 +311,18 @@ run_test() {
   # Convert script path to module path (e.g., src_helix/test_script.py -> src_helix.test_script)
   local module_path=$(echo "$script_name" | sed 's/\.py$//' | sed 's/\//./g')
 
+  # Conditionally add the --log_level argument. Omit if the selected level is ERROR,
+  # as the Python scripts' default will be changed to ERROR.
+  local log_level_arg=""
+  if [ "$LOG_LEVEL" != "ERROR" ]; then
+      log_level_arg="--log_level $LOG_LEVEL"
+  fi
+
   echo "--------------------------------------------------------------------------------"
-  echo "Running: python -m $module_path --log_level $LOG_LEVEL ${extra_args[@]}"
+  echo "Running: python -m $module_path $log_level_arg ${extra_args[@]}"
   echo "--------------------------------------------------------------------------------"
   # Execute the script as a module
-  python -m "$module_path" --log_level "$LOG_LEVEL" "${extra_args[@]}"
+  python -m "$module_path" $log_level_arg "${extra_args[@]}"
   echo "--------------------------------------------------------------------------------"
   read -n 1 -s -r -p "Press any key to return to the menu..."
   echo # Add a newline after the key press

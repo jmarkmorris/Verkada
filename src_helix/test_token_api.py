@@ -45,8 +45,8 @@ def main():
     parser.add_argument(
         "--log_level",
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-        default='INFO',
-        help="Set the logging level (default: INFO)"
+        default='ERROR', # Changed default to ERROR
+        help="Set the logging level (default: ERROR)" # Updated help text
     )
 
     # Parse arguments
