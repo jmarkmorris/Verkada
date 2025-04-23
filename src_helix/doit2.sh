@@ -70,7 +70,7 @@ show_menu() {
   max_script_width=$((max_script_width + 2))
 
   # Print header
-  printf "%-${max_index_width}s | %-${max_desc_width}s | %-${max_api_width}s | %-${max_script_width}s\n" "Index" "Description" "API Endpoint" "Script File"
+  printf "%-${max_index_width}s | %-${max_desc_width}s | %-${max_api_width}s | %-${max_script_width}s\n" "Test" "Description" "API Endpoint" "Script File"
 
   # Print separator line
   printf "%-${max_index_width}s-|-%-${max_desc_width}s-|-%-${max_api_width}s-|-%-${max_script_width}s\n" \
