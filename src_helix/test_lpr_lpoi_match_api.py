@@ -201,7 +201,7 @@ def main():
 
             # Print header with surrounding dashed lines
             print("-" * total_width) # Top separator line
-            print(f"-- LPR Match to LPoI {{{len(lpoi_plates)}}} -- {formatted_start_time} to {formatted_end_time} --")
+            print(f"| LPR Match to LPoI {{{len(lpoi_plates)}}} ::::: {formatted_start_time} to {formatted_end_time} |")
             print("-" * total_width) # Separator line after title
             print(f"{'License Plate':<{plate_width}} | {'Gate (Camera Name)':<{gate_width}} | {'Day/Time':<{time_width}}")
             print("-" * total_width) # Header separator line
