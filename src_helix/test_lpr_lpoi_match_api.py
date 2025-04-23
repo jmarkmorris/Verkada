@@ -187,18 +187,24 @@ def main():
             # Using default values for get() to handle potential missing keys gracefully
             matched_detections.sort(key=lambda x: (x.get('license_plate', ''), x.get('timestamp', 0)))
 
-            # Include the count of LPOI plates and the time range in the header
-            formatted_start_time = format_timestamp(start_time)
-            formatted_end_time = format_timestamp(end_time)
-            print(f"\n-- LPR Match to LPoI {{{len(lpoi_plates)}}} -- {formatted_start_time} to {formatted_end_time} --")
             # Define column widths (adjust as needed)
             plate_width = 20
             gate_width = 30
             time_width = 20
 
-            # Print header
+            # Calculate total width for separator lines
+            total_width = plate_width + gate_width + time_width + 6
+
+            # Include the count of LPOI plates and the time range in the header
+            formatted_start_time = format_timestamp(start_time)
+            formatted_end_time = format_timestamp(end_time)
+
+            # Print header with surrounding dashed lines
+            print("-" * total_width) # Top separator line
+            print(f"-- LPR Match to LPoI {{{len(lpoi_plates)}}} -- {formatted_start_time} to {formatted_end_time} --")
+            print("-" * total_width) # Separator line after title
             print(f"{'License Plate':<{plate_width}} | {'Gate (Camera Name)':<{gate_width}} | {'Day/Time':<{time_width}}")
-            print("-" * (plate_width + gate_width + time_width + 6)) # Header separator line
+            print("-" * total_width) # Header separator line
 
             # Print rows, adding a separator between different license plates
             previous_plate = None
@@ -210,7 +216,7 @@ def main():
 
                 # Add a separator line if the license plate changes (and it's not the first row)
                 if previous_plate is not None and license_plate != previous_plate:
-                    print("-" * (plate_width + gate_width + time_width + 6)) # Group separator line
+                    print("-" * total_width) # Group separator line
 
                 # Update the previous plate tracker
                 previous_plate = license_plate
