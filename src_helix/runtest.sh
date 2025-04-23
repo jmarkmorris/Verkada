@@ -11,35 +11,87 @@ fi
 # Default log level - Changed to ERROR
 LOG_LEVEL="ERROR"
 
-# Variable to store the captured user list for selection
+# Variable to store the captured user list for selection (used by test_user_details_api.py)
 USER_LIST_CACHE=""
+
+# Define menu items as an array of strings: "index,description,api_endpoint,script_file"
+# Defined globally so it's accessible in the main loop
+menu_items=(
+  "1,Access Users List,/access/v1/access_users,src_helix/test_users_list_api.py"
+  "2,Access User Details,/access/v1/access_users/user,src_helix/test_user_details_api.py"
+  "3,Access Events,/access/v1/events,src_helix/test_access_events_api.py"
+  "4,LPR Images (Single Cam),/cameras/v1/analytics/lpr/imagesview,src_helix/test_lpr_images_api.py"
+  "5,LPOI List,/cameras/v1/analytics/lpr/license_plate_of_interest,src_helix/test_lpoi_api.py"
+  "6,LPR Timestamps (Plate/Cam),/cameras/v1/analytics/lpr/timestamps,src_helix/test_lpr_timestamps_api.py"
+  "7,Camera List,/cameras/v1/devices,src_helix/test_cameras_api.py"
+  "8,Camera Notifications,/cameras/v1/notifications,src_helix/test_notifications_api.py"
+  "9,Get API Token,/token,src_helix/test_token_api.py"
+  "10,LPR Images (All LPR Cams),/cameras/v1/analytics/lpr/images,src_helix/test_lpr_images_api_all_cameras.py"
+  "11,LPR Images (LPOI Match),/cameras/v1/analytics/lpr/images,src_helix/test_lpr_lpoi_match_api.py"
+  "12,LPR Images (Non-LPOI),/cameras/v1/analytics/lpr/images,src_helix/test_lpr_non_lpoi_report_api.py"
+  "13,LPR Images (Hourly Report),/cameras/v1/analytics/lpr/images,src_helix/test_lpr_hourly_report_api.py"
+)
+
 
 # Function to display the menu
 show_menu() {
   echo "================================================================================"
   echo " Verkada API Test Script Runner"
   echo "================================================================================"
-  echo " API_KEY: ${API_KEY:0:5}...${API_KEY: -4}"
-  echo " Current Log Level: $LOG_LEVEL"
-  echo "--------------------------------------------------------------------------------"
-  echo " Select a test to run (Alphabetical Order by Endpoint):"
-  echo " 1) /access/v1/access_users (test_users_list_api.py)"
-  echo " 2) /access/v1/access_users/user (test_user_details_api.py)"
-  echo " 3! /access/v1/events (test_access_events_api.py)"
-  echo " 4! /cameras/v1/analytics/lpr/imagesview (test_lpr_images_api.py)"
-  echo " 5) /cameras/v1/analytics/lpr/license_plate_of_interest (test_lpoi_api.py)"
-  echo " 6) /cameras/v1/analytics/lpr/timestamps (test_lpr_timestamps_api.py)"
-  echo " 7) /cameras/v1/devices (test_cameras_api.py)"
-  echo " 8! /cameras/v1/notifications (test_notifications_api.py)"
-  echo " 9) /token (test_token_api.py)"
-  echo " 10) /cameras/v1/analytics/lpr/images (All LPR Cameras) (test_lpr_images_api_all_cameras.py)"
-  echo " 11) /cameras/v1/analytics/lpr/images (LPOI Match) (test_lpr_lpoi_match_api.py)"
-  echo " 12) /cameras/v1/analytics/lpr/images (Non-LPOI Report) (test_lpr_non_lpoi_report_api.py)"
-  echo " 13) /cameras/v1/analytics/lpr/images (Hourly Report) (test_lpr_hourly_report_api.py)" # Added new script
+  # API_KEY and Current Log Level are shown elsewhere or not needed in the main menu
+  echo " Select a test to run:"
+
+  # Calculate column widths
+  local max_index_width=0
+  local max_desc_width=0
+  local max_api_width=0
+  local max_script_width=0
+
+  for item_string in "${menu_items[@]}"; do
+    # Parse the comma-separated string
+    IFS=',' read -r index desc api script <<< "$item_string"
+
+    # Use printf %s to handle potential special characters in strings
+    local index_len=$(printf "%s" "$index" | wc -m)
+    local desc_len=$(printf "%s" "$desc" | wc -m)
+    local api_len=$(printf "%s" "$api" | wc -m)
+    local script_len=$(printf "%s" "$script" | wc -m)
+
+    if (( index_len > max_index_width )); then max_index_width=$index_len; fi
+    if (( desc_len > max_desc_width )); then max_desc_width=$desc_len; fi
+    if (( api_len > max_api_width )); then max_api_width=$api_len; fi
+    if (( script_len > max_script_width )); then max_script_width=$script_len; fi
+  done
+
+  # Add some padding
+  max_index_width=$((max_index_width + 2))
+  max_desc_width=$((max_desc_width + 2))
+  max_api_width=$((max_api_width + 2))
+  max_script_width=$((max_script_width + 2))
+
+  # Print header
+  printf "%-${max_index_width}s | %-${max_desc_width}s | %-${max_api_width}s | %-${max_script_width}s\n" "Test" "Description" "API Endpoint" "Script File"
+
+  # Print separator line
+  printf "%-${max_index_width}s-|-%-${max_desc_width}s-|-%-${max_api_width}s-|-%-${max_script_width}s\n" \
+    "$(printf '%*s' "$max_index_width" | tr ' ' '-')" \
+    "$(printf '%*s' "$max_desc_width" | tr ' ' '-')" \
+    "$(printf '%*s' "$max_api_width" | tr ' ' '-')" \
+    "$(printf '%*s' "$max_script_width" | tr ' ' '-')"
+
+  # Print menu items
+  for item_string in "${menu_items[@]}"; do
+    # Parse the comma-separated string
+    IFS=',' read -r index desc api script <<< "$item_string"
+    printf "%-${max_index_width}s | %-${max_desc_width}s | %-${max_api_width}s | %-${max_script_width}s\n" "${index})" "$desc" "$api" "$script"
+  done
+
   echo "--------------------------------------------------------------------------------"
   echo " L) Change Log Level (Current: $LOG_LEVEL)"
   echo " 0) Exit"
   echo "================================================================================"
+
+  # The menu_items array is now global
 }
 
 # Function to change log level
@@ -91,12 +143,17 @@ run_test() {
   if [[ "$script_name" == "src_helix/test_lpr_images_api_all_cameras.py" || \
         "$script_name" == "src_helix/test_lpr_lpoi_match_api.py" || \
         "$script_name" == "src_helix/test_lpr_non_lpoi_report_api.py" || \
-        "$script_name" == "src_helix/test_lpr_hourly_report_api.py" ]]; then # Added new script
-    read -p "Enter history_hours (default: 24): " history_hours
-    history_hours=${history_hours:-24} # Set default to 24 for this report
+        "$script_name" == "src_helix/test_lpr_hourly_report_api.py" ]]; then
+    # Set default to 24 hours for the hourly report, 1 hour for others
+    local default_hours=1
+    if [[ "$script_name" == "src_helix/test_lpr_hourly_report_api.py" ]]; then
+        default_hours=24
+    fi
+    read -p "Enter history_hours (default: $default_hours): " history_hours
+    history_hours=${history_hours:-$default_hours} # Set default
     if ! [[ "$history_hours" =~ ^[0-9]+$ ]]; then
-        echo "Invalid input. Using default history_hours=24."
-        history_hours=24
+        echo "Invalid input. Using default history_hours=$default_hours."
+        history_hours=$default_hours
     fi
     extra_args+=("--history_hours" "$history_hours")
   fi
@@ -177,6 +234,15 @@ run_test() {
     echo "--------------------------------------------------------------------------------"
 
     read -p "Enter your choice: " user_choice
+
+    # --- Start of fix for empty input ---
+    if [ -z "$user_choice" ]; then
+      echo "Invalid choice. Aborting."
+      read -n 1 -s -r -p "Press any key to return to the menu..."
+      echo
+      return # Exit the run_test function
+    fi
+    # --- End of fix for empty input ---
 
     if [ "$user_choice" -eq 0 ]; then
       echo "Operation cancelled."
@@ -336,28 +402,41 @@ run_test() {
 while true; do
   clear # Clear screen for better readability
   show_menu
-  read -p "Enter your choice [0-11 or L] (default: 0): " choice
+  read -p "Enter your choice [0-13 or L] (default: 0): " choice
 
   # Set default choice to 0 (Exit) if empty
   choice=${choice:-0}
 
+  # Find the selected script file based on the choice and the menu_items array
+  # Removed 'local' keyword to avoid "local: can only be used in a function" error
+  selected_script=""
+  if [[ "$choice" =~ ^[0-9]+$ ]]; then
+      # Iterate through the menu_items array to find the matching index
+      for item_string in "${menu_items[@]}"; do
+          # Parse the comma-separated string
+          IFS=',' read -r index desc api script <<< "$item_string"
+          if [[ "$index" == "$choice" ]]; then
+              selected_script="$script"
+              break
+          fi
+      done
+  fi
+
+
   case $choice in
-    1) run_test "src_helix/test_users_list_api.py" ;; # /access/v1/access_users
-    2) run_test "src_helix/test_user_details_api.py" ;; # /access/v1/access_users/user
-    3) run_test "src_helix/test_access_events_api.py" ;; # /access/v1/events
-    4) run_test "src_helix/test_lpr_images_api.py" ;; # /cameras/v1/analytics/lpr/imagesview
-    5) run_test "src_helix/test_lpoi_api.py" ;; # /cameras/v1/analytics/lpr/license_plate_of_interest
-    6) run_test "src_helix/test_lpr_timestamps_api.py" ;; # /cameras/v1/analytics/lpr/timestamps
-    7) run_test "src_helix/test_cameras_api.py" ;; # /cameras/v1/devices
-    8) run_test "src_helix/test_notifications_api.py" ;; # /cameras/v1/notifications
-    9) run_test "src_helix/test_token_api.py" ;; # /token
-    10) run_test "src_helix/test_lpr_images_api_all_cameras.py" ;; # /cameras/v1/analytics/lpr/images (All LPR Cameras)
-    11) run_test "src_helix/test_lpr_lpoi_match_api.py" ;; # /cameras/v1/analytics/lpr/images (LPOI Match)
-    12) run_test "src_helix/test_lpr_non_lpoi_report_api.py" ;; # /cameras/v1/analytics/lpr/images (Non-LPOI Report)
-    13) run_test "src_helix/test_lpr_hourly_report_api.py" ;; # /cameras/v1/analytics/lpr/images (Hourly Report)
     [Ll]) change_log_level ;;
     0) echo "Exiting."; exit 0 ;;
-    *) echo "Invalid choice. Please try again." ;;
+    *)
+      if [ -n "$selected_script" ]; then
+          run_test "$selected_script"
+      else
+          echo "Invalid choice. Please try again."
+          read -n 1 -s -r -p "Press any key to return to the menu..."
+          echo
+      fi
+      ;;
   esac
   echo # Add a newline for spacing before next menu display
 done
+```
+```python
