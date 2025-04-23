@@ -118,15 +118,14 @@ def main():
 
         # --- Step 1: Fetch License Plates of Interest (LPOI) ---
         logger.info("Fetching License Plates of Interest...")
+        # fetch_lpoi_list_data returns the full response dictionary
         lpoi_data = fetch_lpoi_list_data(api_token) # Use the imported function
 
-        # Extract the list of LPOI strings
-        # The fetch_lpoi_list_data function returns the full response dictionary
-        # The actual list is under the key 'license_plate_of_interest'
-        lpoi_list_raw = lpoi_data.get('license_plate_of_interest', []) if isinstance(lpoi_data, dict) else []
+        # Extract the list of LPOI dictionaries from the 'license_plate_of_interest' key
+        lpoi_list = lpoi_data.get('license_plate_of_interest', []) if isinstance(lpoi_data, dict) else []
 
-        # Extract just the license plate strings and convert to a set for efficient lookup
-        lpoi_plates = {item.get('license_plate') for item in lpoi_list_raw if isinstance(item, dict) and item.get('license_plate')}
+        # Extract just the license plate strings from the list and convert to a set for efficient lookup
+        lpoi_plates = {item.get('license_plate') for item in lpoi_list if isinstance(item, dict) and item.get('license_plate')}
 
         logger.info(f"Successfully retrieved {len(lpoi_plates)} License Plates of Interest.")
         logger.debug(f"LPOI list: {lpoi_plates}")

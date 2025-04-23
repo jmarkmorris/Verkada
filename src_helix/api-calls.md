@@ -70,6 +70,36 @@ The following endpoints have corresponding test scripts in the `src_helix/` dire
     *   *Documentation:* [Get seen license plates](https://apidocs.verkada.com/reference/getlprimagesview)
     *   *Note:* This script iterates through LPR-enabled cameras found via `/cameras/v1/devices`.
 
+11. **`GET /cameras/v1/analytics/lpr/images`**: Get seen license plates (LPOI Match Report).
+    *   *Script:* `test_lpr_lpoi_match_api.py`
+    *   *Purpose:* Fetches LPR detection events for all LPR-enabled cameras within a time range and filters for matches against the LPOI list.
+    *   *Documentation:* [Get seen license plates](https://apidocs.verkada.com/reference/getlprimagesview)
+    *   *Note:* This script combines data from `/cameras/v1/analytics/lpr/license_plate_of_interest` and `/cameras/v1/analytics/lpr/images`.
+
+12. **`GET /cameras/v1/analytics/lpr/images`**: Get seen license plates (Non-LPOI Report).
+    *   *Script:* `test_lpr_non_lpoi_report_api.py`
+    *   *Purpose:* Fetches LPR detection events for all LPR-enabled cameras within a time range and filters for detections that *do not* match any plate in the LPOI list.
+    *   *Documentation:* [Get seen license plates](https://apidocs.verkada.com/reference/getlprimagesview)
+    *   *Note:* This script combines data from `/cameras/v1/analytics/lpr/license_plate_of_interest` and `/cameras/v1/analytics/lpr/images`.
+
+13. **`GET /cameras/v1/analytics/lpr/images`**: Get seen license plates (Hourly Report).
+    *   *Script:* `test_lpr_hourly_report_api.py`
+    *   *Purpose:* Fetches LPR detection events for all LPR-enabled cameras within a time range, categorizes them as LPOI or Non-LPOI, and provides an hourly count breakdown.
+    *   *Documentation:* [Get seen license plates](https://apidocs.verkada.com/reference/getlprimagesview)
+    *   *Note:* This script combines data from `/cameras/v1/analytics/lpr/license_plate_of_interest` and `/cameras/v1/analytics/lpr/images`.
+
+12. **`GET /cameras/v1/analytics/lpr/images`**: Get seen license plates (Non-LPOI Report).
+    *   *Script:* `test_lpr_non_lpoi_report_api.py`
+    *   *Purpose:* Fetches LPR detection events for all LPR-enabled cameras within a time range and filters for detections that *do not* match any plate in the LPOI list.
+    *   *Documentation:* [Get seen license plates](https://apidocs.verkada.com/reference/getlprimagesview)
+    *   *Note:* This script combines data from `/cameras/v1/analytics/lpr/license_plate_of_interest` and `/cameras/v1/analytics/lpr/images`.
+
+13. **`GET /cameras/v1/analytics/lpr/images`**: Get seen license plates (Hourly Report).
+    *   *Script:* `test_lpr_hourly_report_api.py`
+    *   *Purpose:* Fetches LPR detection events for all LPR-enabled cameras within a time range, categorizes them as LPOI or Non-LPOI, and provides an hourly count breakdown.
+    *   *Documentation:* [Get seen license plates](https://apidocs.verkada.com/reference/getlprimagesview)
+    *   *Note:* This script combines data from `/cameras/v1/analytics/lpr/license_plate_of_interest` and `/cameras/v1/analytics/lpr/images`.
+
 ### Potential Future Endpoints for Testing
 
 The following endpoints also return JSON data and could be implemented with test scripts:
