@@ -1,5 +1,7 @@
 .DS_Store
-.aider*
+.aider.i*
+.aider.t*
+.aider.chat*
 
 # Environment
 venv/
