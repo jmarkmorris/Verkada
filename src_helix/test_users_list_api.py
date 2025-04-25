@@ -241,7 +241,7 @@ def main():
             template_output = {"access_members": [template_data]} # Wrap in the expected list structure
 
             # Save the template to the src_helix directory
-            output_filename = "src_helix/test_users_list_api.json"
+            output_filename = "src_helix/api-json/test_users_list_api.json"
             logger.debug(f"Writing template to {output_filename}")
             with open(output_filename, 'w') as f:
                 json.dump(template_output, f, indent=4)

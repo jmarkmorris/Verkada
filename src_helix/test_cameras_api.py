@@ -269,7 +269,7 @@ def main():
             template_output = {"cameras": [template_data]}
 
             # Save the template to the src_helix directory
-            output_filename = "src_helix/test_cameras_api.json"
+            output_filename = "src_helix/api-json/test_cameras_api.json"
             logger.debug(f"Writing template to {output_filename}")
             with open(output_filename, 'w') as f:
                 json.dump(template_output, f, indent=4)

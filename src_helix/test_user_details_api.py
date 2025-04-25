@@ -206,7 +206,7 @@ def main():
                     logger.debug(f"Template data created: {template_data}")
 
                     # Save the template to the src_helix directory
-                    output_filename = "src_helix/test_user_details_api.json"
+                    output_filename = "src_helix/api-json/test_user_details_api.json"
                     logger.debug(f"Writing template to {output_filename}")
                     with open(output_filename, 'w') as f:
                         json.dump(template_data, f, indent=4)

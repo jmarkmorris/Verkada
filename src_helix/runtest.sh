@@ -17,19 +17,19 @@ USER_LIST_CACHE=""
 # Define menu items as an array of strings: "index,description,api_endpoint,script_file"
 # Defined globally so it's accessible in the main loop
 menu_items=(
-  "1,Access Users List,/access/v1/access_users,src_helix/test_users_list_api.py"
-  "2,Access User Details,/access/v1/access_users/user,src_helix/test_user_details_api.py"
-  "3,Access Events,/access/v1/events,src_helix/test_access_events_api.py"
-  "4,LPR Images (Single Cam),/cameras/v1/analytics/lpr/imagesview,src_helix/test_lpr_images_api.py"
-  "5,LPOI List,/cameras/v1/analytics/lpr/license_plate_of_interest,src_helix/test_lpoi_api.py"
-  "6,LPR Timestamps (Plate/Cam),/cameras/v1/analytics/lpr/timestamps,src_helix/test_lpr_timestamps_api.py"
-  "7,Camera List,/cameras/v1/devices,src_helix/test_cameras_api.py"
-  "8,Camera Notifications,/cameras/v1/notifications,src_helix/test_notifications_api.py"
-  "9,Get API Token,/token,src_helix/test_token_api.py"
-  "10,LPR Images (All LPR Cams),/cameras/v1/analytics/lpr/images,src_helix/test_lpr_images_api_all_cameras.py"
-  "11,LPR Images (LPOI Match),/cameras/v1/analytics/lpr/images,src_helix/test_lpr_lpoi_match_api.py"
-  "12,LPR Images (Non-LPOI),/cameras/v1/analytics/lpr/images,src_helix/test_lpr_non_lpoi_report_api.py"
-  "13,LPR Images (Hourly Report),/cameras/v1/analytics/lpr/images,src_helix/test_lpr_hourly_report_api.py"
+  "1,Access Users List,/access/v1/access_users,src_helix/api-json/test_users_list_api.py"
+  "2,Access User Details,/access/v1/access_users/user,src_helix/api-json/test_user_details_api.py"
+  "3,Access Events,/access/v1/events,src_helix/api-json/test_access_events_api.py"
+  "4,LPR Images (Single Cam),/cameras/v1/analytics/lpr/imagesview,src_helix/api-json/test_lpr_images_api.py"
+  "5,LPOI List,/cameras/v1/analytics/lpr/license_plate_of_interest,src_helix/api-json/test_lpoi_api.py"
+  "6,LPR Timestamps (Plate/Cam),/cameras/v1/analytics/lpr/timestamps,src_helix/api-json/test_lpr_timestamps_api.py"
+  "7,Camera List,/cameras/v1/devices,src_helix/api-json/test_cameras_api.py"
+  "8,Camera Notifications,/cameras/v1/notifications,src_helix/api-json/test_notifications_api.py"
+  "9,Get API Token,/token,src_helix/api-json/test_token_api.py"
+  "10,LPR Images (All LPR Cams),/cameras/v1/analytics/lpr/images,src_helix/api-json/test_lpr_images_api_all_cameras.py"
+  "11,LPR Images (LPOI Match),/cameras/v1/analytics/lpr/images,src_helix/api-json/test_lpr_lpoi_match_api.py"
+  "12,LPR Images (Non-LPOI),/cameras/v1/analytics/lpr/images,src_helix/api-json/test_lpr_non_lpoi_report_api.py"
+  "13,LPR Images (Hourly Report),/cameras/v1/analytics/lpr/images,src_helix/api-json/test_lpr_hourly_report_api.py"
 )
 
 
@@ -126,10 +126,10 @@ run_test() {
   local extra_args=()
 
   # Handle scripts requiring history_days
-  if [[ "$script_name" == "src_helix/test_lpr_images_api.py" || \
-        "$script_name" == "src_helix/test_notifications_api.py" || \
-        "$script_name" == "src_helix/test_access_events_api.py" || \
-        "$script_name" == "src_helix/test_lpr_timestamps_api.py" ]]; then
+  if [[ "$script_name" == "src_helix/api-json/test_lpr_images_api.py" || \
+        "$script_name" == "src_helix/api-json/test_notifications_api.py" || \
+        "$script_name" == "src_helix/api-json/test_access_events_api.py" || \
+        "$script_name" == "src_helix/api-json/test_lpr_timestamps_api.py" ]]; then
     read -p "Enter history_days (default: 7): " history_days
     history_days=${history_days:-7} # Set default if empty
     if ! [[ "$history_days" =~ ^[0-9]+$ ]]; then
@@ -140,13 +140,13 @@ run_test() {
   fi
 
   # Handle scripts requiring history_hours (Test cases 10, 11, 12, and 13)
-  if [[ "$script_name" == "src_helix/test_lpr_images_api_all_cameras.py" || \
-        "$script_name" == "src_helix/test_lpr_lpoi_match_api.py" || \
-        "$script_name" == "src_helix/test_lpr_non_lpoi_report_api.py" || \
-        "$script_name" == "src_helix/test_lpr_hourly_report_api.py" ]]; then
+  if [[ "$script_name" == "src_helix/api-json/test_lpr_images_api_all_cameras.py" || \
+        "$script_name" == "src_helix/api-json/test_lpr_lpoi_match_api.py" || \
+        "$script_name" == "src_helix/api-json/test_lpr_non_lpoi_report_api.py" || \
+        "$script_name" == "src_helix/api-json/test_lpr_hourly_report_api.py" ]]; then
     # Set default to 24 hours for the hourly report, 1 hour for others
     local default_hours=1
-    if [[ "$script_name" == "src_helix/test_lpr_hourly_report_api.py" ]]; then
+    if [[ "$script_name" == "src_helix/api-json/test_lpr_hourly_report_api.py" ]]; then
         default_hours=24
     fi
     read -p "Enter history_hours (default: $default_hours): " history_hours
@@ -160,7 +160,7 @@ run_test() {
 
 
   # Handle script requiring user_index (Test 2: test_user_details_api.py)
-  if [[ "$script_name" == "src_helix/test_user_details_api.py" ]]; then
+  if [[ "$script_name" == "src_helix/api-json/test_user_details_api.py" ]]; then
     echo "Fetching list of access users..."
     # Fetch and list users using test_users_list_api.py as a module with --list-for-selection
     # Capture both stdout and stderr
@@ -275,7 +275,7 @@ run_test() {
   fi
 
   # Handle script requiring license_plate and camera_id (via selection menu)
-  if [[ "$script_name" == "src_helix/test_lpr_timestamps_api.py" ]]; then
+  if [[ "$script_name" == "src_helix/api-json/test_lpr_timestamps_api.py" ]]; then
     echo "Fetching list of all cameras..."
     # Fetch and list all cameras using test_cameras_api.py as a module with --list-for-menu
     # Capture both stdout and stderr
@@ -378,7 +378,7 @@ run_test() {
     extra_args+=("--license_plate" "$license_plate")
   fi
 
-  # Convert script path to module path (e.g., src_helix/test_script.py -> src_helix.test_script)
+  # Convert script path to module path (e.g., src_helix/api-json/test_script.py -> src_helix.test_script)
   local module_path=$(echo "$script_name" | sed 's/\.py$//' | sed 's/\//./g')
 
   # Conditionally add the --log_level argument. Omit if the selected level is ERROR,

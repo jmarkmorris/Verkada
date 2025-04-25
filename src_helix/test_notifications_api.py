@@ -175,7 +175,7 @@ def main():
             template_output = {"notifications": [template_data]} # Wrap in the expected list structure
 
             # Save the template to the src_helix directory
-            output_filename = "src_helix/test_notifications_api.json"
+            output_filename = "src_helix/api-json/test_notifications_api.json"
             logger.debug(f"Writing template to {output_filename}")
             with open(output_filename, 'w') as f:
                 json.dump(template_output, f, indent=4)

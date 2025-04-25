@@ -23,7 +23,7 @@ logger.setLevel(logging.DEBUG)
 stream_handler = logging.StreamHandler(sys.stdout)
 # File handler for debug logs - always log DEBUG and above to file
 # Save log file in the src_helix directory
-file_handler = logging.FileHandler('src_helix/token_api_debug.log')
+file_handler = logging.FileHandler('src_helix/api-json/token_api_debug.log')
 file_handler.setLevel(logging.DEBUG)
 
 # Create formatters and add them to the handlers
@@ -102,7 +102,7 @@ def main():
             template_data = create_template(token_data)
             logger.debug(f"Template data created: {template_data}")
             # Save the template to the src_helix directory
-            output_filename = "src_helix/test_token_api.json"
+            output_filename = "src_helix/api-json/test_token_api.json"
             logger.debug(f"Writing template to {output_filename}")
             with open(output_filename, 'w') as f:
                 json.dump(template_data, f, indent=4)
