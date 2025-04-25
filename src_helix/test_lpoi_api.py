@@ -88,10 +88,13 @@ LPOI_ENDPOINT = "/cameras/v1/analytics/lpr/license_plate_of_interest"
 #     return template
 
 
-def fetch_lpoi_data(api_token: str) -> list:
+def fetch_lpoi_data(api_token: str) -> tuple[dict | None, list]:
     """
     Fetch ALL License Plates of Interest from Verkada API, handling pagination.
-    Returns a list of LPOI dictionaries.
+    Returns a tuple: (raw_first_page_data, all_lpoi_items_list).
+    raw_first_page_data is the dictionary response from the first page fetch,
+    or None if the first fetch fails.
+    all_lpoi_items_list is the accumulated list of all LPOI items from all pages.
     """
     url = f"{VERKADA_API_BASE_URL}{LPOI_ENDPOINT}"
     headers = {
@@ -101,6 +104,7 @@ def fetch_lpoi_data(api_token: str) -> list:
     all_lpoi = []
     page_token = None
     page_count = 0
+    raw_first_page_data = None # Store the raw data from the first page
 
     logger.info(f"Fetching License Plates of Interest from {url}")
 
@@ -131,6 +135,10 @@ def fetch_lpoi_data(api_token: str) -> list:
                 data = response.json()
                 logger.debug(f"Response JSON parsed successfully for page {page_count + 1}")
                 logger.debug(f"Response data type: {type(data)}")
+
+                if page_count == 0:
+                    raw_first_page_data = data # Store the raw data from the first page
+
                 if isinstance(data, dict):
                     logger.debug(f"Response data keys: {list(data.keys())}")
                     # The API response structure is a dictionary with 'license_plate_of_interest' key
@@ -181,7 +189,8 @@ def fetch_lpoi_data(api_token: str) -> list:
     # Avoid printing the full list here to keep output clean when imported.
     # Debug logs already capture the raw data per page.
 
-    return all_lpoi # Return the accumulated list
+    # Return the raw data from the first page and the accumulated list
+    return raw_first_page_data, all_lpoi
 
 def main():
     """Main entry point for the script."""
@@ -216,31 +225,41 @@ def main():
         api_token = get_api_token(api_key)
         logger.info(f"Successfully retrieved API token: {api_token[:10]}...")
 
-        # Fetch LPOI data
+        # Fetch LPOI data - fetch_lpoi_data now returns raw data and the list
         logger.debug("Attempting to fetch LPOI data...")
-
-        # Removed temporary stream handler removal/re-addition logic
-        lpoi_data = fetch_lpoi_data(api_token)
+        raw_lpoi_data, lpoi_list = fetch_lpoi_data(api_token)
 
         logger.info("Successfully retrieved License Plates of Interest data")
 
-        # Add debug logging for the fetched data structure
-        logger.debug(f"Type of fetched data: {type(lpoi_data)}")
-        if isinstance(lpoi_data, dict):
-            logger.debug(f"Keys in fetched data: {list(lpoi_data.keys())}")
-            # Corrected key from 'license_plates_of_interest' (plural) to 'license_plate_of_interest' (singular)
-            # Avoid printing the full list in debug log
-            # logger.debug(f"Value for 'license_plate_of_interest' key: {lpoi_data.get('license_plate_of_interest')}")
+        # Print the raw response in pretty format if available
+        if raw_lpoi_data is not None:
+            print("\n--- LPOI API Response (First Page) ---")
+            print(json.dumps(raw_lpoi_data, indent=4))
+            sys.stdout.flush() # Explicitly flush stdout after printing JSON
         else:
-            logger.debug("Fetched data is not a dictionary.")
+            logger.warning("Could not retrieve raw LPOI data to print.")
+
+
+        # Add debug logging for the fetched data structure (the list)
+        logger.debug(f"Type of fetched data list: {type(lpoi_list)}")
+        if isinstance(lpoi_list, list):
+            logger.debug(f"Length of fetched data list: {len(lpoi_list)}")
+            if lpoi_list:
+                logger.debug(f"First item keys: {list(lpoi_list[0].keys()) if isinstance(lpoi_list[0], dict) else 'Not a dict'}")
+        else:
+            logger.debug("Fetched data is not a list.")
+
 
         # Generate and save JSON template if data is available
         # Corrected key from 'license_plates_of_interest' (plural) to 'license_plate_of_interest' (singular)
-        lpoi_list = lpoi_data.get('license_plate_of_interest', []) if isinstance(lpoi_data, dict) else []
-        logger.debug(f"Length of lpoi_list: {len(lpoi_list)}")
+        # Avoid printing the full list in debug log
+        # logger.debug(f"Value for 'license_plate_of_interest' key: {lpoi_data.get('license_plate_of_interest')}")
+
+
+        logger.debug(f"Length of lpoi_list for template generation: {len(lpoi_list)}")
 
         if lpoi_list:
-            logger.debug(f"First LPOI item: {lpoi_list[0]}")
+            logger.debug(f"First LPOI item for template: {lpoi_list[0]}")
             template_data = create_template(lpoi_list[0])
             logger.debug(f"Template data created: {template_data}")
 

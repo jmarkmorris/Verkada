@@ -20,8 +20,8 @@ from src_helix.api_utils import get_api_token, VERKADA_API_BASE_URL
 # Import necessary fetch functions from other test scripts
 # Assuming these functions are designed to be imported and reused and return data.
 try:
-    # fetch_lpoi_data now returns a list directly after pagination was added
-    from src_helix.test_lpoi_api import fetch_lpoi_data as fetch_lpoi_list_data
+    # fetch_lpoi_data now returns a tuple: (raw_first_page_data, all_lpoi_items_list)
+    from src_helix.test_lpoi_api import fetch_lpoi_data as fetch_lpoi_data_and_list
     from src_helix.test_lpr_images_api_all_cameras import fetch_lpr_enabled_cameras, fetch_lpr_images_for_camera, format_timestamp
 except ImportError as e:
     print(f"Error importing necessary functions from other test scripts: {e}", file=sys.stderr)
@@ -121,12 +121,12 @@ def main():
 
         # --- Step 1: Fetch License Plates of Interest (LPOI) ---
         logger.info("Fetching License Plates of Interest...")
-        # fetch_lpoi_list_data now returns the list directly
-        lpoi_list_raw = fetch_lpoi_list_data(api_token) # Use the imported function
+        # fetch_lpoi_data_and_list now returns a tuple (raw_data, list_of_lpoi)
+        raw_lpoi_data, all_lpoi_items = fetch_lpoi_data_and_list(api_token) # Use the imported function
 
-        # Extract just the license plate strings and convert to a set for efficient lookup
-        # Ensure lpoi_list_raw is treated as a list
-        lpoi_plates = {item.get('license_plate') for item in lpoi_list_raw if isinstance(item, dict) and item.get('license_plate')}
+        # Extract just the license plate strings from the list and convert to a set for efficient lookup
+        # Ensure all_lpoi_items is treated as a list
+        lpoi_plates = {item.get('license_plate') for item in all_lpoi_items if isinstance(item, dict) and item.get('license_plate')}
 
         logger.info(f"Successfully retrieved {len(lpoi_plates)} License Plates of Interest.")
         logger.debug(f"LPOI list: {lpoi_plates}")
