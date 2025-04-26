@@ -133,7 +133,13 @@ def main():
     try:
         # Get API token
         logger.debug("Attempting to get API token...")
-        api_token = get_api_token(api_key)
+        # get_api_token now returns the full data dictionary
+        token_data = get_api_token(api_key) # Use imported function
+        # Extract the token string from the returned dictionary
+        api_token = token_data.get('token')
+        if not api_token:
+             raise ValueError("API token not found in response.")
+
         logger.info(f"Successfully retrieved API token: {api_token[:10]}...")
 
         # --- Step 1: Fetch License Plates of Interest (LPOI) ---

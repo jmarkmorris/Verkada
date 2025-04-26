@@ -11,6 +11,7 @@ import argparse
 import traceback
 
 # Import shared utility functions and constants
+# get_api_token now returns the full data dictionary
 from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, TOKEN_ENDPOINT
 
 # Get the logger for this module
@@ -82,32 +83,20 @@ def main():
     else:
         logger.debug(f"API_KEY found: {api_key[:5]}...{api_key[-4:]}")
 
+    token_data = None # Initialize to None
     try:
-        # Get API token
+        # Get API token - get_api_token now returns the full data dictionary
         logger.debug("Attempting to get API token...")
-        api_token = get_api_token(api_key)
-        logger.info(f"Successfully retrieved API token: {api_token[:10]}...")
-
-        # Re-fetch the data to get the full response for templating
-        # This is slightly inefficient but keeps get_api_token focused
-        url = f"{VERKADA_API_BASE_URL}{TOKEN_ENDPOINT}"
-        headers = {
-            "Accept": "application/json",
-            "x-api-key": api_key,
-        }
-        logger.debug(f"Re-fetching token data from {url} for templating...")
-        response = requests.post(url, headers=headers)
-        logger.debug(f"Token re-fetch response status code: {response.status_code}")
-        logger.debug(f"Token re-fetch response headers: {dict(response.headers)}")
-
-        response.raise_for_status()
-        token_data = response.json()
-        logger.debug("Successfully re-fetched token data for templating.")
-        logger.debug(f"Raw token re-fetch data: {token_data}")
+        token_data = get_api_token(api_key)
+        # Log the token itself from the returned data
+        retrieved_token = token_data.get('token', 'N/A')
+        logger.info(f"Successfully retrieved API token: {retrieved_token[:10]}...")
+        logger.debug(f"Retrieved API token data: {token_data}")
 
 
         # Print the response in pretty format
         print("\n--- Token API Response ---")
+        # Print the data returned by get_api_token
         print(json.dumps(token_data, indent=4))
         sys.stdout.flush() # Explicitly flush stdout after printing JSON
 
@@ -120,13 +109,17 @@ def main():
             # Save the template to the src_helix directory
             output_filename = "src_helix/api-json/test_token_api.json"
             logger.debug(f"Writing template to {output_filename}")
-            with open(output_filename, 'w') as f:
-                json.dump(template_data, f, indent=4)
-            logger.info(f"Generated JSON template: {output_filename}")
+            try:
+                with open(output_filename, 'w') as f:
+                    json.dump(template_data, f, indent=4)
+                logger.info(f"Generated JSON template: {output_filename}")
+            except Exception as write_e:
+                logger.error(f"Failed to write JSON template to {output_filename}: {write_e}", exc_info=True)
         else:
             logger.warning("No data returned from Token API to generate a template.")
 
     except Exception as e:
+        # Log the execution failure
         logger.error(f"Script execution failed: {e}", exc_info=True)
         sys.exit(1)
     finally:

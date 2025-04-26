@@ -15,7 +15,8 @@ import datetime
 import traceback
 
 # Import shared utility functions
-from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, fetch_lpr_enabled_cameras, fetch_lpr_images_for_camera, format_timestamp # Import functions from api_utils
+# Import _fetch_data from api_utils
+from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, LPR_TIMESTAMPS_ENDPOINT, fetch_lpr_enabled_cameras, fetch_lpr_images_for_camera, format_timestamp, _fetch_data # Import functions from api_utils
 
 # Get the logger for this module
 logger = logging.getLogger(__name__)
@@ -58,19 +59,13 @@ except Exception as e:
     logger.error(f"Failed to create file handler for {log_file_path}: {e}")
 
 
-LPR_TIMESTAMPS_ENDPOINT = "/cameras/v1/analytics/lpr/timestamps" # Endpoint for timestamps
+# LPR_TIMESTAMPS_ENDPOINT = "/cameras/v1/analytics/lpr/timestamps" # Endpoint for timestamps - Moved to api_utils
 
 
 def fetch_lpr_timestamps_data(api_token: str, camera_id: str, license_plate: str, history_days: int):
     """Fetch LPR timestamps data (detections) for a specific license plate from Verkada API."""
     end_time = int(time.time())
     start_time = end_time - (history_days * 24 * 60 * 60)
-
-    url = f"{VERKADA_API_BASE_URL}{LPR_TIMESTAMPS_ENDPOINT}"
-    headers = {
-        "Accept": "application/json",
-        "x-verkada-auth": api_token,
-    }
 
     params = {
         "camera_id": camera_id, # camera_id is a required parameter
@@ -81,46 +76,28 @@ def fetch_lpr_timestamps_data(api_token: str, camera_id: str, license_plate: str
     }
 
     try:
-        logger.info(f"Fetching LPR timestamps (detections) for plate '{license_plate}' on camera '{camera_id}' from {url} for the last {history_days} days")
-        logger.debug(f"Request headers: {headers}")
-        logger.debug(f"Request parameters: {params}")
-        logger.debug(f"Using API token: {api_token[:10]}...")
+        logger.info(f"Fetching LPR timestamps (detections) for plate '{license_plate}' on camera '{camera_id}' for the last {history_days} days")
         logger.debug(f"Date range: {datetime.datetime.fromtimestamp(start_time)} to {datetime.datetime.fromtimestamp(end_time)}")
 
-        response = requests.get(url, headers=headers, params=params)
-        logger.debug(f"LPR timestamps response status code: {response.status_code}")
-        logger.debug(f"LPR timestamps response headers: {dict(response.headers)}")
+        # Use the new _fetch_data function
+        data = _fetch_data(api_token, LPR_TIMESTAMPS_ENDPOINT, method='GET', params=params)
 
-        response.raise_for_status()
-
-        # Debug the raw response content length, but not the content itself
-        raw_content = response.content
-        logger.debug(f"Raw response content length: {len(raw_content)} bytes")
-        # Removed logging of raw_content preview to avoid dumping potential binary data
-
-
-        try:
-            data = response.json()
-            logger.debug(f"Response JSON parsed successfully")
-            logger.debug(f"Response data type: {type(data)}")
-            if isinstance(data, dict):
-                logger.debug(f"Response data keys: {list(data.keys())}")
-                # Check for the actual key 'detections'
-                if 'detections' in data:
-                    logger.debug(f"Found 'detections' key with {len(data['detections'])} items")
-                else:
-                    logger.debug(f"'detections' key not found in response") # Updated log
-            elif isinstance(data, list):
-                # This case is unlikely based on observed response, but kept for robustness
-                logger.debug(f"Response data is a list with {len(data)} items")
-                if data:
-                    pass
+        logger.debug(f"Response data type: {type(data)}")
+        if isinstance(data, dict):
+            logger.debug(f"Response data keys: {list(data.keys())}")
+            # Check for the actual key 'detections'
+            if 'detections' in data:
+                logger.debug(f"Found 'detections' key with {len(data['detections'])} items")
             else:
-                logger.debug(f"Response data is neither dict nor list: {type(data)}")
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse JSON response: {e}")
-            logger.error(f"Response content: {response.content}")
-            raise
+                logger.debug(f"'detections' key not found in response") # Updated log
+        elif isinstance(data, list):
+            # This case is unlikely based on observed response, but kept for robustness
+            logger.debug(f"Response data is a list with {len(data)} items")
+            if data:
+                pass
+        else:
+            logger.debug(f"Response data is neither dict nor list: {type(data)}")
+
 
         # Print the response in pretty format
         print(f"\n--- LPR Timestamps API Response for '{license_plate}' ---")
@@ -130,11 +107,7 @@ def fetch_lpr_timestamps_data(api_token: str, camera_id: str, license_plate: str
 
         return data
     except requests.exceptions.HTTPError as e:
-        logger.error(f"HTTP Error: {e}")
-        logger.error(f"Response status code: {e.response.status_code}")
-        logger.error(f"Response headers: {dict(e.response.headers)}")
-        logger.error(f"Response content: {e.response.content}")
-
+        # _fetch_data already logged the basic HTTP error details
         if e.response.status_code == 403:
             logger.error(f"403 Forbidden error for {LPR_TIMESTAMPS_ENDPOINT}. Possible permission issue.")
             logger.error("Troubleshooting steps:")
@@ -146,9 +119,9 @@ def fetch_lpr_timestamps_data(api_token: str, camera_id: str, license_plate: str
         # Re-raise the exception after logging
         raise
     except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        logger.error(f"Error type: {type(e)}")
-        logger.error(f"Full exception traceback: {traceback.format_exc()}")
+        # _fetch_data already logged the unexpected error with traceback
+        # Log a higher-level error here if needed, or just re-raise
+        logger.error(f"Failed to fetch LPR timestamps data: {e}")
         # Re-raise the exception after logging
         raise
 
@@ -205,7 +178,11 @@ def main():
     try:
         # Get API token
         logger.debug("Attempting to get API token...") # Debug before getting token
-        api_token = get_api_token(api_key) # Use imported function
+        # get_api_token now returns the full data dictionary
+        token_data = get_api_token(api_key) # Use imported function
+        api_token = token_data.get('token')
+        if not api_token:
+             raise ValueError("API token not found in response.")
         logger.info(f"Successfully retrieved API token: {api_token[:10]}...") # Keep this info log
         logger.debug(f"Retrieved API token: {api_token[:10]}...") # Debug token
 

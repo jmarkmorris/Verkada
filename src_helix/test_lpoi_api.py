@@ -13,7 +13,8 @@ import traceback
 # import contextlib # Removed unused import
 
 # Import shared utility functions and constants
-from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, TOKEN_ENDPOINT
+# Import _fetch_data from api_utils
+from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, LPOI_ENDPOINT, _fetch_data
 
 # Get the logger for this module
 logger = logging.getLogger(__name__)
@@ -61,7 +62,7 @@ except Exception as e:
 
 # VERKADA_API_BASE_URL = "https://api.verkada.com" # Removed, imported from api_utils
 # TOKEN_ENDPOINT = "/token" # Removed, imported from api_utils
-LPOI_ENDPOINT = "/cameras/v1/analytics/lpr/license_plate_of_interest"
+# LPOI_ENDPOINT = "/cameras/v1/analytics/lpr/license_plate_of_interest" # Moved to api_utils
 
 # def get_api_token(api_key: str) -> str: # Removed, imported from api_utils
 #     """Fetch short-lived API token."""
@@ -113,17 +114,12 @@ def fetch_lpoi_data(api_token: str) -> tuple[dict | None, list]:
     or None if the first fetch fails.
     all_lpoi_items_list is the accumulated list of all LPOI items from all pages.
     """
-    url = f"{VERKADA_API_BASE_URL}{LPOI_ENDPOINT}"
-    headers = {
-        "Accept": "application/json",
-        "x-verkada-auth": api_token,
-    }
     all_lpoi = []
     page_token = None
     page_count = 0
     raw_first_page_data = None # Store the raw data from the first page
 
-    logger.info(f"Fetching License Plates of Interest from {url}")
+    logger.info(f"Fetching License Plates of Interest from {LPOI_ENDPOINT}")
 
     while True:
         params = {
@@ -136,48 +132,30 @@ def fetch_lpoi_data(api_token: str) -> tuple[dict | None, list]:
              logger.debug(f"Fetching initial page {page_count + 1}")
 
         try:
-            logger.debug(f"Request headers: {headers}")
-            logger.debug(f"Request parameters: {params}")
-            logger.debug(f"Using API token: {api_token[:10]}...")
+            # Use the new _fetch_data function
+            data = _fetch_data(api_token, LPOI_ENDPOINT, method='GET', params=params)
 
-            response = requests.get(url, headers=headers, params=params)
-            logger.debug(f"LPOI response status code for page {page_count + 1}: {response.status_code}")
-            response.raise_for_status()
+            logger.debug(f"Response data type: {type(data)}")
 
-            # Debug the raw response content length
-            raw_content = response.content
-            logger.debug(f"Raw response content length for page {page_count + 1}: {len(raw_content)} bytes")
+            if page_count == 0:
+                raw_first_page_data = data # Store the raw data from the first page
 
-            try:
-                data = response.json()
-                logger.debug(f"Response JSON parsed successfully for page {page_count + 1}")
-                logger.debug(f"Response data type: {type(data)}")
+            if isinstance(data, dict):
+                logger.debug(f"Response data keys: {list(data.keys())}")
+                # The API response structure is a dictionary with 'license_plate_of_interest' key
+                current_page_items = data.get('license_plate_of_interest', [])
+                if not isinstance(current_page_items, list):
+                     logger.warning(f"Expected 'license_plate_of_interest' list in response for page {page_count + 1}, but got {type(current_page_items)}. Stopping pagination.")
+                     break # Stop if the key is not a list
 
-                if page_count == 0:
-                    raw_first_page_data = data # Store the raw data from the first page
+                logger.debug(f"Found 'license_plate_of_interest' key with {len(current_page_items)} items on page {page_count + 1}")
+                all_lpoi.extend(current_page_items)
+                logger.debug(f"Added {len(current_page_items)} items from page {page_count + 1}. Total LPOI fetched so far: {len(all_lpoi)}")
 
-                if isinstance(data, dict):
-                    logger.debug(f"Response data keys: {list(data.keys())}")
-                    # The API response structure is a dictionary with 'license_plate_of_interest' key
-                    current_page_items = data.get('license_plate_of_interest', [])
-                    if not isinstance(current_page_items, list):
-                         logger.warning(f"Expected 'license_plate_of_interest' list in response for page {page_count + 1}, but got {type(current_page_items)}. Stopping pagination.")
-                         break # Stop if the key is not a list
-
-                    logger.debug(f"Found 'license_plate_of_interest' key with {len(current_page_items)} items on page {page_count + 1}")
-                    all_lpoi.extend(current_page_items)
-                    logger.debug(f"Added {len(current_page_items)} items from page {page_count + 1}. Total LPOI fetched so far: {len(all_lpoi)}")
-
-                    page_token = data.get('next_page_token') # Get next page token from the dictionary
-                else:
-                    logger.warning(f"Response data for page {page_count + 1} is not a dictionary: {type(data)}. Stopping pagination.")
-                    break # Stop if the response is not a dictionary
-
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse JSON response for page {page_count + 1}: {e}")
-                logger.error(f"Response content: {response.content}")
-                # Stop pagination on JSON error
-                break
+                page_token = data.get('next_page_token') # Get next page token from the dictionary
+            else:
+                logger.warning(f"Response data for page {page_count + 1} is not a dictionary: {type(data)}. Stopping pagination.")
+                break # Stop if the response is not a dictionary
 
             page_count += 1
 
@@ -189,18 +167,11 @@ def fetch_lpoi_data(api_token: str) -> tuple[dict | None, list]:
                 logger.debug(f"No next page token found. Ending pagination.")
                 break # No more pages
 
-        except requests.exceptions.HTTPError as e:
-            logger.error(f"HTTP Error fetching LPOI, page {page_count + 1}: {e}")
-            logger.error(f"Response status code: {e.response.status_code}")
-            logger.error(f"Response headers: {dict(e.response.headers)}")
-            logger.error(f"Response content: {e.response.content}")
-            # Decide whether to stop or continue on error
-            # For now, we'll log and stop fetching
-            break
         except Exception as e:
-            logger.error(f"Unexpected error fetching LPOI, page {page_count + 1}: {e}", exc_info=True)
-            # Stop pagination on unexpected error
-            break
+            # _fetch_data already logged the specific error (HTTP, JSON, etc.)
+            # Log a higher-level error here and stop pagination
+            logger.error(f"Failed to fetch LPOI, page {page_count + 1}: {e}")
+            break # Stop pagination on any error
 
     logger.info(f"Finished fetching License Plates of Interest. Total LPOI fetched: {len(all_lpoi)}")
     # Avoid printing the full list here to keep output clean when imported.
@@ -236,10 +207,16 @@ def main():
     else:
         logger.debug(f"API_KEY found: {api_key[:5]}...{api_key[-4:]}")
 
+    raw_lpoi_data = None # Initialize to None
+    lpoi_list = [] # Initialize to empty list
     try:
         # Get API token
         logger.debug("Attempting to get API token...")
-        api_token = get_api_token(api_key)
+        # get_api_token now returns the full data dictionary
+        token_data = get_api_token(api_key)
+        api_token = token_data.get('token')
+        if not api_token:
+             raise ValueError("API token not found in response.")
         logger.info(f"Successfully retrieved API token: {api_token[:10]}...")
 
         # Fetch LPOI data - fetch_lpoi_data now returns raw data and the list
@@ -286,13 +263,17 @@ def main():
             # Save the template to the src_helix directory
             output_filename = "src_helix/api-json/test_lpoi_api.json"
             logger.debug(f"Writing template to {output_filename}")
-            with open(output_filename, 'w') as f:
-                json.dump(template_output, f, indent=4)
-            logger.info(f"Generated JSON template: {output_filename}")
+            try:
+                with open(output_filename, 'w') as f:
+                    json.dump(template_output, f, indent=4)
+                logger.info(f"Generated JSON template: {output_filename}")
+            except Exception as write_e:
+                logger.error(f"Failed to write JSON template to {output_filename}: {write_e}", exc_info=True)
         else:
             logger.warning("No License Plates of Interest found to generate a template.")
 
     except Exception as e:
+        # Log the execution failure
         logger.error(f"Script execution failed: {e}")
         logger.error(f"Full exception traceback: {traceback.format_exc()}")
         sys.exit(1)

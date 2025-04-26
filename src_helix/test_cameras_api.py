@@ -10,7 +10,8 @@ import requests
 import argparse
 
 # Import shared utility functions and constants
-from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, TOKEN_ENDPOINT
+# Import _fetch_data from api_utils
+from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, CAMERAS_ENDPOINT, _fetch_data
 
 # Get the logger for this module
 logger = logging.getLogger(__name__)
@@ -59,7 +60,7 @@ except Exception as e:
 
 # VERKADA_API_BASE_URL = "https://api.verkada.com" # Removed, imported from api_utils
 # TOKEN_ENDPOINT = "/token" # Removed, imported from api_utils
-CAMERAS_ENDPOINT = "/cameras/v1/devices"
+# CAMERAS_ENDPOINT = "/cameras/v1/devices" # Moved to api_utils
 
 # def get_api_token(api_key: str) -> str: # Removed, imported from api_utils
 #     """Fetch short-lived API token."""
@@ -103,20 +104,9 @@ CAMERAS_ENDPOINT = "/cameras/v1/devices"
 
 def fetch_cameras_data(api_token: str):
     """Fetch camera data from Verkada API."""
-    url = f"{VERKADA_API_BASE_URL}{CAMERAS_ENDPOINT}"
-    headers = {
-        "Accept": "application/json",
-        "x-verkada-auth": api_token,
-    }
-
     try:
-        logger.info(f"Fetching camera data from {url}")
-        response = requests.get(url, headers=headers)
-        logger.debug(f"Camera response status code: {response.status_code}") # Added debug log
-        logger.debug(f"Camera response headers: {dict(response.headers)}") # Added debug log
-
-        response.raise_for_status()
-        data = response.json()
+        # Use the new _fetch_data function
+        data = _fetch_data(api_token, CAMERAS_ENDPOINT, method='GET')
 
         logger.debug(f"Raw camera response data: {data}") # Added debug log for raw data
 
@@ -134,10 +124,10 @@ def fetch_cameras_data(api_token: str):
             logger.error("1. Check your API key permissions in Verkada Command")
             logger.error("2. Ensure you have the correct access level for this endpoint")
             logger.error("3. Verify the API key is not expired")
-        raise
+        raise # Re-raise the exception after logging
     except Exception as e: # Catch other potential exceptions during fetch/json parsing
         logger.error(f"Unexpected error during camera data fetch: {e}", exc_info=True) # Added traceback
-        raise
+        raise # Re-raise the exception
 
 
 def _list_cameras_for_menu(api_key: str):
@@ -165,26 +155,24 @@ def _list_cameras_for_menu(api_key: str):
     try:
         # Get API token using imported function
         # get_api_token now has debug logging, which goes to the file handler
-        api_token = get_api_token(api_key)
+        # It returns the full data, extract the token string
+        token_data = get_api_token(api_key)
+        api_token = token_data.get('token')
+        if not api_token:
+             raise ValueError("API token not found in response.")
 
-        # Fetch camera data (errors will be logged to file by the file handler)
-        url = f"{VERKADA_API_BASE_URL}{CAMERAS_ENDPOINT}"
-        headers = {
-            "Accept": "application/json",
-            "x-verkada-auth": api_token,
-        }
 
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        cameras = response.json()
+        # Fetch camera data using the new _fetch_data function
+        # Errors will be logged to file by the file handler via _fetch_data
+        data = _fetch_data(api_token, CAMERAS_ENDPOINT, method='GET')
 
         # These debug logs will now go to the file handler because the logger level is DEBUG
-        logger.debug(f"Raw camera response data in _list_for_menu: {cameras}")
-        logger.debug(f"Type of data received in _list_for_menu: {type(cameras)}")
+        logger.debug(f"Raw camera response data in _list_for_menu: {data}")
+        logger.debug(f"Type of data received in _list_for_menu: {type(data)}")
 
         # Filter for cameras with 'name' and 'camera_id' that contain 'License' (case-insensitive)
         all_cameras = [
-            cam for cam in cameras.get('cameras', []) # Use .get with default empty list
+            cam for cam in data.get('cameras', []) # Use .get with default empty list
             if isinstance(cam, dict) and 'name' in cam and 'camera_id' in cam and 'license' in cam['name'].lower()
         ]
 
@@ -253,9 +241,14 @@ def main():
         sys.exit(0) # Exit successfully after listing
 
     # Otherwise, proceed with the standard test script logic
+    cameras_data = None # Initialize to None
     try:
         # Get API token using imported function
-        api_token = get_api_token(api_key)
+        # get_api_token now returns the full data dictionary
+        token_data = get_api_token(api_key)
+        api_token = token_data.get('token')
+        if not api_token:
+             raise ValueError("API token not found in response.")
         logger.info(f"Successfully retrieved API token: {api_token[:10]}...")
 
         # Fetch camera data
@@ -288,13 +281,17 @@ def main():
             # Save the template to the src_helix/api-json directory
             output_filename = "src_helix/api-json/test_cameras_api.json"
             logger.debug(f"Writing template to {output_filename}")
-            with open(output_filename, 'w') as f:
-                json.dump(template_output, f, indent=4)
-            logger.info(f"Generated JSON template: {output_filename}")
+            try:
+                with open(output_filename, 'w') as f:
+                    json.dump(template_output, f, indent=4)
+                logger.info(f"Generated JSON template: {output_filename}")
+            except Exception as write_e:
+                logger.error(f"Failed to write JSON template to {output_filename}: {write_e}", exc_info=True)
         else:
             logger.warning("No cameras found to generate a template.")
 
     except Exception as e:
+        # Log the execution failure
         logger.error(f"Script execution failed: {e}", exc_info=True)
         sys.exit(1)
     finally:

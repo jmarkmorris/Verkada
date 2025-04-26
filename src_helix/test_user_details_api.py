@@ -12,7 +12,8 @@ import argparse
 import traceback
 
 # Import shared utility functions and constants
-from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, TOKEN_ENDPOINT
+# Import _fetch_data from api_utils
+from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, USERS_LIST_ENDPOINT, USER_DETAILS_ENDPOINT, _fetch_data
 
 # Get the logger for this module
 logger = logging.getLogger(__name__)
@@ -55,29 +56,15 @@ except Exception as e:
     logger.error(f"Failed to create file handler for {log_file_path}: {e}")
 
 
-USERS_LIST_ENDPOINT = "/access/v1/access_users"  # Endpoint for listing users
-USER_DETAILS_ENDPOINT = "/access/v1/access_users/user" # Endpoint for getting a specific user
+# USERS_LIST_ENDPOINT = "/access/v1/access_users"  # Endpoint for listing users - Moved to api_utils
+# USER_DETAILS_ENDPOINT = "/access/v1/access_users/user" # Endpoint for getting a specific user - Moved to api_utils
 
 
 def fetch_users_list_silently(api_token: str) -> list:
     """Fetch list of access users from Verkada API without printing full response."""
-    url = f"{VERKADA_API_BASE_URL}{USERS_LIST_ENDPOINT}"
-    headers = {
-        "Accept": "application/json",
-        "x-verkada-auth": api_token,
-    }
-
     try:
-        logger.info(f"Fetching access users list silently from {url}")
-        logger.debug(f"Request headers: {headers}")
-        logger.debug(f"Using API token: {api_token[:10]}...")
-
-        response = requests.get(url, headers=headers)
-        logger.debug(f"Users list (silent) response status code: {response.status_code}")
-        logger.debug(f"Users list (silent) response headers: {dict(response.headers)}")
-
-        response.raise_for_status()
-        data = response.json()
+        # Use the new _fetch_data function
+        data = _fetch_data(api_token, USERS_LIST_ENDPOINT, method='GET')
 
         logger.debug(f"Raw users list (silent) response data: {data}")
 
@@ -93,35 +80,21 @@ def fetch_users_list_silently(api_token: str) -> list:
         logger.error(f"Response content: {e.response.content}")
         if e.response.status_code == 403:
             logger.error(f"403 Forbidden error for {USERS_LIST_ENDPOINT}. Possible permission issue.")
-        raise
+        raise # Re-raise the exception after logging
     except Exception as e:
         logger.error(f"Unexpected error fetching user list silently: {e}", exc_info=True)
-        raise
+        raise # Re-raise the exception
 
 
 def fetch_user_details(api_token: str, user_id: str):
     """Fetch specific access user details from Verkada API."""
-    url = f"{VERKADA_API_BASE_URL}{USER_DETAILS_ENDPOINT}"
-    headers = {
-        "Accept": "application/json",
-        "x-verkada-auth": api_token,
-    }
     params = {
         "user_id": user_id
     }
 
     try:
-        logger.info(f"Fetching details for user_id {user_id} from {url}")
-        logger.debug(f"Request headers: {headers}")
-        logger.debug(f"Request parameters: {params}")
-        logger.debug(f"Using API token: {api_token[:10]}...")
-
-        response = requests.get(url, headers=headers, params=params)
-        logger.debug(f"User details response status code: {response.status_code}")
-        logger.debug(f"User details response headers: {dict(response.headers)}")
-
-        response.raise_for_status()
-        data = response.json()
+        # Use the new _fetch_data function
+        data = _fetch_data(api_token, USER_DETAILS_ENDPOINT, method='GET', params=params)
 
         logger.debug(f"Raw user details response data: {data}")
 
@@ -146,10 +119,10 @@ def fetch_user_details(api_token: str, user_id: str):
             logger.error("3. Verify the API key is not expired")
         elif e.response.status_code == 404:
              logger.error(f"404 Not Found error for {USER_DETAILS_ENDPOINT}. User may not exist.")
-        raise
+        raise # Re-raise the exception after logging
     except Exception as e:
         logger.error(f"Unexpected error fetching user details: {e}", exc_info=True)
-        raise
+        raise # Re-raise the exception
 
 
 def main():
@@ -204,7 +177,11 @@ def main():
     try:
         # Get API token
         logger.debug("Attempting to get API token...")
-        api_token = get_api_token(api_key)
+        # get_api_token now returns the full data dictionary
+        token_data = get_api_token(api_key)
+        api_token = token_data.get('token')
+        if not api_token:
+             raise ValueError("API token not found in response.")
         logger.info(f"Successfully retrieved API token: {api_token[:10]}...")
 
         # Fetch users list silently
@@ -273,6 +250,7 @@ def main():
             logger.info("Skipping user details fetch because the user list is empty.")
 
     except Exception as e:
+        # Log the execution failure
         logger.error(f"Script execution failed: {e}", exc_info=True)
         sys.exit(1)
     finally:

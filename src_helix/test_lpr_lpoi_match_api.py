@@ -13,6 +13,7 @@ import argparse
 import time
 import datetime
 import traceback
+from collections import defaultdict # To easily count detections per hour
 
 # Import shared utility functions
 from src_helix.api_utils import get_api_token, VERKADA_API_BASE_URL, fetch_lpr_enabled_cameras, fetch_lpr_images_for_camera, format_timestamp # Import functions from api_utils
@@ -133,7 +134,13 @@ def main():
     try:
         # Get API token
         logger.debug("Attempting to get API token...")
-        api_token = get_api_token(api_key)
+        # get_api_token now returns the full data dictionary
+        token_data = get_api_token(api_key) # Use imported function
+        # Extract the token string from the returned dictionary
+        api_token = token_data.get('token')
+        if not api_token:
+             raise ValueError("API token not found in response.")
+
         logger.info(f"Successfully retrieved API token: {api_token[:10]}...")
 
         # --- Step 1: Fetch License Plates of Interest (LPOI) ---

@@ -33,17 +33,9 @@
                 "siteId": "",
                 "siteName": "",
                 "type": "",
-                "userId": "",
-                "userInfo": {
-                    "email": "",
-                    "firstName": "",
-                    "lastName": "",
-                    "name": "",
-                    "organizationId": "",
-                    "phone": "",
-                    "userId": ""
-                },
-                "userName": "",
+                "userId": null,
+                "userInfo": null,
+                "userName": null,
                 "uuid": ""
             },
             "event_type": "",
