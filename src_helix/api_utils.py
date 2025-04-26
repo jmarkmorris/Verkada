@@ -192,10 +192,10 @@ def create_template(data: dict) -> dict:
             template[key] = [create_template(value[0])] if value else []
         elif isinstance(value, str):
             template[key] = ""
-        elif isinstance(value, (int, float)):
-            template[key] = 0
         elif isinstance(value, bool):
             template[key] = False # Or None, depending on desired empty state for boolean
+        elif isinstance(value, (int, float)):
+            template[key] = 0
         else:
             template[key] = None # Handles None and other types
 

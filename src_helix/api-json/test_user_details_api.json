@@ -1,0 +1,16 @@
+{
+    "access_groups": [
+        {
+            "group_id": "",
+            "name": ""
+        }
+    ],
+    "ble_unlock": false,
+    "cards": [],
+    "entry_code": "",
+    "has_profile_photo": false,
+    "license_plates": [],
+    "mfa_codes": [],
+    "remote_unlock": false,
+    "user_id": ""
+}
