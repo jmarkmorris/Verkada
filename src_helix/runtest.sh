@@ -1,5 +1,25 @@
 #!/bin/bash
 
+# Determine the directory where the script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+# Determine the repository root directory
+# Assume the script is either in the root or in src_helix
+if [[ "$SCRIPT_DIR" == */src_helix ]]; then
+  # If script is in src_helix, the root is the parent directory
+  REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+else
+  # If script is in the root (or elsewhere), assume the current directory is the root
+  REPO_ROOT="$SCRIPT_DIR"
+fi
+
+# Change to the repository root directory
+# This ensures all relative paths (like src_helix/...) and python module imports (src_helix....)
+# work correctly regardless of where the script was called from.
+cd "$REPO_ROOT" || { echo "Error: Could not change to repository root $REPO_ROOT"; exit 1; }
+
+# Now the script is running from the repository root.
+
 # Check if API_KEY is set
 if [ -z "$API_KEY" ]; then
   echo "Error: API_KEY environment variable is not set."
@@ -293,7 +313,7 @@ run_test() {
     # Fetch and list all cameras using test_cameras_api.py as a module with --list-for-menu
     # Capture both stdout and stderr
     # Use python -m to ensure imports within test_cameras_api work correctly
-    all_cameras_raw_output=$(python -m src_helix/test_cameras_api --log_level "$LOG_LEVEL" --list-for-menu 2>&1)
+    all_cameras_raw_output=$(python -m src_helix.test_cameras_api --log_level "$LOG_LEVEL" --list-for-menu 2>&1)
     script_exit_code=$? # Capture exit code
 
     if [ "$LOG_LEVEL" == "DEBUG" ]; then
