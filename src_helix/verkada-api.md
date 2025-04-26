@@ -41,11 +41,11 @@ The following endpoints have corresponding test scripts in the `src_helix/` dire
     *   *Documentation:* [Get Alerts](https://apidocs.verkada.com/reference/getnotificationsviewv1)
     *   *Note:* API response key is `notifications`.
 
-6.  **`GET /access/v1/events`**: Get Access Events.
+6.  **`GET /events/v1/access`**: Get Access Events.
     *   *Script:* `test_access_events_api.py`
     *   *Purpose:* Retrieves access control events (door unlocks, etc.) within a time range.
     *   *Documentation:* [Get Access Events](https://apidocs.verkada.com/reference/geteventsviewv1)
-    *   *Note:*  API response key is `events`.
+    *   *Note:* API response key is `events`. **Corrected endpoint path.**
 
 7.  **`GET /access/v1/access_users`**: Get All Access Users.
     *   *Script:* `test_users_list_api.py`

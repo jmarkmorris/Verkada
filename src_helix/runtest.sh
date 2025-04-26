@@ -39,7 +39,7 @@ USER_LIST_CACHE=""
 menu_items=(
   "1,Access Users List,/access/v1/access_users,src_helix/test_users_list_api.py"
   "2,Access User Details,/access/v1/access_users/user,src_helix/test_user_details_api.py"
-  "3,Access Events (fails),/access/v1/events,src_helix/test_access_events_api.py"
+  "3,Access Events,/events/v1/access,src_helix/test_access_events_api.py" 
   "4,LPR Images (fails),/cameras/v1/analytics/lpr/imagesview,src_helix/test_lpr_images_api.py"
   "5,LPOI List,/cameras/v1/analytics/lpr/license_plate_of_interest,src_helix/test_lpoi_api.py"
   "6,LPR Timestamps (Plate/Cam),/cameras/v1/analytics/lpr/timestamps,src_helix/test_lpr_timestamps_api.py"

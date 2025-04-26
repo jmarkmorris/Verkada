@@ -56,7 +56,7 @@ except Exception as e:
     logger.error(f"Failed to create file handler for {log_file_path}: {e}")
 
 
-ACCESS_EVENTS_ENDPOINT = "/access/v1/events" # Specific endpoint
+ACCESS_EVENTS_ENDPOINT = "/events/v1/access" # Specific endpoint - Corrected path
 
 def fetch_access_events_data(api_token: str, endpoint: str, params=None):
     """Fetch access events data from Verkada API."""
