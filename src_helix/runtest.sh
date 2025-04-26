@@ -53,16 +53,11 @@ menu_items=(
   "12|Access Events|/events/v1/access|src_helix/test_access_events_api.py"
 )
 
+# Define a fixed width for separators outside the main menu table
+FIXED_SEPARATOR_WIDTH=120
 
 # Function to display the menu
 show_menu() {
-  echo "============================================================================================================================================"
-  echo " Verkada API Test Script Runner"
-  echo "============================================================================================================================================"
-  # API_KEY and Current Log Level are shown elsewhere or not needed in the main menu
-  echo " Select a test to run:"
-  echo "============================================================================================================================================"
-
   # Calculate column widths
   local max_index_width=0
   local max_desc_width=0
@@ -94,15 +89,23 @@ show_menu() {
   max_api_width=$((max_api_width + 2))
   max_script_display_width=$((max_script_display_width + 2)) # Use display width
 
-  # Print header
+  # Calculate the total width of the menu table including separators and padding
+  # 4 columns + 3 separators (' | ')
+  local total_menu_width=$((max_index_width + max_desc_width + max_api_width + max_script_display_width + (3 * 3)))
+
+
+  # Print header using calculated width
+  printf "%*s\n" "$total_menu_width" | tr ' ' '=' # Top separator line (===)
+  echo " Verkada API Test Script Runner"
+  printf "%*s\n" "$total_menu_width" | tr ' ' '=' # Separator line (===)
+  echo " Select a test to run:"
+  printf "%*s\n" "$total_menu_width" | tr ' ' '=' # Separator line (===)
+
+  # Print table header
   printf "%-${max_index_width}s | %-${max_desc_width}s | %-${max_api_width}s | %-${max_script_display_width}s\n" "Test" "Description" "API Endpoint" "Script File" # Use display width in header
 
-  # Print separator line
-  printf "%-${max_index_width}s-|-%-${max_desc_width}s-|-%-${max_api_width}s-|-%-${max_script_display_width}s\n" \
-    "$(printf '%*s' "$max_index_width" | tr ' ' '-')" \
-    "$(printf '%*s' "$max_desc_width" | tr ' ' '-')" \
-    "$(printf '%*s' "$max_api_width" | tr ' ' '-')" \
-    "$(printf '%*s' "$max_script_display_width" | tr ' ' '-')" # Use display width
+  # Print header separator line (---)
+  printf "%*s\n" "$total_menu_width" | tr ' ' '-' # Header separator line (---)
 
   # Print menu items
   for item_string in "${menu_items[@]}"; do
@@ -113,24 +116,26 @@ show_menu() {
     printf "%-${max_index_width}s | %-${max_desc_width}s | %-${max_api_width}s | %-${max_script_display_width}s\n" "${index})" "$desc" "$api" "$script_display_name" # Print display name
   done
 
-  echo "--------------------------------------------------------------------------------------------------------------------------------------------"
+  # Print bottom separator line (---)
+  printf "%*s\n" "$total_menu_width" | tr ' ' '-' # Bottom separator line (---)
+
   echo " L) Change Log Level (Current: $LOG_LEVEL)"
   echo " 0) Exit"
-  echo "============================================================================================================================================"
+  printf "%*s\n" "$total_menu_width" | tr ' ' '=' # Bottom separator line (===)
 
   # The menu_items array is now global
 }
 
 # Function to change log level
 change_log_level() {
-  echo "--------------------------------------------------------------------------------------------------------------------------------------------"
+  printf "%*s\n" "$FIXED_SEPARATOR_WIDTH" | tr ' ' '-' # Separator line (---)
   echo " Select Log Level:"
   echo " 1) DEBUG    - Detailed information, useful for diagnosis"
   echo " 2) INFO     - Confirmation that things are working as expected"
   echo " 3) WARNING  - Something unexpected happened, but software is still working"
   echo " 4) ERROR    - Software failed to perform a function due to a problem"
   echo " 5) CRITICAL - Serious error, program may be unable to continue"
-  echo "--------------------------------------------------------------------------------------------------------------------------------------------"
+  printf "%*s\n" "$FIXED_SEPARATOR_WIDTH" | tr ' ' '-' # Separator line (---)
   read -p "Enter your choice [1-5]: " level_choice
 
   case $level_choice in
@@ -251,9 +256,9 @@ run_test() {
     fi
 
     # Build user selection menu (only if list is not empty and script succeeded)
-    echo "--------------------------------------------------------------------------------------------------------------------------------------------"
+    printf "%*s\n" "$FIXED_SEPARATOR_WIDTH" | tr ' ' '-' # Separator line (---)
     echo " Select a user for details test:"
-    echo "--------------------------------------------------------------------------------------------------------------------------------------------"
+    printf "%*s\n" "$FIXED_SEPARATOR_WIDTH" | tr ' ' '-' # Separator line (---)
     user_options=() # Array to store user_id
     user_display_options=() # Array to store display string (index)
     user_names=() # Array to store user_name for display confirmation
@@ -282,9 +287,9 @@ run_test() {
         return
     fi
 
-    echo "--------------------------------------------------------------------------------------------------------------------------------------------"
+    printf "%*s\n" "$FIXED_SEPARATOR_WIDTH" | tr ' ' '-' # Separator line (---)
     echo " 0) Cancel"
-    echo "--------------------------------------------------------------------------------------------------------------------------------------------"
+    printf "%*s\n" "$FIXED_SEPARATOR_WIDTH" | tr ' ' '-' # Separator line (---)
 
     read -p "Enter your choice: " user_choice
 
@@ -371,10 +376,10 @@ run_test() {
 
 
     # Build camera selection menu
-    echo "--------------------------------------------------------------------------------------------------------------------------------------------"
+    printf "%*s\n" "$FIXED_SEPARATOR_WIDTH" | tr ' ' '-' # Separator line (---)
     echo " Select a camera for LPR timestamps test:"
     echo " (Choose an LPR-enabled camera)"
-    echo "--------------------------------------------------------------------------------------------------------------------------------------------"
+    printf "%*s\n" "$FIXED_SEPARATOR_WIDTH" | tr ' ' '-' # Separator line (---)
     camera_options=()
     # Now pipe the filtered output to the while loop
     while IFS=',' read -r index camera_id camera_name; do
@@ -395,9 +400,9 @@ run_test() {
         return
     fi
 
-    echo "--------------------------------------------------------------------------------------------------------------------------------------------"
+    printf "%*s\n" "$FIXED_SEPARATOR_WIDTH" | tr ' ' '-' # Separator line (---)
     echo " 0) Cancel"
-    echo "--------------------------------------------------------------------------------------------------------------------------------------------"
+    printf "%*s\n" "$FIXED_SEPARATOR_WIDTH" | tr ' ' '-' # Separator line (---)
 
     read -p "Enter your choice: " camera_choice
 
@@ -450,13 +455,13 @@ run_test() {
       log_level_arg="--log_level $LOG_LEVEL"
   fi
 
-  echo "--------------------------------------------------------------------------------------------------------------------------------------------"
+  printf "%*s\n" "$FIXED_SEPARATOR_WIDTH" | tr ' ' '-' # Separator line (---)
   # Append the running_comment if it's set - REMOVED "$running_comment"
   echo "Running: python -m $module_path $log_level_arg ${extra_args[@]}"
-  echo "--------------------------------------------------------------------------------------------------------------------------------------------"
+  printf "%*s\n" "$FIXED_SEPARATOR_WIDTH" | tr ' ' '-' # Separator line (---)
   # Execute the script as a module
   python -m "$module_path" $log_level_arg "${extra_args[@]}"
-  echo "--------------------------------------------------------------------------------------------------------------------------------------------"
+  printf "%*s\n" "$FIXED_SEPARATOR_WIDTH" | tr ' ' '-' # Separator line (---)
   read -n 1 -s -r -p "Press any key to return to the menu..."
   echo # Add a newline after the key press
 }
