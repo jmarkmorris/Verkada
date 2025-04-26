@@ -146,44 +146,65 @@ change_log_level() {
   echo
 }
 
+# Function to get time-based arguments based on script name
+get_time_args() {
+    local script_name="$1"
+    local args=()
+
+    case "$script_name" in
+        src_helix/test_notifications_api.py|src_helix/test_access_events_api.py)
+            # Scripts requiring history_days (Test 4, 12)
+            read -p "Enter history_days (default: 7): " history_days
+            history_days=${history_days:-7} # Set default if empty
+            if ! [[ "$history_days" =~ ^[0-9]+$ ]]; then
+                echo "Invalid input. Using default history_days=7."
+                history_days=7
+            fi
+            args+=("--history_days" "$history_days")
+            ;;
+        src_helix/test_lpr_timestamps_api.py)
+             # Script requiring history_days (Test 10) - also needs camera_id and license_plate
+             # history_days prompt is handled here, camera/plate selection is handled later in run_test
+            read -p "Enter history_days (default: 7): " history_days
+            history_days=${history_days:-7} # Set default if empty
+            if ! [[ "$history_days" =~ ^[0-9]+$ ]]; then
+                echo "Invalid input. Using default history_days=7."
+                history_days=7
+            fi
+            args+=("--history_days" "$history_days")
+            ;;
+        src_helix/test_lpr_images_api_all_cameras.py|src_helix/test_lpr_lpoi_match_api.py|src_helix/test_lpr_non_lpoi_report_api.py|src_helix/test_lpr_hourly_report_api.py)
+            # Scripts requiring history_hours (Test 5, 6, 7, 8)
+            local default_hours=1
+            if [[ "$script_name" == "src_helix/test_lpr_hourly_report_api.py" ]]; then
+                default_hours=24 # Default to 24 hours for the hourly report
+            fi
+            read -p "Enter history_hours (default: $default_hours): " history_hours
+            history_hours=${history_hours:-$default_hours} # Set default
+            if ! [[ "$history_hours" =~ ^[0-9]+$ ]]; then
+                echo "Invalid input. Using default history_hours=$default_hours."
+                history_hours=$default_hours
+            fi
+            args+=("--history_hours" "$history_hours")
+            ;;
+        *)
+            # No time-based arguments needed for other scripts
+            ;;
+    esac
+
+    echo "${args[@]}" # Return the arguments as a space-separated string
+}
+
+
 # Function to run a test script
 run_test() {
   local script_name="$1"
   local extra_args=()
-  local running_comment="" # Variable to hold the comment for the 'Running:' line
 
-  # Handle scripts requiring history_days
-  # Updated list to reflect new numbering: Test 4, 10, 12
-  if [[ "$script_name" == "src_helix/test_notifications_api.py" || \
-        "$script_name" == "src_helix/test_lpr_timestamps_api.py" || \
-        "$script_name" == "src_helix/test_access_events_api.py" ]]; then # Test 4, 10, 12
-    read -p "Enter history_days (default: 7): " history_days
-    history_days=${history_days:-7} # Set default if empty
-    if ! [[ "$history_days" =~ ^[0-9]+$ ]]; then
-        echo "Invalid input. Using default history_days=7."
-        history_days=7
-    fi
-    extra_args+=("--history_days" "$history_days")
-  fi
-
-  # Handle scripts requiring history_hours (Test cases 5, 6, 7, and 8) - Updated numbering
-  if [[ "$script_name" == "src_helix/test_lpr_images_api_all_cameras.py" || \
-        "$script_name" == "src_helix/test_lpr_lpoi_match_api.py" || \
-        "$script_name" == "src_helix/test_lpr_non_lpoi_report_api.py" || \
-        "$script_name" == "src_helix/test_lpr_hourly_report_api.py" ]]; then # Test 5, 6, 7, 8
-    # Set default to 24 hours for the hourly report, 1 hour for others
-    local default_hours=1
-    if [[ "$script_name" == "src_helix/test_lpr_hourly_report_api.py" ]]; then
-        default_hours=24
-    fi
-    read -p "Enter history_hours (default: $default_hours): " history_hours
-    history_hours=${history_hours:-$default_hours} # Set default
-    if ! [[ "$history_hours" =~ ^[0-9]+$ ]]; then
-        echo "Invalid input. Using default history_hours=$default_hours."
-        history_hours=$default_hours
-    fi
-    extra_args+=("--history_hours" "$history_hours")
-  fi
+  # Get time-based arguments using the new function
+  # Read the space-separated string into the extra_args array
+  read -r -a time_args <<< "$(get_time_args "$script_name")"
+  extra_args+=("${time_args[@]}")
 
 
   # Handle script requiring user_index (Test 3: test_user_details_api.py) - Updated numbering

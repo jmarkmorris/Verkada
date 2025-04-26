@@ -4,16 +4,6 @@ This document outlines potential improvements for the Python API test scripts an
 
 ## Improvement Ideas (Ordered by Least Risk)
 
-2.  **Centralize JSON Template Saving:**
-    *   **Problem:** The logic for generating a template from data and saving it to a file is repeated in the `main` function of several test scripts (`test_cameras_api.py`, `test_token_api.py`, `test_user_details_api.py`, `test_access_events_api.py`, `test_lpoi_api.py`, `test_users_list_api.py`, `test_notifications_api.py`, `test_lpr_timestamps_api.py`).
-    *   **Idea:** Create a dedicated function in `api_utils.py` (e.g., `save_json_template(data, filename)`) that takes the data and the desired output path, generates the template using `create_template`, and writes it to the specified file with standard error handling. Each script's `main` would then call this single function.
-    *   **Risk:** Low. This refactoring only affects the template generation/saving step, which is separate from the API fetching and data display.
-
-3.  **Improve `runtest.sh` Argument Handling:**
-    *   **Problem:** The logic for prompting the user for `history_days` or `history_hours` and adding them to `extra_args` is repeated for different sets of scripts.
-    *   **Idea:** Consolidate the argument prompting logic within `runtest.sh` using functions or more structured conditional blocks to reduce repetition and make it easier to add new scripts with similar arguments.
-    *   **Risk:** Low. This only affects the shell script's user interaction and argument building, not the Python code execution itself.
-
 4.  **Refine `runtest.sh` Menu Parsing:**
     *   **Problem:** The parsing of the `menu_items` array relies on `IFS=',' read -r ... <<< "$item_string"`, which can be fragile if descriptions or filenames contain commas.
     *   **Idea:** Use a more robust method for storing and parsing menu items, such as an associative array or a different delimiter that is guaranteed not to appear in the data (e.g., a pipe `|`).
