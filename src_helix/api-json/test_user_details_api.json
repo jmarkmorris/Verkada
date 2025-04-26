@@ -9,7 +9,13 @@
     "cards": [],
     "entry_code": "",
     "has_profile_photo": false,
-    "license_plates": [],
+    "license_plates": [
+        {
+            "active": false,
+            "license_plate_number": "",
+            "name": ""
+        }
+    ],
     "mfa_codes": [],
     "remote_unlock": false,
     "user_id": ""

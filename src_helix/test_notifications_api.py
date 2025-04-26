@@ -12,68 +12,15 @@ import time
 import datetime
 import traceback
 
-# Import shared utility functions
+# Import shared utility functions and the centralized logging function
 # Import _fetch_data from api_utils
-from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, NOTIFICATIONS_ENDPOINT, _fetch_data
+from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, NOTIFICATIONS_ENDPOINT, _fetch_data, configure_logging
 
-# Get the logger for this module
+# Get the logger for this module. It will be configured by configure_logging in main.
 logger = logging.getLogger(__name__)
-# Set the logger level to DEBUG so it processes all messages
-logger.setLevel(logging.DEBUG)
 
-# Define the logs directory path
-LOGS_DIR = 'src_helix/logs'
+# Removed the old logging setup code (handlers, formatters, addHandler calls)
 
-# Add diagnostic prints for directory creation
-# print(f"DEBUG (notifications): Attempting to create log directory: {LOGS_DIR}", file=sys.stderr) # Removed diagnostic print
-
-# Ensure the logs directory exists
-try:
-    os.makedirs(LOGS_DIR, exist_ok=True)
-    # print(f"DEBUG (notifications): Log directory created or already exists: {LOGS_DIR}", file=sys.stderr) # Removed diagnostic print
-except Exception as e:
-    # print(f"ERROR (notifications): Failed to create log directory {LOGS_DIR}: {e}", file=sys.stderr) # Removed diagnostic print
-    logger.error(f"Failed to create log directory {LOGS_DIR}: {e}") # Log using logger instead
-    # Note: We don't exit here, just report the error and continue.
-
-# Create formatters and add them to the handlers
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-
-# Create handlers
-# Stream handler for stdout - level will be set based on user input in main
-stream_handler = logging.StreamHandler(sys.stdout)
-stream_handler.setFormatter(formatter) # Set formatter for stream handler
-
-# File handler for debug logs - always log DEBUG and above to file
-# Save log file in the src_helix/logs directory
-log_file_path = os.path.join(LOGS_DIR, 'notifications_api_debug.log')
-
-# Add diagnostic prints for file handler creation
-# print(f"DEBUG (notifications): Attempting to create file handler for: {log_file_path} (Absolute: {os.path.abspath(log_file_path)})", file=sys.stderr) # Removed diagnostic print
-
-try:
-    file_handler = logging.FileHandler(log_file_path)
-    # print(f"DEBUG (notifications): File handler created successfully for: {log_file_path}", file=sys.stderr) # Removed diagnostic print
-    file_handler.setLevel(logging.DEBUG) # File handler always logs DEBUG and above
-    file_handler.setFormatter(formatter) # Set formatter for file handler
-
-    # Add handlers to the logger
-    # Prevent duplicate handlers if the script is somehow imported multiple times
-    if not logger.handlers:
-        logger.addHandler(stream_handler)
-        logger.addHandler(file_handler)
-        # print("DEBUG (notifications): Handlers added to logger.", file=sys.stderr) # Removed diagnostic print
-    # else:
-         # print("DEBUG (notifications): Logger already has handlers.", file=sys.stderr) # Removed diagnostic print
-
-except Exception as e:
-    # print(f"ERROR (notifications): Failed to create file handler for {log_file_path}: {e}", file=sys.stderr) # Removed diagnostic print
-    logger.error(f"Failed to create file handler for {log_file_path}: {e}") # Log using logger instead
-    # If file handler creation fails, logging to file won't work.
-    # The script will continue, but file logs will be missing.
-
-
-# NOTIFICATIONS_ENDPOINT = "/cameras/v1/alerts" # Corrected endpoint path - Moved to api_utils
 
 def fetch_notifications_data(api_token: str, endpoint: str, params=None):
     """Fetch notifications data from Verkada API."""
@@ -142,7 +89,7 @@ def handle_notifications_api(api_token: str, history_days: int):
 def main():
     """Main entry point for the script."""
     # Add a critical log message at the very start of main
-    logger.critical("Script test_notifications_api.py started.")
+    # logger.critical("Script test_notifications_api.py started.") # Removed this specific critical log
 
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Test Verkada Notifications API")
@@ -155,17 +102,15 @@ def main():
     parser.add_argument(
         "--log_level",
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-        default='ERROR', # Changed default to ERROR
-        help="Set the logging level (default: ERROR)" # Updated help text
+        default='ERROR',
+        help="Set the logging level (default: ERROR)"
     )
 
     # Parse arguments
     args = parser.parse_args()
 
-    # Set logging level for the stream handler based on the argument.
-    # The file handler level is already set to DEBUG.
-    stream_handler.setLevel(getattr(logging, args.log_level))
-    logger.debug(f"Stream handler level set to: {args.log_level}")
+    # Configure logging using the centralized function
+    configure_logging(args.log_level)
 
     # Get API key from environment variable
     logger.debug("Attempting to get API_KEY environment variable...")

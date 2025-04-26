@@ -7,47 +7,90 @@ import os
 import time
 import datetime
 
-logger = logging.getLogger(__name__)
-# Set the logger level to DEBUG so it processes all messages
-logger.setLevel(logging.DEBUG)
-
 # Define the logs directory path
 LOGS_DIR = 'src_helix/logs'
 
 # Ensure the logs directory exists
+# This needs to happen before the file handler is potentially created
 os.makedirs(LOGS_DIR, exist_ok=True)
 
-# Create formatters and add them to the handlers
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+def configure_logging(log_level_str: str = 'ERROR'):
+    """
+    Configures the root logger with a stream handler and a file handler.
+    Removes existing handlers to prevent duplicates if called multiple times.
 
-# Create handlers for the api_utils logger
-# Stream handler for stdout (optional, but useful for immediate feedback)
-# Level will be set based on the calling script's configuration if propagation is enabled,
-# or can be set here if needed. Let's set it to WARNING by default for this handler.
-stream_handler = logging.StreamHandler(sys.stdout)
-stream_handler.setFormatter(formatter) # Set formatter for stream handler
-stream_handler.setLevel(logging.WARNING) # Default stream level for api_utils
+    Args:
+        log_level_str: The desired logging level as a string (e.g., 'DEBUG', 'INFO').
+                       Defaults to 'ERROR'.
+    """
+    # Get the root logger
+    root_logger = logging.getLogger()
 
-# File handler for debug logs - always log DEBUG and above to file
-# Save log file in the src_helix/logs directory
-log_file_path = os.path.join(LOGS_DIR, 'api_utils_debug.log')
+    # Remove existing handlers to prevent duplicates
+    if root_logger.hasHandlers():
+        # print("DEBUG: Root logger already has handlers. Removing them.", file=sys.stderr) # Diagnostic print
+        root_logger.handlers.clear()
+        # print("DEBUG: Root logger handlers cleared.", file=sys.stderr) # Diagnostic print
 
-# Create file handler, handling potential errors
-try:
-    file_handler = logging.FileHandler(log_file_path)
-    file_handler.setLevel(logging.DEBUG) # File handler always logs DEBUG and above
-    file_handler.setFormatter(formatter) # Set formatter for file handler
 
-    # Add handlers to the logger
-    # Prevent duplicate handlers if the module is somehow imported multiple times
-    if not logger.handlers:
-        logger.addHandler(stream_handler)
-        logger.addHandler(file_handler)
+    # Set the root logger level to DEBUG so it processes all messages
+    # Handlers will filter based on their own levels
+    root_logger.setLevel(logging.DEBUG)
+    # print(f"DEBUG: Root logger level set to DEBUG.", file=sys.stderr) # Diagnostic print
 
-except Exception as e:
-    # If file handler creation fails, log an error to the console (via stream_handler)
-    # and continue without the file handler.
-    logger.error(f"Failed to create file handler for {log_file_path}: {e}")
+
+    # Create formatters
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    # print("DEBUG: Formatter created.", file=sys.stderr) # Diagnostic print
+
+
+    # Create handlers
+    # Stream handler for stdout - level set by log_level_str argument
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setFormatter(formatter)
+    try:
+        stream_handler.setLevel(getattr(logging, log_level_str.upper()))
+        # print(f"DEBUG: Stream handler level set to {log_level_str.upper()}.", file=sys.stderr) # Diagnostic print
+    except AttributeError:
+        print(f"WARNING: Invalid log level string '{log_level_str}'. Defaulting stream handler to ERROR.", file=sys.stderr)
+        stream_handler.setLevel(logging.ERROR)
+        # print("DEBUG: Stream handler level defaulted to ERROR.", file=sys.stderr) # Diagnostic print
+
+
+    # File handler for debug logs - always log DEBUG and above to file
+    # Save log file in the src_helix/logs directory
+    log_file_path = os.path.join(LOGS_DIR, 'debug.log') # Centralized debug log file
+
+    # Create file handler, handling potential errors
+    file_handler = None # Initialize file_handler to None
+    try:
+        file_handler = logging.FileHandler(log_file_path)
+        file_handler.setLevel(logging.DEBUG) # File handler always logs DEBUG and above
+        file_handler.setFormatter(formatter)
+        # print(f"DEBUG: File handler created successfully for {log_file_path}.", file=sys.stderr) # Diagnostic print
+    except Exception as e:
+        # If file handler creation fails, log an error to the console (via stream_handler)
+        # and continue without the file handler.
+        # Use a temporary logger or print directly if root logger isn't fully set up yet
+        print(f"ERROR: Failed to create file handler for {log_file_path}: {e}", file=sys.stderr)
+        # print("DEBUG: File handler creation failed.", file=sys.stderr) # Diagnostic print
+
+
+    # Add handlers to the root logger
+    root_logger.addHandler(stream_handler)
+    # print("DEBUG: Stream handler added to root logger.", file=sys.stderr) # Diagnostic print
+    if file_handler: # Only add if file handler was successfully created
+        root_logger.addHandler(file_handler)
+        # print("DEBUG: File handler added to root logger.", file=sys.stderr) # Diagnostic print
+
+    # print("DEBUG: Logging configuration complete.", file=sys.stderr) # Diagnostic print
+
+
+# Get the logger for this module. It will inherit handlers from the root logger.
+logger = logging.getLogger(__name__)
+
+# Removed the old logging setup code from here.
+# The configure_logging function will be called by the main scripts.
 
 
 VERKADA_API_BASE_URL = "https://api.verkada.com"
@@ -302,3 +345,18 @@ def format_timestamp(unix_timestamp: int) -> str:
     except (TypeError, ValueError) as e:
         logger.warning(f"Could not format timestamp {unix_timestamp}: {e}")
         return str(unix_timestamp) # Return original value or error indicator
+
+# Example usage if api_utils were run directly (not intended for this project structure)
+# if __name__ == '__main__':
+#     configure_logging('DEBUG')
+#     logger.info("api_utils module started directly.")
+#     # Example API call (requires API_KEY env var)
+#     # api_key = os.environ.get('API_KEY')
+#     # if api_key:
+#     #     try:
+#     #         token_data = get_api_token(api_key)
+#     #         logger.info(f"Successfully got token: {token_data.get('token', 'N/A')[:10]}...")
+#     #     except Exception as e:
+#     #         logger.error(f"Failed to get token: {e}")
+#     # else:
+#     #     logger.warning("API_KEY not set, cannot test get_api_token.")

@@ -11,53 +11,14 @@ import requests
 import argparse
 import traceback
 
-# Import shared utility functions and constants
+# Import shared utility functions and constants, including configure_logging
 # Import _fetch_data from api_utils
-from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, USERS_LIST_ENDPOINT, USER_DETAILS_ENDPOINT, _fetch_data
+from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, USERS_LIST_ENDPOINT, USER_DETAILS_ENDPOINT, _fetch_data, configure_logging
 
-# Get the logger for this module
+# Get the logger for this module. It will be configured by configure_logging in main.
 logger = logging.getLogger(__name__)
-# Set the logger level to DEBUG so it processes all messages
-logger.setLevel(logging.DEBUG)
 
-# Define the logs directory path
-LOGS_DIR = 'src_helix/logs'
-
-# Ensure the logs directory exists
-os.makedirs(LOGS_DIR, exist_ok=True)
-
-# Create formatters and add them to the handlers
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-
-# Create handlers
-# Stream handler for stdout - level will be set based on user input in main
-stream_handler = logging.StreamHandler(sys.stdout)
-stream_handler.setFormatter(formatter) # Set formatter for stream handler
-
-# File handler for debug logs - always log DEBUG and above to file
-# Save log file in the src_helix/logs directory
-log_file_path = os.path.join(LOGS_DIR, 'user_details_api_debug.log')
-
-# Create file handler, handling potential errors
-try:
-    file_handler = logging.FileHandler(log_file_path)
-    file_handler.setLevel(logging.DEBUG) # File handler always logs DEBUG and above
-    file_handler.setFormatter(formatter) # Set formatter for file handler
-
-    # Add handlers to the logger
-    # Prevent duplicate handlers if the script is somehow imported multiple times
-    if not logger.handlers:
-        logger.addHandler(stream_handler)
-        logger.addHandler(file_handler)
-
-except Exception as e:
-    # If file handler creation fails, log an error to the console (via stream_handler)
-    # and continue without the file handler.
-    logger.error(f"Failed to create file handler for {log_file_path}: {e}")
-
-
-# USERS_LIST_ENDPOINT = "/access/v1/access_users"  # Endpoint for listing users - Moved to api_utils
-# USER_DETAILS_ENDPOINT = "/access/v1/access_users/user" # Endpoint for getting a specific user - Moved to api_utils
+# Removed the old logging setup code (handlers, formatters, addHandler calls)
 
 
 def fetch_users_list_silently(api_token: str) -> list:
@@ -132,8 +93,8 @@ def main():
     parser.add_argument(
         "--log_level",
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-        default='ERROR', # Changed default to ERROR
-        help="Set the logging level (default: ERROR)" # Updated help text
+        default='ERROR',
+        help="Set the logging level (default: ERROR)"
     )
     parser.add_argument(
         "--user_index",
@@ -160,10 +121,8 @@ def main():
     # Parse arguments
     args = parser.parse_args()
 
-    # Set logging level for the stream handler based on the argument.
-    # The file handler level is already set to DEBUG.
-    stream_handler.setLevel(getattr(logging, args.log_level))
-    logger.debug(f"Stream handler level set to: {args.log_level}")
+    # Configure logging using the centralized function
+    configure_logging(args.log_level)
 
     # Get API key from environment variable
     logger.debug("Attempting to get API_KEY environment variable...")
