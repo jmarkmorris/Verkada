@@ -72,7 +72,7 @@ except Exception as e:
     # The script will continue, but file logs will be missing.
 
 
-NOTIFICATIONS_ENDPOINT = "/notifications/v1/cameras" # Corrected endpoint path
+NOTIFICATIONS_ENDPOINT = "/cameras/v1/alerts" # Corrected endpoint path
 
 def fetch_notifications_data(api_token: str, endpoint: str, params=None):
     """Fetch notifications data from Verkada API."""
@@ -106,7 +106,7 @@ def fetch_notifications_data(api_token: str, endpoint: str, params=None):
     except requests.exceptions.HTTPError as e:
         logger.error(f"HTTP Error: {e}")
         logger.error(f"Response status code: {e.response.status_code}")
-        logger.error(f"Response headers: {dict(e.response.headers)}")
+        logger.error(f"Response headers: {dict(response.headers)}")
         logger.error(f"Response content: {e.response.content}")
 
         if e.response.status_code == 403:

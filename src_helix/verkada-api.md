@@ -29,7 +29,7 @@ The following endpoints have corresponding test scripts in the `src_helix/` dire
     *   *Documentation:* Implicitly covered in Camera API section.
     *   *Note:* API response key is `cameras`.
 
-4.  **`GET /notifications/v1/cameras`**: Get Alerts/Notifications.
+4.  **`GET /cameras/v1/alerts`**: Get Alerts/Notifications.
     *   *Script:* `test_notifications_api.py`
     *   *Purpose:* Retrieves camera-related notifications within a time range.
     *   *Documentation:* [Get Alerts](https://apidocs.verkada.com/reference/getnotificationsviewv1)
@@ -135,7 +135,7 @@ The following endpoints also return JSON data and could be implemented with test
 
 ## API Rate Limiting
 
-When fetching large amounts of data, particularly when paginating through results from endpoints like `/notifications/v1/cameras`, you may encounter API rate limits. If you receive `429 Too Many Requests` errors, consider adding a small delay (e.g., `time.sleep(0.1)`) between API calls, especially between fetching subsequent pages of results.
+When fetching large amounts of data, particularly when paginating through results from endpoints like `/cameras/v1/alerts`, you may encounter API rate limits. If you receive `429 Too Many Requests` errors, consider adding a small delay (e.g., `time.sleep(0.1)`) between API calls, especially between fetching subsequent pages of results.
 
 ---
 

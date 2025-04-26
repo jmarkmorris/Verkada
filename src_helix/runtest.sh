@@ -44,7 +44,7 @@ menu_items=(
   "4,LPOI List,/cameras/v1/analytics/lpr/license_plate_of_interest,src_helix/test_lpoi_api.py" # Re-numbered from 5
   "5,LPR Timestamps (Plate/Cam),/cameras/v1/analytics/lpr/timestamps,src_helix/test_lpr_timestamps_api.py" # Re-numbered from 6
   "6,Camera List,/cameras/v1/devices,src_helix/test_cameras_api.py" # Re-numbered from 7
-  "7,Camera Notifications,/notifications/v1/cameras,src_helix/test_notifications_api.py" # Re-numbered from 8, Corrected endpoint path
+  "7,Camera Notifications,/cameras/v1/alerts,src_helix/test_notifications_api.py" # Re-numbered from 8, Corrected endpoint path
   "8,Get API Token,/token,src_helix/test_token_api.py" # Re-numbered from 9
   "9,LPR Events (All LPR Cams),/cameras/v1/analytics/lpr/images,src_helix/test_lpr_images_api_all_cameras.py" # Re-numbered from 10
   "10,LPR Events (LPOI Match),/cameras/v1/analytics/lpr/images,src_helix/test_lpr_lpoi_match_api.py" # Re-numbered from 11
