@@ -10,24 +10,23 @@ This section lists Verkada API endpoints that return JSON text-based information
 
 ### Endpoints with Existing Test Scripts
 
-The following endpoints have corresponding test scripts in the `src_helix/` directory, runnable via `runtest.sh`:
+The following endpoints have corresponding test scripts in the `src_helix/` directory, runnable via `runtest.sh`. They are listed in the order they appear in the `runtest.sh` menu:
 
 1.  **`POST /token`**: Get API Token.
     *   *Script:* `test_token_api.py`
     *   *Purpose:* Exchanges API Key for a short-lived API Token.
     *   *Documentation:* [API Login](https://apidocs.verkada.com/reference/postloginapikeyviewv2)
 
-2.  **`GET /cameras/v1/analytics/lpr/license_plate_of_interest`**: Get All License Plates of Interest.
-    *   *Script:* `test_lpoi_api.py`
-    *   *Purpose:* Retrieves the configured LPOI list.
-    *   *Documentation:* [Get All License Plates of Interest](https://apidocs.verkada.com/reference/getlicenseplateofinterestviewv1)
-    *   *Note:* API response key is `license_plate_of_interest`.
+2.  **`GET /access/v1/access_users`**: Get All Access Users.
+    *   *Script:* `test_users_list_api.py`
+    *   *Purpose:* Retrieves a list of all users configured for access control.
+    *   *Documentation:* [Get All Access Users](https://apidocs.verkada.com/reference/getaccessmembersviewv1)
+    *   *Note:* API response key is `access_members`.
 
-3.  **`GET /cameras/v1/devices`**: Get Camera Data.
-    *   *Script:* `test_cameras_api.py`
-    *   *Purpose:* Retrieves a list of cameras in the organization.
-    *   *Documentation:* Implicitly covered in Camera API section.
-    *   *Note:* API response key is `cameras`.
+3.  **`GET /access/v1/access_users/user`**: Get Access Information Object.
+    *   *Script:* `test_user_details_api.py`
+    *   *Purpose:* Retrieves detailed information for a specific access user (requires `user_id` or `external_id`).
+    *   *Documentation:* [Get Access Information Object](https://apidocs.verkada.com/reference/getaccessuserviewv1)
 
 4.  **`GET /cameras/v1/alerts`**: Get Alerts/Notifications.
     *   *Script:* `test_notifications_api.py`
@@ -35,52 +34,53 @@ The following endpoints have corresponding test scripts in the `src_helix/` dire
     *   *Documentation:* [Get Alerts](https://apidocs.verkada.com/reference/getnotificationsviewv1)
     *   *Note:* API response key is `notifications`.
 
-5.  **`GET /events/v1/access`**: Get Access Events.
-    *   *Script:* `test_access_events_api.py`
-    *   *Purpose:* Retrieves access control events (door unlocks, etc.) within a time range.
-    *   *Documentation:* [Get Access Events](https://apidocs.verkada.com/reference/geteventsviewv1)
-    *   *Note:* API response key is `events`.
-
-6.  **`GET /access/v1/access_users`**: Get All Access Users.
-    *   *Script:* `test_users_list_api.py`
-    *   *Purpose:* Retrieves a list of all users configured for access control.
-    *   *Documentation:* [Get All Access Users](https://apidocs.verkada.com/reference/getaccessmembersviewv1)
-    *   *Note:* API response key is `access_members`.
-
-7.  **`GET /access/v1/access_users/user`**: Get Access Information Object.
-    *   *Script:* `test_user_details_api.py`
-    *   *Purpose:* Retrieves detailed information for a specific access user (requires `user_id` or `external_id`).
-    *   *Documentation:* [Get Access Information Object](https://apidocs.verkada.com/reference/getaccessuserviewv1)
-
-8.  **`GET /cameras/v1/analytics/lpr/timestamps`**: Get Timestamps for a specific License Plate.
-    *   *Script:* `test_lpr_timestamps_api.py`
-    *   *Purpose:* Retrieves timestamps when a specific license plate was seen (requires `license_plate` and `camera_id` parameters).
-    *   *Documentation:* [Get Timestamps for a specific License Plate](https://apidocs.verkada.com/reference/getlprtimestampsviewv1)
-    *   *Note:* API response is a dictionary containing a `detections` key, which holds the list of timestamp/detection events.
-
-9.  **`GET /cameras/v1/analytics/lpr/images`**: Get seen license plates (All LPR Cameras).
+5.  **`GET /cameras/v1/analytics/lpr/images`**: Get seen license plates (All LPR Cameras).
     *   *Script:* `test_lpr_images_api_all_cameras.py`
     *   *Purpose:* Fetches LPR detection events for *all* LPR-enabled cameras within a time range and displays them in a table.
     *   *Documentation:* [Get seen license plates](https://apidocs.verkada.com/reference/getlprimagesview)
     *   *Note:* This script iterates through LPR-enabled cameras found via `/cameras/v1/devices`.
 
-10. **`GET /cameras/v1/analytics/lpr/images`**: Get seen license plates (LPOI Match Report).
+6.  **`GET /cameras/v1/analytics/lpr/images`**: Get seen license plates (LPOI Match Report).
     *   *Script:* `test_lpr_lpoi_match_api.py`
     *   *Purpose:* Fetches LPR detection events for all LPR-enabled cameras within a time range and filters for matches against the LPOI list.
     *   *Documentation:* [Get seen license plates](https://apidocs.verkada.com/reference/getlprimagesview)
     *   *Note:* This script combines data from `/cameras/v1/analytics/lpr/license_plate_of_interest` and `/cameras/v1/analytics/lpr/images`.
 
-11. **`GET /cameras/v1/analytics/lpr/images`**: Get seen license plates (Non-LPOI Report).
+7.  **`GET /cameras/v1/analytics/lpr/images`**: Get seen license plates (Non-LPOI Report).
     *   *Script:* `test_lpr_non_lpoi_report_api.py`
     *   *Purpose:* Fetches LPR detection events for all LPR-enabled cameras within a time range and filters for detections that *do not* match any plate in the LPOI list.
     *   *Documentation:* [Get seen license plates](https://apidocs.verkada.com/reference/getlprimagesview)
     *   *Note:* This script combines data from `/cameras/v1/analytics/lpr/license_plate_of_interest` and `/cameras/v1/analytics/lpr/images`.
 
-12. **`GET /cameras/v1/analytics/lpr/images`**: Get seen license plates (Hourly Report).
+8.  **`GET /cameras/v1/analytics/lpr/images`**: Get seen license plates (Hourly Report).
     *   *Script:* `test_lpr_hourly_report_api.py`
     *   *Purpose:* Fetches LPR detection events for all LPR-enabled cameras within a time range, categorizes them as LPOI or Non-LPOI, and provides an hourly count breakdown.
     *   *Documentation:* [Get seen license plates](https://apidocs.verkada.com/reference/getlprimagesview)
     *   *Note:* This script combines data from `/cameras/v1/analytics/lpr/license_plate_of_interest` and `/cameras/v1/analytics/lpr/images`.
+
+9.  **`GET /cameras/v1/analytics/lpr/license_plate_of_interest`**: Get All License Plates of Interest.
+    *   *Script:* `test_lpoi_api.py`
+    *   *Purpose:* Retrieves the configured LPOI list.
+    *   *Documentation:* [Get All License Plates of Interest](https://apidocs.verkada.com/reference/getlicenseplateofinterestviewv1)
+    *   *Note:* API response key is `license_plate_of_interest`.
+
+10. **`GET /cameras/v1/analytics/lpr/timestamps`**: Get Timestamps for a specific License Plate.
+    *   *Script:* `test_lpr_timestamps_api.py`
+    *   *Purpose:* Retrieves timestamps when a specific license plate was seen (requires `license_plate` and `camera_id` parameters).
+    *   *Documentation:* [Get Timestamps for a specific License Plate](https://apidocs.verkada.com/reference/getlprtimestampsviewv1)
+    *   *Note:* API response is a dictionary containing a `detections` key, which holds the list of timestamp/detection events.
+
+11. **`GET /cameras/v1/devices`**: Get Camera Data.
+    *   *Script:* `test_cameras_api.py`
+    *   *Purpose:* Retrieves a list of cameras in the organization.
+    *   *Documentation:* Implicitly covered in Camera API section.
+    *   *Note:* API response key is `cameras`.
+
+12. **`GET /events/v1/access`**: Get Access Events.
+    *   *Script:* `test_access_events_api.py`
+    *   *Purpose:* Retrieves access control events (door unlocks, etc.) within a time range.
+    *   *Documentation:* [Get Access Events](https://apidocs.verkada.com/reference/geteventsviewv1)
+    *   *Note:* API response key is `events`.
 
 ### Potential Future Endpoints for Testing
 
