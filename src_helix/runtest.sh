@@ -66,45 +66,50 @@ show_menu() {
   local max_index_width=0
   local max_desc_width=0
   local max_api_width=0
-  local max_script_width=0
+  local max_script_display_width=0 # New variable for displayed script name width
 
   for item_string in "${menu_items[@]}"; do
     # Parse the comma-separated string
     IFS=',' read -r index desc api script <<< "$item_string"
 
+    # Get the script filename without the path for display
+    local script_display_name=$(basename "$script")
+
     # Use printf %s to handle potential special characters in strings
     local index_len=$(printf "%s" "$index" | wc -m)
     local desc_len=$(printf "%s" "$desc" | wc -m)
     local api_len=$(printf "%s" "$api" | wc -m)
-    local script_len=$(printf "%s" "$script" | wc -m)
+    local script_display_len=$(printf "%s" "$script_display_name" | wc -m) # Use display name length
 
     if (( index_len > max_index_width )); then max_index_width=$index_len; fi
     if (( desc_len > max_desc_width )); then max_desc_width=$desc_len; fi
     if (( api_len > max_api_width )); then max_api_width=$api_len; fi
-    if (( script_len > max_script_width )); then max_script_width=$script_len; fi
+    if (( script_display_len > max_script_display_width )); then max_script_display_width=$script_display_len; fi # Use display width
   done
 
   # Add some padding
   max_index_width=$((max_index_width + 2))
   max_desc_width=$((max_desc_width + 2))
   max_api_width=$((max_api_width + 2))
-  max_script_width=$((max_script_width + 2))
+  max_script_display_width=$((max_script_display_width + 2)) # Use display width
 
   # Print header
-  printf "%-${max_index_width}s | %-${max_desc_width}s | %-${max_api_width}s | %-${max_script_width}s\n" "Test" "Description" "API Endpoint" "Script File"
+  printf "%-${max_index_width}s | %-${max_desc_width}s | %-${max_api_width}s | %-${max_script_display_width}s\n" "Test" "Description" "API Endpoint" "Script File" # Use display width in header
 
   # Print separator line
-  printf "%-${max_index_width}s-|-%-${max_desc_width}s-|-%-${max_api_width}s-|-%-${max_script_width}s\n" \
+  printf "%-${max_index_width}s-|-%-${max_desc_width}s-|-%-${max_api_width}s-|-%-${max_script_display_width}s\n" \
     "$(printf '%*s' "$max_index_width" | tr ' ' '-')" \
     "$(printf '%*s' "$max_desc_width" | tr ' ' '-')" \
     "$(printf '%*s' "$max_api_width" | tr ' ' '-')" \
-    "$(printf '%*s' "$max_script_width" | tr ' ' '-')"
+    "$(printf '%*s' "$max_script_display_width" | tr ' ' '-')" # Use display width
 
   # Print menu items
   for item_string in "${menu_items[@]}"; do
     # Parse the comma-separated string
     IFS=',' read -r index desc api script <<< "$item_string"
-    printf "%-${max_index_width}s | %-${max_desc_width}s | %-${max_api_width}s | %-${max_script_width}s\n" "${index})" "$desc" "$api" "$script"
+    # Get the script filename without the path for display
+    local script_display_name=$(basename "$script")
+    printf "%-${max_index_width}s | %-${max_desc_width}s | %-${max_api_width}s | %-${max_script_display_width}s\n" "${index})" "$desc" "$api" "$script_display_name" # Print display name
   done
 
   echo "--------------------------------------------------------------------------------------------------------------------------------------------"
