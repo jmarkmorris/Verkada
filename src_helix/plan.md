@@ -4,10 +4,6 @@ This document outlines potential improvements for the Python API test scripts an
 
 ## Improvement Ideas (Ordered by Least Risk)
 
-4.  **Refine `runtest.sh` Menu Parsing:**
-    *   **Problem:** The parsing of the `menu_items` array relies on `IFS=',' read -r ... <<< "$item_string"`, which can be fragile if descriptions or filenames contain commas.
-    *   **Idea:** Use a more robust method for storing and parsing menu items, such as an associative array or a different delimiter that is guaranteed not to appear in the data (e.g., a pipe `|`).
-    *   **Risk:** Low. This is an internal improvement to the shell script's data handling.
 
 5.  **Centralize Pagination Logic:**
     *   **Problem:** The pagination logic (checking for `next_page_token`, looping, accumulating results) is repeated in `fetch_lpr_images_for_camera` and `fetch_lpoi_data`.

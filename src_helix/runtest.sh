@@ -34,22 +34,23 @@ LOG_LEVEL="ERROR"
 # Variable to store the captured user list for selection (used by test_user_details_api.py)
 USER_LIST_CACHE=""
 
-# Define menu items as an array of strings: "index,description,api_endpoint,script_file"
+# Define menu items as an array of strings: "index|description|api_endpoint|script_file"
+# Using '|' as a delimiter instead of ',' to handle commas in descriptions/paths.
 # Defined globally so it's accessible in the main loop
 # Order: /token first, then others sorted alphabetically by API Endpoint
 menu_items=(
-  "1,Get API Token,/token,src_helix/test_token_api.py"
-  "2,Access Users List,/access/v1/access_users,src_helix/test_users_list_api.py"
-  "3,Access User Details,/access/v1/access_users/user,src_helix/test_user_details_api.py"
-  "4,Camera Notifications,/cameras/v1/alerts,src_helix/test_notifications_api.py"
-  "5,LPR Events (All LPR Cams),/cameras/v1/analytics/lpr/images,src_helix/test_lpr_images_api_all_cameras.py"
-  "6,LPR Events (LPOI Match),/cameras/v1/analytics/lpr/images,src_helix/test_lpr_lpoi_match_api.py"
-  "7,LPR Events (Non-LPOI),/cameras/v1/analytics/lpr/images,src_helix/test_lpr_non_lpoi_report_api.py"
-  "8,LPR Events (Hourly Report),/cameras/v1/analytics/lpr/images,src_helix/test_lpr_hourly_report_api.py"
-  "9,LPOI List,/cameras/v1/analytics/lpr/license_plate_of_interest,src_helix/test_lpoi_api.py"
-  "10,LPR Timestamps (Plate/Cam),/cameras/v1/analytics/lpr/timestamps,src_helix/test_lpr_timestamps_api.py"
-  "11,Camera List,/cameras/v1/devices,src_helix/test_cameras_api.py"
-  "12,Access Events,/events/v1/access,src_helix/test_access_events_api.py"
+  "1|Get API Token|/token|src_helix/test_token_api.py"
+  "2|Access Users List|/access/v1/access_users|src_helix/test_users_list_api.py"
+  "3|Access User Details|/access/v1/access_users/user|src_helix/test_user_details_api.py"
+  "4|Camera Notifications|/cameras/v1/alerts|src_helix/test_notifications_api.py"
+  "5|LPR Events (All LPR Cams)|/cameras/v1/analytics/lpr/images|src_helix/test_lpr_images_api_all_cameras.py"
+  "6|LPR Events (LPOI Match)|/cameras/v1/analytics/lpr/images|src_helix/test_lpr_lpoi_match_api.py"
+  "7|LPR Events (Non-LPOI)|/cameras/v1/analytics/lpr/images|src_helix/test_lpr_non_lpoi_report_api.py"
+  "8|LPR Events (Hourly Report)|/cameras/v1/analytics/lpr/images|src_helix/test_lpr_hourly_report_api.py"
+  "9|LPOI List|/cameras/v1/analytics/lpr/license_plate_of_interest|src_helix/test_lpoi_api.py"
+  "10|LPR Timestamps (Plate/Cam)|/cameras/v1/analytics/lpr/timestamps|src_helix/test_lpr_timestamps_api.py"
+  "11|Camera List|/cameras/v1/devices|src_helix/test_cameras_api.py"
+  "12|Access Events|/events/v1/access|src_helix/test_access_events_api.py"
 )
 
 
@@ -69,8 +70,8 @@ show_menu() {
   local max_script_display_width=0 # New variable for displayed script name width
 
   for item_string in "${menu_items[@]}"; do
-    # Parse the comma-separated string
-    IFS=',' read -r index desc api script <<< "$item_string"
+    # Parse the pipe-separated string
+    IFS='|' read -r index desc api script <<< "$item_string"
 
     # Get the script filename without the path for display
     local script_display_name=$(basename "$script")
@@ -105,8 +106,8 @@ show_menu() {
 
   # Print menu items
   for item_string in "${menu_items[@]}"; do
-    # Parse the comma-separated string
-    IFS=',' read -r index desc api script <<< "$item_string"
+    # Parse the pipe-separated string
+    IFS='|' read -r index desc api script <<< "$item_string"
     # Get the script filename without the path for display
     local script_display_name=$(basename "$script")
     printf "%-${max_index_width}s | %-${max_desc_width}s | %-${max_api_width}s | %-${max_script_display_width}s\n" "${index})" "$desc" "$api" "$script_display_name" # Print display name
@@ -476,8 +477,8 @@ while true; do
   if [[ "$choice" =~ ^[0-9]+$ ]]; then
       # Iterate through the menu_items array to find the matching index
       for item_string in "${menu_items[@]}"; do
-          # Parse the comma-separated string
-          IFS=',' read -r index desc api script <<< "$item_string"
+          # Parse the pipe-separated string
+          IFS='|' read -r index desc api script <<< "$item_string"
           if [[ "$index" == "$choice" ]]; then
               selected_script="$script"
               break
