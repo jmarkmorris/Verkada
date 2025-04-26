@@ -110,9 +110,10 @@ def fetch_user_details(api_token: str, user_id: str):
         logger.debug(f"Raw user details response data: {data}")
 
         # Print the details response in pretty format
-        print(f"\n--- Access User Details API Response (User ID: {user_id}) ---")
-        print(json.dumps(data, indent=4))
-        sys.stdout.flush() # Explicitly flush stdout after printing JSON
+        # This print happens AFTER the custom print line below
+        # print(f"\n--- Access User Details API Response (User ID: {user_id}) ---")
+        # print(json.dumps(data, indent=4))
+        # sys.stdout.flush() # Explicitly flush stdout after printing JSON
 
         return data
     except requests.exceptions.HTTPError as e:
@@ -151,6 +152,21 @@ def main():
         default=0,
         help="Index of the user in the list to fetch details for (default: 0)"
     )
+    # Add new argument to receive the 1-based user number from the menu
+    parser.add_argument(
+        "--user_number",
+        type=int,
+        required=False, # Not required if script is run directly
+        help="The 1-based number of the user selected from the menu"
+    )
+    # Removed --user_display_string argument
+    # parser.add_argument(
+    #     "--user_display_string",
+    #     type=str,
+    #     required=False, # Not required if script is run directly
+    #     help="The full display string of the user selected from the menu"
+    # )
+
 
     # Parse arguments
     args = parser.parse_args()
@@ -186,17 +202,30 @@ def main():
                 logger.error(f"Invalid user_index {args.user_index}. Must be between 0 and {len(users_list) - 1}.")
                 sys.exit(1)
 
-            selected_user = users_list[args.user_index]
-            user_id_to_fetch = selected_user.get('user_id')
+            selected_user_from_list = users_list[args.user_index] # Keep this for the base record print
+            user_id_to_fetch = selected_user_from_list.get('user_id')
 
             if user_id_to_fetch:
                 # Print the base user record before fetching details
                 print("\n--- Base User Record (from list) ---")
-                print(json.dumps(selected_user, indent=4))
+                print(json.dumps(selected_user_from_list, indent=4))
                 sys.stdout.flush() # Explicitly flush stdout
 
                 logger.info(f"Attempting to fetch details for user at index {args.user_index} (ID: {user_id_to_fetch})...")
                 user_details = fetch_user_details(api_token, user_id_to_fetch)
+
+                # Print the custom line using the user number and name from details
+                if user_details and isinstance(user_details, dict):
+                    full_name_from_details = user_details.get('full_name', 'Unnamed User') # Get name from details
+                    user_number_display = args.user_number if args.user_number is not None else args.user_index + 1 # Use 1-based number if provided, else calculate from index
+                    print(f"\nDetail information for user {user_number_display}) {full_name_from_details}")
+                    sys.stdout.flush() # Explicitly flush stdout
+
+                    # Now print the full details response
+                    print(f"\n--- Access User Details API Response (User ID: {user_id_to_fetch}) ---")
+                    print(json.dumps(user_details, indent=4))
+                    sys.stdout.flush() # Explicitly flush stdout
+
                 logger.info(f"Successfully retrieved details for user ID: {user_id_to_fetch}")
 
                 # Generate and save JSON template if details were fetched

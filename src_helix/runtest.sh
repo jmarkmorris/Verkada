@@ -124,6 +124,7 @@ change_log_level() {
 run_test() {
   local script_name="$1"
   local extra_args=()
+  local running_comment="" # Variable to hold the comment for the 'Running:' line
 
   # Handle scripts requiring history_days
   if [[ "$script_name" == "src_helix/test_lpr_images_api.py" || \
@@ -208,14 +209,18 @@ run_test() {
     user_options=() # Array to store user_id
     user_display_options=() # Array to store display string (index)
     user_names=() # Array to store user_name for display confirmation
+    # user_display_strings=() # Array to store the full display string for passing to script - REMOVED
+
     # Now pipe the filtered output to the while loop
     while IFS=',' read -r index user_id user_name; do
       # The filtering should ensure we only get valid lines, but keep the check for safety
       if [ -n "$index" ] && [ -n "$user_id" ] && [ -n "$user_name" ]; then
-        echo " $index) $user_name (ID: ${user_id:0:5}...)" # Display user name and truncated ID
+        local display_string="${index}) $user_name (ID: ${user_id:0:5}...)"
+        echo " $display_string" # Display user name and truncated ID
         user_options+=("$user_id") # Store user_id in an array
         user_display_options+=("$index") # Store the display index
         user_names+=("$user_name") # Store user name
+        # user_display_strings+=("$display_string") # Store the full display string - REMOVED
       fi
     done <<< "$user_list_output" # Use the filtered output
 
@@ -268,10 +273,18 @@ run_test() {
       return
     fi
 
-    # Pass the 0-based index to the script
+    # Pass the 0-based index and the 1-based user number to the script
     # Print a confirmation message using the user's choice and the selected user's name/ID
     echo "Selected choice $user_choice: ${user_names[$selected_index]} (ID: ${user_options[$selected_index]:0:5}...)"
+
+    # Add arguments for user index (0-based) and user number (1-based)
     extra_args+=("--user_index" "$selected_index")
+    extra_args+=("--user_number" "$user_choice")
+    # Removed --user_display_string argument
+
+    # Set the running comment for this specific script
+    # The comment is no longer needed as --user_number is explicit
+    # running_comment="# corresponds to user number $user_choice"
   fi
 
   # Handle script requiring license_plate and camera_id (via selection menu)
@@ -389,6 +402,7 @@ run_test() {
   fi
 
   echo "--------------------------------------------------------------------------------"
+  # Append the running_comment if it's set - REMOVED "$running_comment"
   echo "Running: python -m $module_path $log_level_arg ${extra_args[@]}"
   echo "--------------------------------------------------------------------------------"
   # Execute the script as a module
@@ -438,5 +452,3 @@ while true; do
   esac
   echo # Add a newline for spacing before next menu display
 done
-```
-```python
