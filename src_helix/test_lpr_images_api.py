@@ -2,7 +2,7 @@
 """
 Script to test the Verkada LPR Images API endpoint.
 """
-import os
+import os # Import os
 import sys
 import json
 import logging
@@ -19,24 +19,54 @@ logger = logging.getLogger(__name__)
 # Set the logger level to DEBUG so it processes all messages
 logger.setLevel(logging.DEBUG) # Set logger level to DEBUG
 
-# Create handlers
-# Stream handler for stdout - level will be set based on user input in main
-stream_handler = logging.StreamHandler(sys.stdout)
-# File handler for debug logs - always log DEBUG and above to file
-# Save log file in the src_helix directory
-file_handler = logging.FileHandler('src_helix/lpr_images_api_debug.log')
-file_handler.setLevel(logging.DEBUG) # Set file handler level to DEBUG
+# Define the logs directory path
+LOGS_DIR = 'src_helix/logs'
+
+# Add diagnostic prints for directory creation
+print(f"DEBUG (lpr_images): Attempting to create log directory: {LOGS_DIR}", file=sys.stderr)
+
+# Ensure the logs directory exists
+try:
+    os.makedirs(LOGS_DIR, exist_ok=True)
+    print(f"DEBUG (lpr_images): Log directory created or already exists: {LOGS_DIR}", file=sys.stderr)
+except Exception as e:
+    print(f"ERROR (lpr_images): Failed to create log directory {LOGS_DIR}: {e}", file=sys.stderr)
+    # Note: We don't exit here, just report the error and continue.
 
 # Create formatters and add them to the handlers
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-stream_handler.setFormatter(formatter)
-file_handler.setFormatter(formatter)
 
-# Add handlers to the logger
-# Prevent duplicate handlers if the script is somehow imported multiple times
-if not logger.handlers:
-    logger.addHandler(stream_handler)
-    logger.addHandler(file_handler)
+# Create handlers
+# Stream handler for stdout - level will be set based on user input in main
+stream_handler = logging.StreamHandler(sys.stdout)
+stream_handler.setFormatter(formatter) # Set formatter for stream handler
+
+# File handler for debug logs - always log DEBUG and above to file
+# Save log file in the src_helix/logs directory
+log_file_path = os.path.join(LOGS_DIR, 'lpr_images_api_debug.log')
+
+# Add diagnostic prints for file handler creation
+print(f"DEBUG (lpr_images): Attempting to create file handler for: {log_file_path} (Absolute: {os.path.abspath(log_file_path)})", file=sys.stderr)
+
+try:
+    file_handler = logging.FileHandler(log_file_path)
+    print(f"DEBUG (lpr_images): File handler created successfully for: {log_file_path}", file=sys.stderr)
+    file_handler.setLevel(logging.DEBUG) # Set file handler level to DEBUG
+    file_handler.setFormatter(formatter) # Set formatter for file handler
+
+    # Add handlers to the logger
+    # Prevent duplicate handlers if the script is somehow imported multiple times
+    if not logger.handlers:
+        logger.addHandler(stream_handler)
+        logger.addHandler(file_handler)
+        print("DEBUG (lpr_images): Handlers added to logger.", file=sys.stderr)
+    else:
+         print("DEBUG (lpr_images): Logger already has handlers.", file=sys.stderr)
+
+except Exception as e:
+    print(f"ERROR (lpr_images): Failed to create file handler for {log_file_path}: {e}", file=sys.stderr)
+    # If file handler creation fails, logging to file won't work.
+    # The script will continue, but file logs will be missing.
 
 
 LPR_IMAGES_ENDPOINT = "/cameras/v1/analytics/lpr/imagesview"
@@ -166,7 +196,7 @@ def main():
             # Wrap in a list for the template output
             template_output = [template_data]
 
-            # Save the template to the src_helix directory
+            # Save the template to the src_helix/api-json directory
             output_filename = "src_helix/api-json/test_lpr_images_api.json"
             logger.debug(f"Writing template to {output_filename}") # Added debug log
             with open(output_filename, 'w') as f:
@@ -178,6 +208,9 @@ def main():
     except Exception as e:
         logger.error(f"Script execution failed: {e}", exc_info=True)
         sys.exit(1)
+    finally:
+        # Ensure logs are flushed before exiting
+        logging.shutdown()
 
 if __name__ == '__main__':
     main()

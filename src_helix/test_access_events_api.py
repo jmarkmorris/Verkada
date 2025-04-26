@@ -2,7 +2,7 @@
 """
 Script to test the Verkada Access Events API endpoint.
 """
-import os
+import os # Import os
 import sys
 import json
 import logging
@@ -20,24 +20,54 @@ logger = logging.getLogger(__name__)
 # Set the logger level to DEBUG so it processes all messages
 logger.setLevel(logging.DEBUG)
 
-# Create handlers
-# Stream handler for stdout - level will be set based on user input in main
-stream_handler = logging.StreamHandler(sys.stdout)
-# File handler for debug logs - always log DEBUG and above to file
-# Save log file in the src_helix directory
-file_handler = logging.FileHandler('src_helix/access_events_api_debug.log')
-file_handler.setLevel(logging.DEBUG)
+# Define the logs directory path
+LOGS_DIR = 'src_helix/logs'
+
+# Add diagnostic prints for directory creation
+print(f"DEBUG (access_events): Attempting to create log directory: {LOGS_DIR}", file=sys.stderr)
+
+# Ensure the logs directory exists
+try:
+    os.makedirs(LOGS_DIR, exist_ok=True)
+    print(f"DEBUG (access_events): Log directory created or already exists: {LOGS_DIR}", file=sys.stderr)
+except Exception as e:
+    print(f"ERROR (access_events): Failed to create log directory {LOGS_DIR}: {e}", file=sys.stderr)
+    # Note: We don't exit here, just report the error and continue.
 
 # Create formatters and add them to the handlers
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-stream_handler.setFormatter(formatter)
-file_handler.setFormatter(formatter)
 
-# Add handlers to the logger
-# Prevent duplicate handlers if the script is somehow imported multiple times
-if not logger.handlers:
-    logger.addHandler(stream_handler)
-    logger.addHandler(file_handler)
+# Create handlers
+# Stream handler for stdout - level will be set based on user input in main
+stream_handler = logging.StreamHandler(sys.stdout)
+stream_handler.setFormatter(formatter) # Set formatter for stream handler
+
+# File handler for debug logs - always log DEBUG and above to file
+# Save log file in the src_helix/logs directory
+log_file_path = os.path.join(LOGS_DIR, 'access_events_api_debug.log')
+
+# Add diagnostic prints for file handler creation
+print(f"DEBUG (access_events): Attempting to create file handler for: {log_file_path} (Absolute: {os.path.abspath(log_file_path)})", file=sys.stderr)
+
+try:
+    file_handler = logging.FileHandler(log_file_path)
+    print(f"DEBUG (access_events): File handler created successfully for: {log_file_path}", file=sys.stderr)
+    file_handler.setLevel(logging.DEBUG) # File handler always logs DEBUG and above
+    file_handler.setFormatter(formatter) # Set formatter for file handler
+
+    # Add handlers to the logger
+    # Prevent duplicate handlers if the script is somehow imported multiple times
+    if not logger.handlers:
+        logger.addHandler(stream_handler)
+        logger.addHandler(file_handler)
+        print("DEBUG (access_events): Handlers added to logger.", file=sys.stderr)
+    else:
+         print("DEBUG (access_events): Logger already has handlers.", file=sys.stderr)
+
+except Exception as e:
+    print(f"ERROR (access_events): Failed to create file handler for {log_file_path}: {e}", file=sys.stderr)
+    # If file handler creation fails, logging to file won't work.
+    # The script will continue, but file logs will be missing.
 
 
 ACCESS_EVENTS_ENDPOINT = "/access/v1/events" # Specific endpoint
@@ -175,7 +205,7 @@ def main():
 
             template_output = {"events": [template_data]} # Wrap in the expected list structure
 
-            # Save the template to the src_helix directory
+            # Save the template to the src_helix/api-json directory
             output_filename = "src_helix/api-json/test_access_events_api.json"
             logger.debug(f"Writing template to {output_filename}")
             with open(output_filename, 'w') as f:
@@ -187,6 +217,9 @@ def main():
     except Exception as e:
         logger.error(f"Script execution failed: {e}", exc_info=True)
         sys.exit(1)
+    finally:
+        # Ensure logs are flushed before exiting
+        logging.shutdown()
 
 if __name__ == '__main__':
     main()

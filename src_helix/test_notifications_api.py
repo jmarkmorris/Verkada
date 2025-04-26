@@ -2,7 +2,7 @@
 """
 Script to test the Verkada Notifications API endpoint.
 """
-import os
+import os # Import os
 import sys
 import json
 import logging
@@ -20,24 +20,54 @@ logger = logging.getLogger(__name__)
 # Set the logger level to DEBUG so it processes all messages
 logger.setLevel(logging.DEBUG)
 
-# Create handlers
-# Stream handler for stdout - level will be set based on user input in main
-stream_handler = logging.StreamHandler(sys.stdout)
-# File handler for debug logs - always log DEBUG and above to file
-# Save log file in the src_helix directory
-file_handler = logging.FileHandler('src_helix/notifications_api_debug.log')
-file_handler.setLevel(logging.DEBUG)
+# Define the logs directory path
+LOGS_DIR = 'src_helix/logs'
+
+# Add diagnostic prints for directory creation
+print(f"DEBUG (notifications): Attempting to create log directory: {LOGS_DIR}", file=sys.stderr)
+
+# Ensure the logs directory exists
+try:
+    os.makedirs(LOGS_DIR, exist_ok=True)
+    print(f"DEBUG (notifications): Log directory created or already exists: {LOGS_DIR}", file=sys.stderr)
+except Exception as e:
+    print(f"ERROR (notifications): Failed to create log directory {LOGS_DIR}: {e}", file=sys.stderr)
+    # Note: We don't exit here, just report the error and continue.
 
 # Create formatters and add them to the handlers
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-stream_handler.setFormatter(formatter)
-file_handler.setFormatter(formatter)
 
-# Add handlers to the logger
-# Prevent duplicate handlers if the script is somehow imported multiple times
-if not logger.handlers:
-    logger.addHandler(stream_handler)
-    logger.addHandler(file_handler)
+# Create handlers
+# Stream handler for stdout - level will be set based on user input in main
+stream_handler = logging.StreamHandler(sys.stdout)
+stream_handler.setFormatter(formatter) # Set formatter for stream handler
+
+# File handler for debug logs - always log DEBUG and above to file
+# Save log file in the src_helix/logs directory
+log_file_path = os.path.join(LOGS_DIR, 'notifications_api_debug.log')
+
+# Add diagnostic prints for file handler creation
+print(f"DEBUG (notifications): Attempting to create file handler for: {log_file_path} (Absolute: {os.path.abspath(log_file_path)})", file=sys.stderr)
+
+try:
+    file_handler = logging.FileHandler(log_file_path)
+    print(f"DEBUG (notifications): File handler created successfully for: {log_file_path}", file=sys.stderr)
+    file_handler.setLevel(logging.DEBUG) # File handler always logs DEBUG and above
+    file_handler.setFormatter(formatter) # Set formatter for file handler
+
+    # Add handlers to the logger
+    # Prevent duplicate handlers if the script is somehow imported multiple times
+    if not logger.handlers:
+        logger.addHandler(stream_handler)
+        logger.addHandler(file_handler)
+        print("DEBUG (notifications): Handlers added to logger.", file=sys.stderr)
+    else:
+         print("DEBUG (notifications): Logger already has handlers.", file=sys.stderr)
+
+except Exception as e:
+    print(f"ERROR (notifications): Failed to create file handler for {log_file_path}: {e}", file=sys.stderr)
+    # If file handler creation fails, logging to file won't work.
+    # The script will continue, but file logs will be missing.
 
 
 NOTIFICATIONS_ENDPOINT = "/cameras/v1/notifications"
@@ -121,6 +151,9 @@ def handle_notifications_api(api_token: str, history_days: int):
 
 def main():
     """Main entry point for the script."""
+    # Add a critical log message at the very start of main
+    logger.critical("Script test_notifications_api.py started.")
+
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Test Verkada Notifications API")
     parser.add_argument(
@@ -186,6 +219,9 @@ def main():
     except Exception as e:
         logger.error(f"Script execution failed: {e}", exc_info=True)
         sys.exit(1)
+    finally:
+        # Ensure logs are flushed before exiting
+        logging.shutdown()
 
 if __name__ == '__main__':
     main()

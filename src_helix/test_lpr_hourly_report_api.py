@@ -17,17 +17,19 @@ import traceback
 from collections import defaultdict # To easily count detections per hour
 
 # Import shared utility functions
-from src_helix.api_utils import get_api_token, VERKADA_API_BASE_URL
+from src_helix.api_utils import get_api_token, VERKADA_API_BASE_URL, fetch_lpr_enabled_cameras, fetch_lpr_images_for_camera, format_timestamp # Import functions from api_utils
 
 # Import necessary fetch functions from other test scripts
 # Assuming these functions are designed to be imported and reused and return data.
 try:
     # fetch_lpoi_data now returns a tuple: (raw_first_page_data, all_lpoi_items_list)
     from src_helix.test_lpoi_api import fetch_lpoi_data as fetch_lpoi_data_and_list
-    from src_helix.test_lpr_images_api_all_cameras import fetch_lpr_enabled_cameras, fetch_lpr_images_for_camera, format_timestamp
+    # Removed import from test_lpr_images_api_all_cameras
+    # from src_helix.test_lpr_images_api_all_cameras import fetch_lpr_enabled_cameras, fetch_lpr_images_for_camera, format_timestamp
 except ImportError as e:
-    print(f"Error importing necessary functions from other test scripts: {e}", file=sys.stderr)
-    print("Please ensure 'test_lpoi_api.py' and 'test_lpr_images_api_all_cameras.py' exist and are in the correct path.", file=sys.stderr)
+    # Updated error message to reflect the correct import source
+    print(f"Error importing necessary functions: {e}", file=sys.stderr)
+    print("Please ensure 'test_lpoi_api.py' and 'api_utils.py' exist and are in the correct path.", file=sys.stderr)
     sys.exit(1)
 
 
@@ -36,24 +38,55 @@ logger = logging.getLogger(__name__)
 # Set the logger level initially to DEBUG to capture all messages for the file handler
 logger.setLevel(logging.DEBUG)
 
-# Create handlers
-# Stream handler for stdout - level will be set based on user input in main
-stream_handler = logging.StreamHandler(sys.stdout)
-# File handler for debug logs - always log DEBUG and above to file
-# Save log file in the src_helix directory
-file_handler = logging.FileHandler('src_helix/lpr_hourly_report_api_debug.log')
-file_handler.setLevel(logging.DEBUG) # File handler always logs DEBUG and above
+# Define the logs directory path
+LOGS_DIR = 'src_helix/logs'
+
+# Add diagnostic prints for directory creation
+print(f"DEBUG (lpr_hourly): Attempting to create log directory: {LOGS_DIR}", file=sys.stderr)
+
+# Ensure the logs directory exists
+try:
+    os.makedirs(LOGS_DIR, exist_ok=True)
+    print(f"DEBUG (lpr_hourly): Log directory created or already exists: {LOGS_DIR}", file=sys.stderr)
+except Exception as e:
+    print(f"ERROR (lpr_hourly): Failed to create log directory {LOGS_DIR}: {e}", file=sys.stderr)
+    # Note: We don't exit here, just report the error and continue.
 
 # Create formatters and add them to the handlers
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-stream_handler.setFormatter(formatter)
-file_handler.setFormatter(formatter)
 
-# Add handlers to the logger
-# Prevent duplicate handlers if the script is somehow imported multiple times
-if not logger.handlers:
-    logger.addHandler(stream_handler)
-    logger.addHandler(file_handler)
+# Create handlers
+# Stream handler for stdout - level will be set based on user input in main
+stream_handler = logging.StreamHandler(sys.stdout)
+stream_handler.setFormatter(formatter) # Set formatter for stream handler
+
+# File handler for debug logs - always log DEBUG and above to file
+# Save log file in the src_helix/logs directory
+log_file_path = os.path.join(LOGS_DIR, 'lpr_hourly_report_api_debug.log')
+
+# Add diagnostic prints for file handler creation
+print(f"DEBUG (lpr_hourly): Attempting to create file handler for: {log_file_path} (Absolute: {os.path.abspath(log_file_path)})", file=sys.stderr)
+
+try:
+    file_handler = logging.FileHandler(log_file_path)
+    print(f"DEBUG (lpr_hourly): File handler created successfully for: {log_file_path}", file=sys.stderr)
+    file_handler.setLevel(logging.DEBUG) # File handler always logs DEBUG and above
+    file_handler.setFormatter(formatter) # Set formatter for file handler
+
+    # Add handlers to the logger
+    # Prevent duplicate handlers if the script is somehow imported multiple times
+    if not logger.handlers:
+        logger.addHandler(stream_handler)
+        logger.addHandler(file_handler)
+        print("DEBUG (lpr_hourly): Handlers added to logger.", file=sys.stderr)
+    else:
+         print("DEBUG (lpr_hourly): Logger already has handlers.", file=sys.stderr)
+
+except Exception as e:
+    print(f"ERROR (lpr_hourly): Failed to create file handler for {log_file_path}: {e}", file=sys.stderr)
+    # If file handler creation fails, logging to file won't work.
+    # The script will continue, but file logs will be missing.
+
 
 # Get loggers for imported modules to control their output level
 # This is necessary because imported modules configure their own loggers.
@@ -116,7 +149,7 @@ def main():
     try:
         # Get API token
         logger.debug("Attempting to get API token...")
-        api_token = get_api_token(api_key)
+        api_token = get_api_token(api_key) # Use imported function
         logger.info(f"Successfully retrieved API token: {api_token[:10]}...")
 
         # --- Step 1: Fetch License Plates of Interest (LPOI) ---
@@ -263,6 +296,9 @@ def main():
     except Exception as e:
         logger.error(f"Script execution failed: {e}", exc_info=True)
         sys.exit(1)
+    finally:
+        # Ensure logs are flushed before exiting
+        logging.shutdown()
 
 if __name__ == '__main__':
     main()

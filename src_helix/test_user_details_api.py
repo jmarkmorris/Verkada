@@ -3,7 +3,7 @@
 Script to test the Verkada Access User Details API endpoint.
 Fetches the user list first to get a user_id.
 """
-import os
+import os # Import os
 import sys
 import json
 import logging
@@ -19,24 +19,54 @@ logger = logging.getLogger(__name__)
 # Set the logger level to DEBUG so it processes all messages
 logger.setLevel(logging.DEBUG)
 
-# Create handlers
-# Stream handler for stdout - level will be set based on user input in main
-stream_handler = logging.StreamHandler(sys.stdout)
-# File handler for debug logs - always log DEBUG and above to file
-# Save log file in the src_helix directory
-file_handler = logging.FileHandler('src_helix/user_details_api_debug.log')
-file_handler.setLevel(logging.DEBUG)
+# Define the logs directory path
+LOGS_DIR = 'src_helix/logs'
+
+# Add diagnostic prints for directory creation
+print(f"DEBUG (user_details): Attempting to create log directory: {LOGS_DIR}", file=sys.stderr)
+
+# Ensure the logs directory exists
+try:
+    os.makedirs(LOGS_DIR, exist_ok=True)
+    print(f"DEBUG (user_details): Log directory created or already exists: {LOGS_DIR}", file=sys.stderr)
+except Exception as e:
+    print(f"ERROR (user_details): Failed to create log directory {LOGS_DIR}: {e}", file=sys.stderr)
+    # Note: We don't exit here, just report the error and continue.
 
 # Create formatters and add them to the handlers
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-stream_handler.setFormatter(formatter)
-file_handler.setFormatter(formatter)
 
-# Add handlers to the logger
-# Prevent duplicate handlers if the script is somehow imported multiple times
-if not logger.handlers:
-    logger.addHandler(stream_handler)
-    logger.addHandler(file_handler)
+# Create handlers
+# Stream handler for stdout - level will be set based on user input in main
+stream_handler = logging.StreamHandler(sys.stdout)
+stream_handler.setFormatter(formatter) # Set formatter for stream handler
+
+# File handler for debug logs - always log DEBUG and above to file
+# Save log file in the src_helix/logs directory
+log_file_path = os.path.join(LOGS_DIR, 'user_details_api_debug.log')
+
+# Add diagnostic prints for file handler creation
+print(f"DEBUG (user_details): Attempting to create file handler for: {log_file_path} (Absolute: {os.path.abspath(log_file_path)})", file=sys.stderr)
+
+try:
+    file_handler = logging.FileHandler(log_file_path)
+    print(f"DEBUG (user_details): File handler created successfully for: {log_file_path}", file=sys.stderr)
+    file_handler.setLevel(logging.DEBUG) # File handler always logs DEBUG and above
+    file_handler.setFormatter(formatter) # Set formatter for file handler
+
+    # Add handlers to the logger
+    # Prevent duplicate handlers if the script is somehow imported multiple times
+    if not logger.handlers:
+        logger.addHandler(stream_handler)
+        logger.addHandler(file_handler)
+        print("DEBUG (user_details): Handlers added to logger.", file=sys.stderr)
+    else:
+         print("DEBUG (user_details): Logger already has handlers.", file=sys.stderr)
+
+except Exception as e:
+    print(f"ERROR (user_details): Failed to create file handler for {log_file_path}: {e}", file=sys.stderr)
+    # If file handler creation fails, logging to file won't work.
+    # The script will continue, but file logs will be missing.
 
 
 USERS_LIST_ENDPOINT = "/access/v1/access_users"  # Endpoint for listing users
@@ -229,24 +259,27 @@ def main():
                     print(json.dumps(user_details, indent=4))
                     sys.stdout.flush() # Explicitly flush stdout
                     logger.info(f"Successfully retrieved details for user ID: {user_id_to_fetch}")
-                else:
-                     logger.warning(f"No details returned for user ID {user_id_to_fetch}.")
 
-
-                # Generate and save JSON template if details were fetched
-                if user_details:
+                    # Generate and save JSON template
                     logger.debug("Generating JSON template...")
                     template_data = create_template(user_details)
                     logger.debug(f"Template data created: {template_data}")
 
-                    # Save the template to the src_helix directory
+                    # The template output should be the template_data itself for user details
+                    template_output = template_data
+
+                    # Save the template to the src_helix/api-json directory
                     output_filename = "src_helix/api-json/test_user_details_api.json"
                     logger.debug(f"Writing template to {output_filename}")
-                    with open(output_filename, 'w') as f:
-                        json.dump(template_data, f, indent=4)
-                    logger.info(f"Generated JSON template: {output_filename}")
+                    try:
+                        with open(output_filename, 'w') as f:
+                            json.dump(template_output, f, indent=4)
+                        logger.info(f"Generated JSON template: {output_filename}")
+                    except Exception as write_e:
+                        logger.error(f"Failed to write JSON template to {output_filename}: {write_e}", exc_info=True)
+
                 else:
-                    logger.warning(f"No details returned for user ID {user_id_to_fetch} to generate a template.")
+                     logger.warning(f"No details returned for user ID {user_id_to_fetch}.")
 
             else:
                 logger.warning(f"Could not find 'user_id' in the user object at index {args.user_index}.")
@@ -256,6 +289,9 @@ def main():
     except Exception as e:
         logger.error(f"Script execution failed: {e}", exc_info=True)
         sys.exit(1)
+    finally:
+        # Ensure logs are flushed before exiting
+        logging.shutdown()
 
 if __name__ == '__main__':
     main()
