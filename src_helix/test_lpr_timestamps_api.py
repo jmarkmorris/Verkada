@@ -25,16 +25,8 @@ logger.setLevel(logging.DEBUG)
 # Define the logs directory path
 LOGS_DIR = 'src_helix/logs'
 
-# Add diagnostic prints for directory creation
-print(f"DEBUG (lpr_timestamps): Attempting to create log directory: {LOGS_DIR}", file=sys.stderr)
-
 # Ensure the logs directory exists
-try:
-    os.makedirs(LOGS_DIR, exist_ok=True)
-    print(f"DEBUG (lpr_timestamps): Log directory created or already exists: {LOGS_DIR}", file=sys.stderr)
-except Exception as e:
-    print(f"ERROR (lpr_timestamps): Failed to create log directory {LOGS_DIR}: {e}", file=sys.stderr)
-    # Note: We don't exit here, just report the error and continue.
+os.makedirs(LOGS_DIR, exist_ok=True)
 
 # Create formatters and add them to the handlers
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
@@ -48,12 +40,9 @@ stream_handler.setFormatter(formatter) # Set formatter for stream handler
 # Save log file in the src_helix/logs directory
 log_file_path = os.path.join(LOGS_DIR, 'lpr_timestamps_api_debug.log')
 
-# Add diagnostic prints for file handler creation
-print(f"DEBUG (lpr_timestamps): Attempting to create file handler for: {log_file_path} (Absolute: {os.path.abspath(log_file_path)})", file=sys.stderr)
-
+# Create file handler, handling potential errors
 try:
     file_handler = logging.FileHandler(log_file_path)
-    print(f"DEBUG (lpr_timestamps): File handler created successfully for: {log_file_path}", file=sys.stderr)
     file_handler.setLevel(logging.DEBUG) # File handler always logs DEBUG and above
     file_handler.setFormatter(formatter) # Set formatter for file handler
 
@@ -62,14 +51,11 @@ try:
     if not logger.handlers:
         logger.addHandler(stream_handler)
         logger.addHandler(file_handler)
-        print("DEBUG (lpr_timestamps): Handlers added to logger.", file=sys.stderr)
-    else:
-         print("DEBUG (lpr_timestamps): Logger already has handlers.", file=sys.stderr)
 
 except Exception as e:
-    print(f"ERROR (lpr_timestamps): Failed to create file handler for {log_file_path}: {e}", file=sys.stderr)
-    # If file handler creation fails, logging to file won't work.
-    # The script will continue, but file logs will be missing.
+    # If file handler creation fails, log an error to the console (via stream_handler)
+    # and continue without the file handler.
+    logger.error(f"Failed to create file handler for {log_file_path}: {e}")
 
 
 LPR_TIMESTAMPS_ENDPOINT = "/cameras/v1/analytics/lpr/timestamps" # Endpoint for timestamps

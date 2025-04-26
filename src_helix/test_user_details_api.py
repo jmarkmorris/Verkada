@@ -3,7 +3,7 @@
 Script to test the Verkada Access User Details API endpoint.
 Fetches the user list first to get a user_id.
 """
-import os # Import os
+import os
 import sys
 import json
 import logging
@@ -22,16 +22,8 @@ logger.setLevel(logging.DEBUG)
 # Define the logs directory path
 LOGS_DIR = 'src_helix/logs'
 
-# Add diagnostic prints for directory creation
-print(f"DEBUG (user_details): Attempting to create log directory: {LOGS_DIR}", file=sys.stderr)
-
 # Ensure the logs directory exists
-try:
-    os.makedirs(LOGS_DIR, exist_ok=True)
-    print(f"DEBUG (user_details): Log directory created or already exists: {LOGS_DIR}", file=sys.stderr)
-except Exception as e:
-    print(f"ERROR (user_details): Failed to create log directory {LOGS_DIR}: {e}", file=sys.stderr)
-    # Note: We don't exit here, just report the error and continue.
+os.makedirs(LOGS_DIR, exist_ok=True)
 
 # Create formatters and add them to the handlers
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
@@ -45,12 +37,9 @@ stream_handler.setFormatter(formatter) # Set formatter for stream handler
 # Save log file in the src_helix/logs directory
 log_file_path = os.path.join(LOGS_DIR, 'user_details_api_debug.log')
 
-# Add diagnostic prints for file handler creation
-print(f"DEBUG (user_details): Attempting to create file handler for: {log_file_path} (Absolute: {os.path.abspath(log_file_path)})", file=sys.stderr)
-
+# Create file handler, handling potential errors
 try:
     file_handler = logging.FileHandler(log_file_path)
-    print(f"DEBUG (user_details): File handler created successfully for: {log_file_path}", file=sys.stderr)
     file_handler.setLevel(logging.DEBUG) # File handler always logs DEBUG and above
     file_handler.setFormatter(formatter) # Set formatter for file handler
 
@@ -59,14 +48,11 @@ try:
     if not logger.handlers:
         logger.addHandler(stream_handler)
         logger.addHandler(file_handler)
-        print("DEBUG (user_details): Handlers added to logger.", file=sys.stderr)
-    else:
-         print("DEBUG (user_details): Logger already has handlers.", file=sys.stderr)
 
 except Exception as e:
-    print(f"ERROR (user_details): Failed to create file handler for {log_file_path}: {e}", file=sys.stderr)
-    # If file handler creation fails, logging to file won't work.
-    # The script will continue, but file logs will be missing.
+    # If file handler creation fails, log an error to the console (via stream_handler)
+    # and continue without the file handler.
+    logger.error(f"Failed to create file handler for {log_file_path}: {e}")
 
 
 USERS_LIST_ENDPOINT = "/access/v1/access_users"  # Endpoint for listing users
@@ -159,7 +145,7 @@ def fetch_user_details(api_token: str, user_id: str):
             logger.error("2. Ensure you have the correct access level for this endpoint")
             logger.error("3. Verify the API key is not expired")
         elif e.response.status_code == 404:
-             logger.error(f"404 Not Found error for {USER_DETAILS_ENDPOINT} with user_id {user_id}. User may not exist.")
+             logger.error(f"404 Not Found error for {USER_DETAILS_ENDPOINT}. User may not exist.")
         raise
     except Exception as e:
         logger.error(f"Unexpected error fetching user details: {e}", exc_info=True)
