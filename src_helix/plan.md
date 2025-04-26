@@ -4,11 +4,6 @@ This document outlines potential improvements for the Python API test scripts an
 
 ## Improvement Ideas (Ordered by Least Risk)
 
-1.  **Centralize Logging Configuration:**
-    *   **Problem:** Each Python script (`test_*.py` and `api_utils.py`) currently sets up its own logger, stream handler, file handler, and formatter. This is repetitive and makes consistent logging configuration across the project difficult.
-    *   **Idea:** Create a dedicated logging configuration function (e.g., in `api_utils.py` or a new `logging_utils.py`) that sets up the root logger or specific loggers with the desired handlers and formatters based on a requested level. Each script would then only need to get its logger instance (`logging.getLogger(__name__)`) and potentially set its level, relying on the centralized configuration for handlers.
-    *   **Risk:** Low. This change primarily affects how logs are configured and output, not the core API interaction or data processing logic.
-
 2.  **Centralize JSON Template Saving:**
     *   **Problem:** The logic for generating a template from data and saving it to a file is repeated in the `main` function of several test scripts (`test_cameras_api.py`, `test_token_api.py`, `test_user_details_api.py`, `test_access_events_api.py`, `test_lpoi_api.py`, `test_users_list_api.py`, `test_notifications_api.py`, `test_lpr_timestamps_api.py`).
     *   **Idea:** Create a dedicated function in `api_utils.py` (e.g., `save_json_template(data, filename)`) that takes the data and the desired output path, generates the template using `create_template`, and writes it to the specified file with standard error handling. Each script's `main` would then call this single function.
