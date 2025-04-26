@@ -60,6 +60,7 @@ show_menu() {
   echo "============================================================================================================================================"
   # API_KEY and Current Log Level are shown elsewhere or not needed in the main menu
   echo " Select a test to run:"
+  echo "============================================================================================================================================"
 
   # Calculate column widths
   local max_index_width=0
