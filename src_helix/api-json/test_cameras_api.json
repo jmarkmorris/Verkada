@@ -1,0 +1,28 @@
+{
+    "cameras": [
+        {
+            "camera_id": "",
+            "cloud_retention": 0,
+            "date_added": 0,
+            "device_retention": 0,
+            "firmware": "",
+            "firmware_update_schedule": "",
+            "last_online": 0,
+            "local_ip": "",
+            "location": "",
+            "location_angle": 0,
+            "location_lat": 0,
+            "location_lon": 0,
+            "mac": "",
+            "model": "",
+            "name": "",
+            "people_history_enabled": 0,
+            "serial": "",
+            "site": "",
+            "site_id": "",
+            "status": "",
+            "timezone": "",
+            "vehicle_history_enabled": 0
+        }
+    ]
+}

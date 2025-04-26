@@ -1,0 +1,55 @@
+{
+    "events": [
+        {
+            "device_id": "",
+            "device_type": "",
+            "end_timestamp": null,
+            "event_id": "",
+            "event_info": {
+                "accepted": 0,
+                "auxInputId": null,
+                "auxInputName": null,
+                "buildingId": "",
+                "buildingName": "",
+                "direction": null,
+                "doorId": "",
+                "doorInfo": {
+                    "accessControllerId": "",
+                    "accessControllerName": "",
+                    "name": ""
+                },
+                "entityId": "",
+                "entityName": "",
+                "entityType": "",
+                "eventType": "",
+                "floorId": "",
+                "floorName": "",
+                "floors": null,
+                "inputValue": "",
+                "lockdownInfo": null,
+                "message": "",
+                "organizationId": "",
+                "rawCard": "",
+                "siteId": "",
+                "siteName": "",
+                "type": "",
+                "userId": "",
+                "userInfo": {
+                    "email": "",
+                    "firstName": "",
+                    "lastName": "",
+                    "name": "",
+                    "organizationId": "",
+                    "phone": "",
+                    "userId": ""
+                },
+                "userName": "",
+                "uuid": ""
+            },
+            "event_type": "",
+            "organization_id": "",
+            "site_id": "",
+            "timestamp": ""
+        }
+    ]
+}
