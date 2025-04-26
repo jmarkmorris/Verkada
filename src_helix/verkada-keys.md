@@ -28,11 +28,11 @@ Based on the sample data and script parameters, the following potential foreign 
     *   **Description:** Notifications are typically associated with a specific device like a camera. While the sample `test_notifications_api.json` doesn't show the camera ID at the top level, it's highly probable that a `camera_id` field exists within each notification object, linking it back to a camera from the `test_cameras_api.json` list.
     *   **Potential Relationship:** `test_cameras_api.json`.`cameras[*].camera_id` = `test_notifications_api.json`.`notifications[*].camera_id` (assuming `camera_id` exists within notification objects)
 
-4.  **`test_cameras_api.json` (`cameras`) to `test_lpr_images_api.py` and `test_lpr_images_api_all_cameras.py` (Implicit/Contextual & Response Field)**
+4.  **`test_cameras_api.json` (`cameras`) to `test_lpr_images_api_all_cameras.py` (Implicit/Contextual & Response Field)**
     *   **Relationship:** One-to-Many (one camera can capture many LPR images/events).
-    *   **Potential Key:** `camera_id` (used as a parameter in `test_lpr_images_api.py` and present within each detection object in the response for both scripts).
-    *   **Description:** LPR images/events are tied to the camera that captured them. The `test_lpr_images_api.py` script requires a `camera_id` parameter. The response structure for the `/images` endpoint includes `camera_id` within each detection object, linking it back to a camera from the `test_cameras_api.json` list. The `test_lpr_images_api_all_cameras.py` script explicitly fetches LPR-enabled cameras first and then queries the `/images` endpoint for each, using the `camera_id`.
-    *   **Relationship:** `test_cameras_api.json`.`cameras[*].camera_id` = `test_lpr_images_api.json`.[*].`camera_id` (assuming `test_lpr_images_api.json` is a list of detection objects) OR `test_lpr_images_api_all_cameras.py` (via `camera_id` parameter and response field).
+    *   **Potential Key:** `camera_id` 
+    *   **Description:** LPR images/events are tied to the camera that captured them. The `test_lpr_images_api_all_cameras.py` script explicitly fetches LPR-enabled cameras first and then queries the `/images` endpoint for each, using the `camera_id`.
+    *   **Relationship:** `test_cameras_api.json`.`cameras[*].camera_id` = `test_lpr_images_api_all_cameras.py` (via `camera_id` parameter and response field).
 
 5.  **`test_users_list_api.json` (`access_members`) or `test_user_details_api.json` to `test_access_events_api.py` (Implicit/Contextual)**
     *   **Relationship:** One-to-Many (one user can generate many access events).
