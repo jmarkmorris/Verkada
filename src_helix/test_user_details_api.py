@@ -214,19 +214,24 @@ def main():
                 logger.info(f"Attempting to fetch details for user at index {args.user_index} (ID: {user_id_to_fetch})...")
                 user_details = fetch_user_details(api_token, user_id_to_fetch)
 
-                # Print the custom line using the user number and name from details
-                if user_details and isinstance(user_details, dict):
-                    full_name_from_details = user_details.get('full_name', 'Unnamed User') # Get name from details
-                    user_number_display = args.user_number if args.user_number is not None else args.user_index + 1 # Use 1-based number if provided, else calculate from index
-                    print(f"\nDetail information for user {user_number_display}) {full_name_from_details}")
+                # Print the custom line using the user number and name from the *list* record
+                if selected_user_from_list and isinstance(selected_user_from_list, dict):
+                    # Get name from the list record, which contains full_name
+                    full_name_from_list = selected_user_from_list.get('full_name', 'Unnamed User')
+                    # Use 1-based number if provided, else calculate from index
+                    user_number_display = args.user_number if args.user_number is not None else args.user_index + 1
+                    print(f"\nDetail information for user {user_number_display}) {full_name_from_list}")
                     sys.stdout.flush() # Explicitly flush stdout
 
-                    # Now print the full details response
+                # Now print the full details response if it was successfully fetched
+                if user_details:
                     print(f"\n--- Access User Details API Response (User ID: {user_id_to_fetch}) ---")
                     print(json.dumps(user_details, indent=4))
                     sys.stdout.flush() # Explicitly flush stdout
+                    logger.info(f"Successfully retrieved details for user ID: {user_id_to_fetch}")
+                else:
+                     logger.warning(f"No details returned for user ID {user_id_to_fetch}.")
 
-                logger.info(f"Successfully retrieved details for user ID: {user_id_to_fetch}")
 
                 # Generate and save JSON template if details were fetched
                 if user_details:
