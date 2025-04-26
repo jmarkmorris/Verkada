@@ -14,8 +14,8 @@ import time
 import datetime
 import traceback
 
-# Import shared utility functions and the centralized logging function
-from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, LPR_TIMESTAMPS_ENDPOINT, fetch_lpr_enabled_cameras, fetch_lpr_images_for_camera, format_timestamp, _fetch_data, configure_logging # Import functions from api_utils
+# Import shared utility functions and the centralized logging function and save_json_template
+from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, LPR_TIMESTAMPS_ENDPOINT, fetch_lpr_enabled_cameras, fetch_lpr_images_for_camera, format_timestamp, _fetch_data, configure_logging, save_json_template # Import functions from api_utils
 
 # Get the logger for this module. It will be configured by configure_logging in main.
 logger = logging.getLogger(__name__)
@@ -149,26 +149,11 @@ def main():
         lpr_timestamps_data = fetch_lpr_timestamps_data(api_token, args.camera_id, args.license_plate, args.history_days)
         logger.info(f"Successfully retrieved LPR timestamps data for plate '{args.license_plate}' on camera '{args.camera_id}'")
 
-        # Generate and save JSON template based on the expected structure
-        # The template should always have the same structure regardless of the data returned
-        template_output = {
-            "camera_id": "",
-            "detections": [0], # Template for a list of integers
-            "license_plate": "",
-            "next_page_token": 0 # Assuming next_page_token is an integer
-        }
-
-        logger.debug(f"Template data created: {template_output}")
-
-        # Save the template to the src_helix/api-json directory
+        # Generate and save JSON template based on the fetched data structure
+        # Use the centralized save_json_template function
         output_filename = "src_helix/api-json/test_lpr_timestamps_api.json"
-        logger.debug(f"Writing JSON template to {output_filename}")
-        try:
-            with open(output_filename, 'w') as f:
-                json.dump(template_output, f, indent=4, ensure_ascii=False)
-            logger.info(f"Generated JSON template: {output_filename}")
-        except Exception as write_e:
-                logger.error(f"Failed to write JSON template to {output_filename}: {write_e}", exc_info=True)
+        # Pass the fetched data directly. No wrap_key needed as the template is the root object.
+        save_json_template(lpr_timestamps_data, output_filename)
 
     except Exception as e:
         # Log the execution failure

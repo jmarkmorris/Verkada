@@ -232,7 +232,14 @@ def create_template(data: dict) -> dict:
             template[key] = create_template(value)
         elif isinstance(value, list):
             # For lists, create a list containing one template item if the list is not empty
-            template[key] = [create_template(value[0])] if value else []
+            # and the first item is a dictionary. Otherwise, template the first item directly.
+            if value and isinstance(value[0], dict):
+                 template[key] = [create_template(value[0])]
+            elif value:
+                 # Template the first item if it's a primitive type
+                 template[key] = [type(value[0])()] if isinstance(value[0], (int, float, str, bool)) else [None]
+            else:
+                 template[key] = [] # Empty list remains empty
         elif isinstance(value, str):
             template[key] = ""
         elif isinstance(value, bool):
@@ -243,6 +250,51 @@ def create_template(data: dict) -> dict:
             template[key] = None # Handles None and other types
 
     return template
+
+def save_json_template(data_to_template, output_filename: str, wrap_key: str = None):
+    """
+    Generates a JSON template from provided data and saves it to a file.
+
+    Args:
+        data_to_template: The dictionary or list item to template.
+        output_filename: The full path including filename to save the template.
+        wrap_key: Optional. If provided, the template will be wrapped in a dictionary
+                  like {wrap_key: [template_data]} if data_to_template was a list item,
+                  or {wrap_key: template_data} if data_to_template was a dictionary.
+                  If None, the template_data is saved directly.
+    """
+    if data_to_template is None:
+        logger.warning(f"No data provided to generate template for {output_filename}.")
+        return
+
+    try:
+        logger.debug(f"Generating JSON template from data type: {type(data_to_template)}")
+        template_data = create_template(data_to_template)
+        logger.debug(f"Template data created: {template_data}")
+
+        final_output = template_data
+        if wrap_key:
+            # If wrap_key is provided, wrap the template.
+            # Assume if wrap_key is used, the original data was likely a list item
+            # that should be represented as a list in the template file.
+            final_output = {wrap_key: [template_data]}
+            logger.debug(f"Wrapped template data with key '{wrap_key}'")
+
+
+        # Ensure the output directory exists
+        output_dir = os.path.dirname(output_filename)
+        os.makedirs(output_dir, exist_ok=True)
+        logger.debug(f"Ensured directory exists: {output_dir}")
+
+
+        logger.debug(f"Writing JSON template to {output_filename}")
+        with open(output_filename, 'w') as f:
+            json.dump(final_output, f, indent=4, ensure_ascii=False)
+        logger.info(f"Generated JSON template: {output_filename}")
+
+    except Exception as e:
+        logger.error(f"Failed to generate or write JSON template to {output_filename}: {e}", exc_info=True)
+
 
 # Moved shared functions from test_lpr_images_api_all_cameras.py
 def fetch_lpr_enabled_cameras(api_token: str) -> list:

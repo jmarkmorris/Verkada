@@ -10,9 +10,9 @@ import requests
 import argparse
 import traceback
 
-# Import shared utility functions and the centralized logging function
+# Import shared utility functions and the centralized logging function and save_json_template
 # Import _fetch_data from api_utils
-from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, LPOI_ENDPOINT, _fetch_data, configure_logging
+from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, LPOI_ENDPOINT, _fetch_data, configure_logging, save_json_template
 
 # Get the logger for this module. It will be configured by configure_logging in main.
 logger = logging.getLogger(__name__)
@@ -166,21 +166,10 @@ def main():
 
         if lpoi_list:
             logger.debug("First LPOI item for template: {lpoi_list[0]}")
-            template_data = create_template(lpoi_list[0])
-            logger.debug(f"Template data created: {template_data}")
-
-            # Keep the output key as plural for consistency with potential future use, but get data from singular key
-            template_output = {"license_plates_of_interest": [template_data]}
-
-            # Save the template to the src_helix directory
+            # Use the centralized save_json_template function
             output_filename = "src_helix/api-json/test_lpoi_api.json"
-            logger.debug(f"Writing template to {output_filename}")
-            try:
-                with open(output_filename, 'w') as f:
-                    json.dump(template_output, f, indent=4)
-                logger.info(f"Generated JSON template: {output_filename}")
-            except Exception as write_e:
-                logger.error(f"Failed to write JSON template to {output_filename}: {write_e}", exc_info=True)
+            # Pass the first item of the list and the key to wrap it with (using the plural key for the template file)
+            save_json_template(lpoi_list[0], output_filename, wrap_key="license_plates_of_interest")
         else:
             logger.warning("No License Plates of Interest found to generate a template.")
 

@@ -11,9 +11,9 @@ import requests
 import argparse
 import traceback
 
-# Import shared utility functions and constants, including configure_logging
+# Import shared utility functions and constants, including configure_logging and save_json_template
 # Import _fetch_data from api_utils
-from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, USERS_LIST_ENDPOINT, _fetch_data, configure_logging
+from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, USERS_LIST_ENDPOINT, _fetch_data, configure_logging, save_json_template
 
 # Get the logger for this module. It will be configured by configure_logging in main.
 logger = logging.getLogger(__name__)
@@ -200,20 +200,10 @@ def main():
         # Generate and save JSON template if data is available
         if users_list:
             logger.debug(f"First user item: {users_list[0]}")
-            template_data = create_template(users_list[0])
-            logger.debug(f"Template data created: {template_data}")
-
-            template_output = {"access_members": [template_data]} # Wrap in the expected list structure
-
-            # Save the template to the src_helix/api-json directory
+            # Use the centralized save_json_template function
             output_filename = "src_helix/api-json/test_users_list_api.json"
-            logger.debug(f"Writing template to {output_filename}")
-            try:
-                with open(output_filename, 'w') as f:
-                    json.dump(template_output, f, indent=4)
-                logger.info(f"Generated JSON template: {output_filename}")
-            except Exception as write_e:
-                logger.error(f"Failed to write JSON template to {output_filename}: {write_e}", exc_info=True)
+            # Pass the first item of the list and the key to wrap it with
+            save_json_template(users_list[0], output_filename, wrap_key="access_members")
         else:
             logger.warning("No access users found to generate a template.")
 

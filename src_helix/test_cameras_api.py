@@ -9,8 +9,8 @@ import logging
 import requests
 import argparse
 
-# Import shared utility functions and constants, including configure_logging
-from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, CAMERAS_ENDPOINT, _fetch_data, configure_logging
+# Import shared utility functions and constants, including configure_logging and save_json_template
+from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, CAMERAS_ENDPOINT, _fetch_data, configure_logging, save_json_template
 
 # Get the logger for this module. It will be configured by configure_logging in main.
 logger = logging.getLogger(__name__)
@@ -181,20 +181,10 @@ def main():
 
         if cameras_list:
             logger.debug("cameras_list is not empty, attempting to generate template.") # Added debug log
-            template_data = create_template(cameras_list[0]) # Use imported function
-            logger.debug(f"Template data created: {template_data}") # Added debug log for template data
-            # Wrap in the expected list structure using the correct key 'cameras'
-            template_output = {"cameras": [template_data]}
-
-            # Save the template to the src_helix/api-json directory
+            # Use the centralized save_json_template function
             output_filename = "src_helix/api-json/test_cameras_api.json"
-            logger.debug(f"Writing template to {output_filename}")
-            try:
-                with open(output_filename, 'w') as f:
-                    json.dump(template_output, f, indent=4)
-                logger.info(f"Generated JSON template: {output_filename}")
-            except Exception as write_e:
-                logger.error(f"Failed to write JSON template to {output_filename}: {write_e}", exc_info=True)
+            # Pass the first item of the list and the key to wrap it with
+            save_json_template(cameras_list[0], output_filename, wrap_key="cameras")
         else:
             logger.warning("No cameras found to generate a template.")
 
