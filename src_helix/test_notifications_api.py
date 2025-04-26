@@ -24,14 +24,15 @@ logger.setLevel(logging.DEBUG)
 LOGS_DIR = 'src_helix/logs'
 
 # Add diagnostic prints for directory creation
-print(f"DEBUG (notifications): Attempting to create log directory: {LOGS_DIR}", file=sys.stderr)
+# print(f"DEBUG (notifications): Attempting to create log directory: {LOGS_DIR}", file=sys.stderr) # Removed diagnostic print
 
 # Ensure the logs directory exists
 try:
     os.makedirs(LOGS_DIR, exist_ok=True)
-    print(f"DEBUG (notifications): Log directory created or already exists: {LOGS_DIR}", file=sys.stderr)
+    # print(f"DEBUG (notifications): Log directory created or already exists: {LOGS_DIR}", file=sys.stderr) # Removed diagnostic print
 except Exception as e:
-    print(f"ERROR (notifications): Failed to create log directory {LOGS_DIR}: {e}", file=sys.stderr)
+    # print(f"ERROR (notifications): Failed to create log directory {LOGS_DIR}: {e}", file=sys.stderr) # Removed diagnostic print
+    logger.error(f"Failed to create log directory {LOGS_DIR}: {e}") # Log using logger instead
     # Note: We don't exit here, just report the error and continue.
 
 # Create formatters and add them to the handlers
@@ -47,11 +48,11 @@ stream_handler.setFormatter(formatter) # Set formatter for stream handler
 log_file_path = os.path.join(LOGS_DIR, 'notifications_api_debug.log')
 
 # Add diagnostic prints for file handler creation
-print(f"DEBUG (notifications): Attempting to create file handler for: {log_file_path} (Absolute: {os.path.abspath(log_file_path)})", file=sys.stderr)
+# print(f"DEBUG (notifications): Attempting to create file handler for: {log_file_path} (Absolute: {os.path.abspath(log_file_path)})", file=sys.stderr) # Removed diagnostic print
 
 try:
     file_handler = logging.FileHandler(log_file_path)
-    print(f"DEBUG (notifications): File handler created successfully for: {log_file_path}", file=sys.stderr)
+    # print(f"DEBUG (notifications): File handler created successfully for: {log_file_path}", file=sys.stderr) # Removed diagnostic print
     file_handler.setLevel(logging.DEBUG) # File handler always logs DEBUG and above
     file_handler.setFormatter(formatter) # Set formatter for file handler
 
@@ -60,17 +61,18 @@ try:
     if not logger.handlers:
         logger.addHandler(stream_handler)
         logger.addHandler(file_handler)
-        print("DEBUG (notifications): Handlers added to logger.", file=sys.stderr)
-    else:
-         print("DEBUG (notifications): Logger already has handlers.", file=sys.stderr)
+        # print("DEBUG (notifications): Handlers added to logger.", file=sys.stderr) # Removed diagnostic print
+    # else:
+         # print("DEBUG (notifications): Logger already has handlers.", file=sys.stderr) # Removed diagnostic print
 
 except Exception as e:
-    print(f"ERROR (notifications): Failed to create file handler for {log_file_path}: {e}", file=sys.stderr)
+    # print(f"ERROR (notifications): Failed to create file handler for {log_file_path}: {e}", file=sys.stderr) # Removed diagnostic print
+    logger.error(f"Failed to create file handler for {log_file_path}: {e}") # Log using logger instead
     # If file handler creation fails, logging to file won't work.
     # The script will continue, but file logs will be missing.
 
 
-NOTIFICATIONS_ENDPOINT = "/cameras/v1/notifications"
+NOTIFICATIONS_ENDPOINT = "/notifications/v1/cameras" # Corrected endpoint path
 
 def fetch_notifications_data(api_token: str, endpoint: str, params=None):
     """Fetch notifications data from Verkada API."""

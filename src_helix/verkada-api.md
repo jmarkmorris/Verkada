@@ -29,72 +29,54 @@ The following endpoints have corresponding test scripts in the `src_helix/` dire
     *   *Documentation:* Implicitly covered in Camera API section.
     *   *Note:* API response key is `cameras`.
 
-4.  **`GET /cameras/v1/analytics/lpr/imagesview`**: Get seen license plates.
-    *   *Script:* `test_lpr_images_api.py`
-    *   *Purpose:* Retrieves LPR detection events within a time range for a *single* camera (requires `camera_id`).
-    *   *Documentation:* [Get seen license plates](https://apidocs.verkada.com/reference/getlprimagesview)
-    *   *Note:* API response is a list.
-
-5.  **`GET /cameras/v1/notifications`**: Get Alerts/Notifications.
+4.  **`GET /notifications/v1/cameras`**: Get Alerts/Notifications.
     *   *Script:* `test_notifications_api.py`
     *   *Purpose:* Retrieves camera-related notifications within a time range.
     *   *Documentation:* [Get Alerts](https://apidocs.verkada.com/reference/getnotificationsviewv1)
-    *   *Note:* API response key is `notifications`.
+    *   *Note:* API response key is `notifications`. **Corrected endpoint path.**
 
-6.  **`GET /events/v1/access`**: Get Access Events.
+5.  **`GET /events/v1/access`**: Get Access Events.
     *   *Script:* `test_access_events_api.py`
     *   *Purpose:* Retrieves access control events (door unlocks, etc.) within a time range.
     *   *Documentation:* [Get Access Events](https://apidocs.verkada.com/reference/geteventsviewv1)
-    *   *Note:* API response key is `events`. **Corrected endpoint path.**
+    *   *Note:* API response key is `events`.
 
-7.  **`GET /access/v1/access_users`**: Get All Access Users.
+6.  **`GET /access/v1/access_users`**: Get All Access Users.
     *   *Script:* `test_users_list_api.py`
     *   *Purpose:* Retrieves a list of all users configured for access control.
     *   *Documentation:* [Get All Access Users](https://apidocs.verkada.com/reference/getaccessmembersviewv1)
     *   *Note:* API response key is `access_members`.
 
-8.  **`GET /access/v1/access_users/user`**: Get Access Information Object.
+7.  **`GET /access/v1/access_users/user`**: Get Access Information Object.
     *   *Script:* `test_user_details_api.py`
     *   *Purpose:* Retrieves detailed information for a specific access user (requires `user_id` or `external_id`).
     *   *Documentation:* [Get Access Information Object](https://apidocs.verkada.com/reference/getaccessuserviewv1)
 
-9.  **`GET /cameras/v1/analytics/lpr/timestamps`**: Get Timestamps for a specific License Plate.
+8.  **`GET /cameras/v1/analytics/lpr/timestamps`**: Get Timestamps for a specific License Plate.
     *   *Script:* `test_lpr_timestamps_api.py`
     *   *Purpose:* Retrieves timestamps when a specific license plate was seen (requires `license_plate` and `camera_id` parameters).
     *   *Documentation:* [Get Timestamps for a specific License Plate](https://apidocs.verkada.com/reference/getlprtimestampsviewv1)
     *   *Note:* API response is a dictionary containing a `detections` key, which holds the list of timestamp/detection events.
 
-10. **`GET /cameras/v1/analytics/lpr/images`**: Get seen license plates (All LPR Cameras).
+9.  **`GET /cameras/v1/analytics/lpr/images`**: Get seen license plates (All LPR Cameras).
     *   *Script:* `test_lpr_images_api_all_cameras.py`
     *   *Purpose:* Fetches LPR detection events for *all* LPR-enabled cameras within a time range and displays them in a table.
     *   *Documentation:* [Get seen license plates](https://apidocs.verkada.com/reference/getlprimagesview)
     *   *Note:* This script iterates through LPR-enabled cameras found via `/cameras/v1/devices`.
 
-11. **`GET /cameras/v1/analytics/lpr/images`**: Get seen license plates (LPOI Match Report).
+10. **`GET /cameras/v1/analytics/lpr/images`**: Get seen license plates (LPOI Match Report).
     *   *Script:* `test_lpr_lpoi_match_api.py`
     *   *Purpose:* Fetches LPR detection events for all LPR-enabled cameras within a time range and filters for matches against the LPOI list.
     *   *Documentation:* [Get seen license plates](https://apidocs.verkada.com/reference/getlprimagesview)
     *   *Note:* This script combines data from `/cameras/v1/analytics/lpr/license_plate_of_interest` and `/cameras/v1/analytics/lpr/images`.
 
-12. **`GET /cameras/v1/analytics/lpr/images`**: Get seen license plates (Non-LPOI Report).
+11. **`GET /cameras/v1/analytics/lpr/images`**: Get seen license plates (Non-LPOI Report).
     *   *Script:* `test_lpr_non_lpoi_report_api.py`
     *   *Purpose:* Fetches LPR detection events for all LPR-enabled cameras within a time range and filters for detections that *do not* match any plate in the LPOI list.
     *   *Documentation:* [Get seen license plates](https://apidocs.verkada.com/reference/getlprimagesview)
     *   *Note:* This script combines data from `/cameras/v1/analytics/lpr/license_plate_of_interest` and `/cameras/v1/analytics/lpr/images`.
 
-13. **`GET /cameras/v1/analytics/lpr/images`**: Get seen license plates (Hourly Report).
-    *   *Script:* `test_lpr_hourly_report_api.py`
-    *   *Purpose:* Fetches LPR detection events for all LPR-enabled cameras within a time range, categorizes them as LPOI or Non-LPOI, and provides an hourly count breakdown.
-    *   *Documentation:* [Get seen license plates](https://apidocs.verkada.com/reference/getlprimagesview)
-    *   *Note:* This script combines data from `/cameras/v1/analytics/lpr/license_plate_of_interest` and `/cameras/v1/analytics/lpr/images`.
-
-12. **`GET /cameras/v1/analytics/lpr/images`**: Get seen license plates (Non-LPOI Report).
-    *   *Script:* `test_lpr_non_lpoi_report_api.py`
-    *   *Purpose:* Fetches LPR detection events for all LPR-enabled cameras within a time range and filters for detections that *do not* match any plate in the LPOI list.
-    *   *Documentation:* [Get seen license plates](https://apidocs.verkada.com/reference/getlprimagesview)
-    *   *Note:* This script combines data from `/cameras/v1/analytics/lpr/license_plate_of_interest` and `/cameras/v1/analytics/lpr/images`.
-
-13. **`GET /cameras/v1/analytics/lpr/images`**: Get seen license plates (Hourly Report).
+12. **`GET /cameras/v1/analytics/lpr/images`**: Get seen license plates (Hourly Report).
     *   *Script:* `test_lpr_hourly_report_api.py`
     *   *Purpose:* Fetches LPR detection events for all LPR-enabled cameras within a time range, categorizes them as LPOI or Non-LPOI, and provides an hourly count breakdown.
     *   *Documentation:* [Get seen license plates](https://apidocs.verkada.com/reference/getlprimagesview)
@@ -153,7 +135,7 @@ The following endpoints also return JSON data and could be implemented with test
 
 ## API Rate Limiting
 
-When fetching large amounts of data, particularly when paginating through results from endpoints like `/cameras/v1/analytics/lpr/imagesview`, you may encounter API rate limits. If you receive `429 Too Many Requests` errors, consider adding a small delay (e.g., `time.sleep(0.1)`) between API calls, especially between fetching subsequent pages of results.
+When fetching large amounts of data, particularly when paginating through results from endpoints like `/notifications/v1/cameras`, you may encounter API rate limits. If you receive `429 Too Many Requests` errors, consider adding a small delay (e.g., `time.sleep(0.1)`) between API calls, especially between fetching subsequent pages of results.
 
 ---
 

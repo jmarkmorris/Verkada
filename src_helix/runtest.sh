@@ -39,17 +39,17 @@ USER_LIST_CACHE=""
 menu_items=(
   "1,Access Users List,/access/v1/access_users,src_helix/test_users_list_api.py"
   "2,Access User Details,/access/v1/access_users/user,src_helix/test_user_details_api.py"
-  "3,Access Events,/events/v1/access,src_helix/test_access_events_api.py" 
-  "4,LPR Images (fails),/cameras/v1/analytics/lpr/imagesview,src_helix/test_lpr_images_api.py"
-  "5,LPOI List,/cameras/v1/analytics/lpr/license_plate_of_interest,src_helix/test_lpoi_api.py"
-  "6,LPR Timestamps (Plate/Cam),/cameras/v1/analytics/lpr/timestamps,src_helix/test_lpr_timestamps_api.py"
-  "7,Camera List,/cameras/v1/devices,src_helix/test_cameras_api.py"
-  "8,Camera Notifications (fails),/cameras/v1/notifications,src_helix/test_notifications_api.py"
-  "9,Get API Token,/token,src_helix/test_token_api.py"
-  "10,LPR Events (All LPR Cams),/cameras/v1/analytics/lpr/images,src_helix/test_lpr_images_api_all_cameras.py"
-  "11,LPR Events (LPOI Match),/cameras/v1/analytics/lpr/images,src_helix/test_lpr_lpoi_match_api.py"
-  "12,LPR Events (Non-LPOI),/cameras/v1/analytics/lpr/images,src_helix/test_lpr_non_lpoi_report_api.py"
-  "13,LPR Events (Hourly Report),/cameras/v1/analytics/lpr/images,src_helix/test_lpr_hourly_report_api.py"
+  "3,Access Events,/events/v1/access,src_helix/test_access_events_api.py"
+  # Removed Test 4 (LPR Images - single camera /imagesview) as the endpoint is not documented
+  "4,LPOI List,/cameras/v1/analytics/lpr/license_plate_of_interest,src_helix/test_lpoi_api.py" # Re-numbered from 5
+  "5,LPR Timestamps (Plate/Cam),/cameras/v1/analytics/lpr/timestamps,src_helix/test_lpr_timestamps_api.py" # Re-numbered from 6
+  "6,Camera List,/cameras/v1/devices,src_helix/test_cameras_api.py" # Re-numbered from 7
+  "7,Camera Notifications,/notifications/v1/cameras,src_helix/test_notifications_api.py" # Re-numbered from 8, Corrected endpoint path
+  "8,Get API Token,/token,src_helix/test_token_api.py" # Re-numbered from 9
+  "9,LPR Events (All LPR Cams),/cameras/v1/analytics/lpr/images,src_helix/test_lpr_images_api_all_cameras.py" # Re-numbered from 10
+  "10,LPR Events (LPOI Match),/cameras/v1/analytics/lpr/images,src_helix/test_lpr_lpoi_match_api.py" # Re-numbered from 11
+  "11,LPR Events (Non-LPOI),/cameras/v1/analytics/lpr/images,src_helix/test_lpr_non_lpoi_report_api.py" # Re-numbered from 12
+  "12,LPR Events (Hourly Report),/cameras/v1/analytics/lpr/images,src_helix/test_lpr_hourly_report_api.py" # Re-numbered from 13
 )
 
 
@@ -148,10 +148,11 @@ run_test() {
   local running_comment="" # Variable to hold the comment for the 'Running:' line
 
   # Handle scripts requiring history_days
-  if [[ "$script_name" == "src_helix/test_lpr_images_api.py" || \
-        "$script_name" == "src_helix/test_notifications_api.py" || \
+  # Updated list to reflect re-numbering and removal of test_lpr_images_api.py
+  # Test 7 is test_notifications_api.py
+  if [[ "$script_name" == "src_helix/test_notifications_api.py" || \
         "$script_name" == "src_helix/test_access_events_api.py" || \
-        "$script_name" == "src_helix/test_lpr_timestamps_api.py" ]]; then
+        "$script_name" == "src_helix/test_lpr_timestamps_api.py" ]]; then # Test 7, 3, 5
     read -p "Enter history_days (default: 7): " history_days
     history_days=${history_days:-7} # Set default if empty
     if ! [[ "$history_days" =~ ^[0-9]+$ ]]; then
@@ -161,7 +162,7 @@ run_test() {
     extra_args+=("--history_days" "$history_days")
   fi
 
-  # Handle scripts requiring history_hours (Test cases 10, 11, 12, and 13)
+  # Handle scripts requiring history_hours (Test cases 9, 10, 11, and 12) - Re-numbered
   if [[ "$script_name" == "src_helix/test_lpr_images_api_all_cameras.py" || \
         "$script_name" == "src_helix/test_lpr_lpoi_match_api.py" || \
         "$script_name" == "src_helix/test_lpr_non_lpoi_report_api.py" || \
@@ -309,6 +310,7 @@ run_test() {
   fi
 
   # Handle script requiring license_plate and camera_id (via selection menu)
+  # Test 5: test_lpr_timestamps_api.py - Re-numbered from 6
   if [[ "$script_name" == "src_helix/test_lpr_timestamps_api.py" ]]; then
     echo "Fetching list of all cameras..."
     # Fetch and list all cameras using test_cameras_api.py as a module with --list-for-menu
@@ -437,7 +439,8 @@ run_test() {
 while true; do
   clear # Clear screen for better readability
   show_menu
-  read -p "Enter your choice [0-13 or L] (default: 0): " choice
+  # Updated prompt to reflect new number of tests
+  read -p "Enter your choice [0-12 or L] (default: 0): " choice
 
   # Set default choice to 0 (Exit) if empty
   choice=${choice:-0}
@@ -465,7 +468,8 @@ while true; do
       if [ -n "$selected_script" ]; then
           run_test "$selected_script"
       else
-          echo "Invalid choice. Please try again."
+          # Updated error message to reflect new number of tests
+          echo "Invalid choice. Please try again. Enter a number between 0 and 12, or 'L'."
           read -n 1 -s -r -p "Press any key to return to the menu..."
           echo
       fi
