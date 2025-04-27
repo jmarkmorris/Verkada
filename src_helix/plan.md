@@ -4,19 +4,11 @@ This document outlines potential improvements for the Python API test scripts an
 
 ## Remaining Improvement Ideas (Ordered by Least Risk)
 
-1.  **Centralize Pagination Logic:**
-    *   **Problem:** The pagination logic (checking for `next_page_token`, looping, accumulating results) is repeated in `fetch_lpr_images_for_camera` and `fetch_lpoi_data`.
-    *   **Idea:** Create a generic pagination helper function in `api_utils.py` (e.g., `_fetch_paginated_data(api_token, endpoint, params, list_key, page_size=...)`) that handles the looping and token management. The existing fetch functions (`fetch_lpr_images_for_camera`, `fetch_lpoi_data`) would then call this helper.
-    *   **Risk:** Medium. This affects core data fetching logic and requires careful implementation to ensure it works correctly for different endpoints (which might have different keys for the list and the next token).
 
-2.  **Move LPR Filtering Logic to `api_utils`:**
-    *   **Problem:** The logic for filtering LPR detections based on the LPOI list is repeated in `test_lpr_lpoi_match_api.py` and `test_lpr_non_lpoi_report_api.py`.
-    *   **Idea:** Create functions in `api_utils.py` (e.g., `filter_lpr_by_lpoi(detections, lpoi_set)`, `filter_lpr_by_non_lpoi(detections, lpoi_set)`) that take a list of detections and the LPOI set and return the filtered list. The LPR report scripts would then call these functions after fetching all detections.
-    *   **Risk:** Medium. This involves moving business logic, requiring careful testing to ensure filtering is applied correctly in the consuming scripts.
 
 3.  **Refactor User/Camera Selection (Eliminate stdout Parsing):**
     *   **Problem:** The `runtest.sh` and `testit.sh` scripts rely on running Python scripts with special flags (`--list-for-selection`, `--list-for-menu`) and parsing their stdout output, which is fragile and couples the shell scripts tightly to the output format of the Python scripts.
-    *   **Idea:** Create dedicated, minimal Python functions (perhaps within `api_utils.py` or a new `listing_utils.py`) specifically for fetching and returning lists of users/cameras in a structured format (e.g., a list of dictionaries). The shell scripts would call these functions directly (or via a minimal wrapper script) and process the structured data, rather than parsing formatted strings from stdout.
+    *   **Idea:** Create dedicated, minimal Python functions within `api_utils.py` specifically for fetching and returning lists of users/cameras in a structured format (e.g., a list of dictionaries). The shell scripts would call these functions directly (or via a minimal wrapper script) and process the structured data, rather than parsing formatted strings from stdout.
     *   **Risk:** Medium. This requires changes in both the shell scripts and modifying/creating Python code to provide structured list data instead of formatted strings.
 
 4.  **Consolidate API Key Reading:**

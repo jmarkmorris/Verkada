@@ -28,6 +28,16 @@ if [ -z "$API_KEY" ]; then
   exit 1
 fi
 
+# Check if jq is installed
+if ! command -v jq &> /dev/null
+then
+    echo "Error: jq is not installed."
+    echo "jq is required to parse JSON output from helper scripts."
+    echo "Please install jq (e.g., 'brew install jq' on macOS, 'sudo apt-get install jq' on Debian/Ubuntu)."
+    exit 1
+fi
+
+
 # Default log level for automated tests - INFO is a good balance
 LOG_LEVEL="INFO"
 
@@ -84,12 +94,10 @@ for test_item in "${test_list[@]}"; do
   echo "Script: $(basename "$script_file")"
   print_separator "-"
 
-  # Removed 'local' from these declarations in the main loop
   extra_args=()
   skip_current_test=false # Flag to skip the current test if setup fails
 
   # Add log level argument (only if not default ERROR)
-  # Removed 'local' from this declaration
   log_level_arg=""
   if [ "$LOG_LEVEL" != "ERROR" ]; then
       log_level_arg="--log_level $LOG_LEVEL"
@@ -104,7 +112,6 @@ for test_item in "${test_list[@]}"; do
       ;;
     src_helix/test_lpr_images_api_all_cameras.py|src_helix/test_lpr_lpoi_match_api.py|src_helix/test_lpr_non_lpoi_report_api.py|src_helix/test_lpr_hourly_report_api.py)
       # These tests accept --history_hours, use a default value
-      # Removed 'local' from this declaration
       default_hours=1
       if [[ "$script_file" == "src_helix/test_lpr_hourly_report_api.py" ]]; then
           default_hours=1 # Use 1 hour for quick run of hourly report
@@ -113,33 +120,40 @@ for test_item in "${test_list[@]}"; do
       echo "  -> Using default history_hours=$default_hours"
       ;;
     src_helix/test_user_details_api.py)
-      # This test requires --user_index and --user_number.
-      # We need to fetch the user list and pick the first one.
+      # This test requires a user_id. We need to fetch the user list and pick the first one.
       echo "  -> Fetching user list to select first user..."
-      # Use python -m to ensure imports work, capture output and errors
-      user_list_raw_output=$(python -m src_helix.test_users_list_api --log_level "$LOG_LEVEL" --list-for-selection 2>&1)
-      user_list_exit_code=$?
+      # Call list_items.py to get the full user list as JSON
+      # Direct stderr to /dev/null to keep output clean, unless LOG_LEVEL is DEBUG
+      local list_output
+      if [ "$LOG_LEVEL" == "DEBUG" ]; then
+          list_output=$(python -m src_helix.list_items --type users --log_level DEBUG)
+          list_exit_code=$?
+      else
+          list_output=$(python -m src_helix.list_items --type users --log_level ERROR 2>/dev/null)
+          list_exit_code=$?
+      fi
 
-      if [ $user_list_exit_code -ne 0 ]; then
-        echo "  -> Failed to fetch user list (exit code $user_list_exit_code). Cannot run user details test."
-        echo "     Check logs for test_users_list_api.py for details."
+      if [ $list_exit_code -ne 0 ]; then
+        echo "  -> Failed to fetch user list (exit code $list_exit_code). Cannot run user details test."
+        echo "     Check logs for list_items.py for details."
         skip_current_test=true
       else
-        # Extract the first user line after the marker
-        first_user_line=$(echo "$user_list_raw_output" | awk '/---START_USER_LIST---/{flag=1; next} flag' | head -n 1)
+        # Parse the JSON output using jq to get the first user's user_id and full_name
+        # .[0] gets the first object in the array
+        first_user_id=$(echo "$list_output" | jq -r '.[0].user_id')
+        first_user_name=$(echo "$list_output" | jq -r '.[0].full_name')
 
-        if [ -z "$first_user_line" ]; then
-          echo "  -> User list is empty. Cannot run user details test."
+        if [ "$first_user_id" == "null" ] || [ -z "$first_user_id" ]; then
+          echo "  -> User list is empty or first user has no user_id. Cannot run user details test."
           skip_current_test=true
         else
-          # Parse the first user line: index,user_id,user_name
-          IFS=',' read -r first_user_index first_user_id first_user_name <<< "$first_user_line"
-          # The script needs the 0-based index and the 1-based number
-          # Removed 'local' from this declaration
-          zero_based_index=$((first_user_index - 1))
-          extra_args+=("--user_index" "$zero_based_index")
-          extra_args+=("--user_number" "$first_user_index") # Pass the 1-based index as user_number
-          echo "  -> Selected first user: ${first_user_name} (Index: ${zero_based_index}, Number: ${first_user_index})"
+          # Handle potential null or empty full_name
+          if [ "$first_user_name" == "null" ] || [ -z "$first_user_name" ]; then
+              first_user_name="Unnamed User"
+          fi
+          # Pass the user_id to the script (assuming test_user_details_api.py is updated)
+          extra_args+=("--user_id" "$first_user_id")
+          echo "  -> Selected first user: ${first_user_name} (ID: ${first_user_id:0:5}...)"
         fi
       fi
       ;;
@@ -153,7 +167,6 @@ for test_item in "${test_list[@]}"; do
     skipped_count=$((skipped_count + 1))
   else
     # Convert script path to module path (e.g., src_helix/test_script.py -> src_helix.test_script)
-    # Removed 'local' from this declaration
     module_path=$(echo "$script_file" | sed 's/\.py$//' | sed 's/\//./g')
 
     # Conditionally add the --log_level argument. Omit if the selected level is ERROR,
@@ -161,7 +174,6 @@ for test_item in "${test_list[@]}"; do
     # log_level_arg is already declared above without local
 
     printf "%*s\n" "$SEPARATOR_WIDTH" | tr ' ' "-"
-    # Append the running_comment if it's set - REMOVED "$running_comment"
     echo "Running: python -m $module_path $log_level_arg ${extra_args[@]}"
     printf "%*s\n" "$SEPARATOR_WIDTH" | tr ' ' "-"
     # Execute the script as a module
@@ -169,7 +181,6 @@ for test_item in "${test_list[@]}"; do
     # even if it's piped (though not currently piping stdout here)
     set -o pipefail
     python -m "$module_path" $log_level_arg "${extra_args[@]}"
-    # Removed 'local' from this declaration
     exit_code=$?
     set +o pipefail # Turn pipefail off
 

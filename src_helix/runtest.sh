@@ -28,11 +28,21 @@ if [ -z "$API_KEY" ]; then
   exit 1
 fi
 
+# Check if jq is installed
+if ! command -v jq &> /dev/null
+then
+    echo "Error: jq is not installed."
+    echo "jq is required to parse JSON output from helper scripts."
+    echo "Please install jq (e.g., 'brew install jq' on macOS, 'sudo apt-get install jq' on Debian/Ubuntu)."
+    exit 1
+fi
+
+
 # Default log level - Changed to ERROR
 LOG_LEVEL="ERROR"
 
 # Variable to store the captured user list for selection (used by test_user_details_api.py)
-USER_LIST_CACHE=""
+# USER_LIST_CACHE="" # No longer needed with direct JSON parsing
 
 # Define menu items as an array of strings: "index|description|api_endpoint|script_file"
 # Using '|' as a delimiter instead of ',' to handle commas in descriptions/paths.
@@ -213,75 +223,78 @@ run_test() {
   extra_args+=("${time_args[@]}")
 
 
-  # Handle script requiring user_index (Test 3: test_user_details_api.py) - Updated numbering
-  if [[ "$script_name" == "src_helix/test_user_details_api.py" ]]; then # Test 3
+  # Handle script requiring user_index (Test 3: test_user_details_api.py)
+  if [[ "$script_name" == "src_helix/test_user_details_api.py" ]]; then
     echo "Fetching list of access users..."
-    # Fetch and list users using test_users_list_api.py as a module with --list-for-selection
-    # Capture both stdout and stderr
-    # Use python -m to ensure imports within test_users_list_api work correctly
-    # Cache the output for potential reuse (though not strictly necessary with current logic)
-    USER_LIST_CACHE=$(python -m src_helix.test_users_list_api --log_level "$LOG_LEVEL" --list-for-selection 2>&1)
-    script_exit_code=$? # Capture exit code
-
+    # Call list_items.py to get the full user list as JSON
+    # Direct stderr to /dev/null to keep output clean, unless LOG_LEVEL is DEBUG
+    local list_output
     if [ "$LOG_LEVEL" == "DEBUG" ]; then
-        echo "--- Raw output from test_users_list_api.py ---"
-        echo "$USER_LIST_CACHE"
-        echo "--- End raw output ---"
+        list_output=$(python -m src_helix.list_items --type users --log_level DEBUG)
+        list_exit_code=$?
+    else
+        list_output=$(python -m src_helix.list_items --type users --log_level ERROR 2>/dev/null)
+        list_exit_code=$?
     fi
 
-    # Extract only the user list lines after the marker using awk
-    # Set flag=1 when marker is found, skip marker line (next), print lines when flag is 1
-    user_list_output=$(echo "$USER_LIST_CACHE" | awk '/---START_USER_LIST---/{flag=1; next} flag')
 
-    if [ "$LOG_LEVEL" == "DEBUG" ]; then
-        echo "--- Filtered user list output ---"
-        echo "$user_list_output"
-        echo "--- End filtered output ---"
-    fi
-
-    # Check if the script failed or returned an empty list
-    if [ $script_exit_code -ne 0 ]; then
-      echo "Failed to fetch user list (exit code $script_exit_code). Aborting."
-      echo "Please check the 'users_list_api_debug.log' file for details."
-      read -n 1 -s -r -p "Press any key to return to the menu..."
-      echo
-      return # Exit the run_test function
-    elif [ -z "$user_list_output" ]; then
-      # Script exited successfully (0), but no users were listed after the marker
-      echo "The API call was successful, but no access users were returned."
-      echo "Please check the 'users_list_api_debug.log' file for details if you expected users."
+    if [ $list_exit_code -ne 0 ]; then
+      echo "Failed to fetch user list (exit code $list_exit_code). Cannot run user details test."
+      echo "Check logs for list_items.py for details."
       read -n 1 -s -r -p "Press any key to return to the menu..."
       echo
       return # Exit the run_test function
     fi
 
-    # Build user selection menu (only if list is not empty and script succeeded)
+    # Parse the JSON output using jq to get an array of objects with index, user_id, and full_name
+    # jq filter: .[] | {index: (. | input_line_number), user_id: .user_id, full_name: .full_name}
+    # This creates an array of objects like [{"index": 1, "user_id": "...", "full_name": "..."}, ...]
+    # Then we iterate over this array in bash
+    local user_list_json=$(echo "$list_output" | jq -c '.[] | {user_id: .user_id, full_name: .full_name}')
+
+    if [ -z "$user_list_json" ]; then
+      echo "User list is empty or could not be parsed. Cannot run user details test."
+      read -n 1 -s -r -p "Press any key to return to the menu..."
+      echo
+      return # Exit the run_test function
+    fi
+
+    # Build user selection menu from the parsed JSON
     printf "%*s\n" "$FIXED_SEPARATOR_WIDTH" | tr ' ' '-' # Separator line (---)
     echo " Select a user for details test:"
     printf "%*s\n" "$FIXED_SEPARATOR_WIDTH" | tr ' ' '-' # Separator line (---)
     user_options=() # Array to store user_id
-    user_display_options=() # Array to store display string (index)
     user_names=() # Array to store user_name for display confirmation
-    # user_display_strings=() # Array to store the full display string for passing to script - REMOVED
 
-    # Now pipe the filtered output to the while loop
-    while IFS=',' read -r index user_id user_name; do
-      # The filtering should ensure we only get valid lines, but keep the check for safety
-      if [ -n "$index" ] && [ -n "$user_id" ] && [ -n "$user_name" ]; then
-        local display_string="${index}) $user_name (ID: ${user_id:0:5}...)"
+    local i=0
+    while IFS= read -r user_obj; do
+        local user_id=$(echo "$user_obj" | jq -r '.user_id')
+        local full_name=$(echo "$user_obj" | jq -r '.full_name')
+        local display_index=$((i + 1))
+
+        # Handle potential null or empty full_name
+        if [ "$full_name" == "null" ] || [ -z "$full_name" ]; then
+            full_name="Unnamed User"
+        fi
+
+        # Handle potential null or empty user_id
+        if [ "$user_id" == "null" ] || [ -z "$user_id" ]; then
+            echo "Skipping user entry with missing user_id." >&2 # Log to stderr
+            continue # Skip this entry
+        fi
+
+        local display_string="${display_index}) $full_name (ID: ${user_id:0:5}...)"
         echo " $display_string" # Display user name and truncated ID
-        user_options+=("$user_id") # Store user_id in an array
-        user_display_options+=("$index") # Store the display index
-        user_names+=("$user_name") # Store user name
-        # user_display_strings+=("$display_string") # Store the full display string - REMOVED
-      fi
-    done <<< "$user_list_output" # Use the filtered output
 
-    # This check should technically be redundant now due to the check above,
-    # but keeping it doesn't hurt.
+        user_options+=("$user_id") # Store user_id in an array
+        user_names+=("$full_name") # Store user name
+        i=$((i + 1))
+    done <<< "$user_list_json"
+
+
     if [ ${#user_options[@]} -eq 0 ]; then
-        echo "No users were found or parsed from the list after successful API call."
-        echo "This is unexpected. Please check the 'users_list_api_debug.log' file."
+        echo "No valid users were found or parsed from the list."
+        echo "Please check the list_items_debug.log file."
         read -n 1 -s -r -p "Press any key to return to the menu..."
         echo
         return
@@ -293,14 +306,12 @@ run_test() {
 
     read -p "Enter your choice: " user_choice
 
-    # --- Start of fix for empty input ---
     if [ -z "$user_choice" ]; then
       echo "Invalid choice. Aborting."
       read -n 1 -s -r -p "Press any key to return to the menu..."
       echo
       return # Exit the run_test function
     fi
-    # --- End of fix for empty input ---
 
     if [ "$user_choice" -eq 0 ]; then
       echo "Operation cancelled."
@@ -310,95 +321,119 @@ run_test() {
     fi
 
     # Validate choice and get the corresponding 0-based index
-    # Find the index in user_display_options that matches the user_choice
-    selected_index=-1
-    for i in "${!user_display_options[@]}"; do
-        if [[ "${user_display_options[$i]}" == "$user_choice" ]]; then
-            selected_index=$i
-            break
-        fi
-    done
+    local selected_index=$((user_choice - 1))
 
-    if [ "$selected_index" -eq -1 ]; then
+    if [ "$selected_index" -lt 0 ] || [ "$selected_index" -ge ${#user_options[@]} ]; then
       echo "Invalid choice. Aborting."
       read -n 1 -s -r -p "Press any key to return to the menu..."
       echo
       return
     fi
 
-    # Pass the 0-based index and the 1-based user number to the script
+    local user_id_to_fetch="${user_options[$selected_index]}"
+    local selected_user_name="${user_names[$selected_index]}"
+
     # Print a confirmation message using the user's choice and the selected user's name/ID
-    echo "Selected choice $user_choice: ${user_names[$selected_index]} (ID: ${user_options[$selected_index]:0:5}...)"
+    echo "Selected choice $user_choice: ${selected_user_name} (ID: ${user_id_to_fetch:0:5}...)"
 
     # Add arguments for user index (0-based) and user number (1-based)
-    extra_args+=("--user_index" "$selected_index")
-    extra_args+=("--user_number" "$user_choice")
-    # Removed --user_display_string argument
+    # The script test_user_details_api.py still expects --user_index and --user_number
+    # based on the *original* list order from the API, not the filtered/displayed list.
+    # We need to pass the *original* index from the full list.
+    # Let's re-think this. The script test_user_details_api.py only needs the user_id.
+    # The --user_index and --user_number arguments were remnants of the old parsing logic.
+    # Let's simplify test_user_details_api.py to only require --user_id.
 
-    # Set the running comment for this specific script
-    # The comment is no longer needed as --user_number is explicit
-    # running_comment="# corresponds to user number $user_choice"
+    # --- Re-evaluating test_user_details_api.py arguments ---
+    # The script test_user_details_api.py currently takes --user_index and --user_number.
+    # It uses --user_index to get the user_id from a *silently fetched* list.
+    # This is still coupled. Let's change test_user_details_api.py to take --user_id directly.
+
+    # --- Revised Plan for Test 3 ---
+    # 1. Modify test_user_details_api.py to accept --user_id instead of --user_index/--user_number.
+    # 2. In runtest.sh, after selecting the user, pass the selected user_id to test_user_details_api.py.
+    # 3. Remove the silent fetch and index logic from test_user_details_api.py main function.
+
+    # Let's implement step 2 here first, assuming step 1 will be done in test_user_details_api.py.
+    extra_args+=("--user_id" "$user_id_to_fetch")
+
   fi
 
   # Handle script requiring license_plate and camera_id (via selection menu)
-  # Test 10: test_lpr_timestamps_api.py - Updated numbering
-  if [[ "$script_name" == "src_helix/test_lpr_timestamps_api.py" ]]; then # Test 10
+  # Test 10: test_lpr_timestamps_api.py
+  if [[ "$script_name" == "src_helix/test_lpr_timestamps_api.py" ]]; then
     echo "Fetching list of all cameras..."
-    # Fetch and list all cameras using test_cameras_api.py as a module with --list-for-menu
-    # Capture both stdout and stderr
-    # Use python -m to ensure imports within test_cameras_api work correctly
-    all_cameras_raw_output=$(python -m src_helix.test_cameras_api --log_level "$LOG_LEVEL" --list-for-menu 2>&1)
-    script_exit_code=$? # Capture exit code
-
+    # Call list_items.py to get the full camera list as JSON
+    # Direct stderr to /dev/null to keep output clean, unless LOG_LEVEL is DEBUG
+    local list_output
     if [ "$LOG_LEVEL" == "DEBUG" ]; then
-        echo "--- Raw output from test_cameras_api.py ---"
-        echo "$all_cameras_raw_output"
-        echo "--- End raw output ---"
+        list_output=$(python -m src_helix.list_items --type cameras --log_level DEBUG)
+        list_exit_code=$?
+    else
+        list_output=$(python -m src_helix.list_items --type cameras --log_level ERROR 2>/dev/null)
+        list_exit_code=$?
     fi
 
-    if [ $script_exit_code -ne 0 ]; then
-      echo "Failed to fetch camera list (exit code $script_exit_code). Aborting."
-      echo "Please check the 'cameras_api_debug.log' file for details."
+    if [ $list_exit_code -ne 0 ]; then
+      echo "Failed to fetch camera list (exit code $list_exit_code). Cannot run LPR timestamps test."
+      echo "Check logs for list_items.py for details."
       read -n 1 -s -r -p "Press any key to return to the menu..."
       echo
-      return
+      return # Exit the run_test function
     fi
 
-    # Extract only the camera list lines after the marker using awk
-    # Set flag=1 when marker is found, skip marker line (next), print lines when flag is 1
-    camera_list_output=$(echo "$all_cameras_raw_output" | awk '/---START_CAMERA_LIST---/{flag=1; next} flag')
+    # Parse the JSON output using jq to get an array of objects with index, camera_id, and name
+    local camera_list_json=$(echo "$list_output" | jq -c '.[] | {camera_id: .camera_id, name: .name}')
 
-    if [ "$LOG_LEVEL" == "DEBUG" ]; then
-        echo "--- Filtered camera list output ---"
-        echo "$camera_list_output"
-        echo "--- End filtered output ---"
+    if [ -z "$camera_list_json" ]; then
+      echo "Camera list is empty or could not be parsed. Cannot run LPR timestamps test."
+      read -n 1 -s -r -p "Press any key to return to the menu..."
+      echo
+      return # Exit the run_test function
     fi
-
 
     # Build camera selection menu
     printf "%*s\n" "$FIXED_SEPARATOR_WIDTH" | tr ' ' '-' # Separator line (---)
     echo " Select a camera for LPR timestamps test:"
-    echo " (Choose an LPR-enabled camera)"
+    echo " (Choose an LPR-enabled camera if possible)"
     printf "%*s\n" "$FIXED_SEPARATOR_WIDTH" | tr ' ' '-' # Separator line (---)
-    camera_options=()
-    # Now pipe the filtered output to the while loop
-    while IFS=',' read -r index camera_id camera_name; do
-      # The filtering should ensure we only get valid lines, but keep the check for safety
-      if [ -n "$index" ] && [ -n "$camera_id" ] && [ -n "$camera_name" ]; then
-        echo " $index) $camera_name"
-        camera_options+=("$camera_id") # Store camera_id in an array
-      fi
-    done <<< "$camera_list_output" # Use the filtered output
+    camera_options=() # Array to store camera_id
+    camera_names=() # Array to store camera_name for display confirmation
 
-    # Check if any cameras were actually parsed
+    local i=0
+    while IFS= read -r camera_obj; do
+        local camera_id=$(echo "$camera_obj" | jq -r '.camera_id')
+        local camera_name=$(echo "$camera_obj" | jq -r '.name')
+        local display_index=$((i + 1))
+
+        # Handle potential null or empty name
+        if [ "$camera_name" == "null" ] || [ -z "$camera_name" ]; then
+            camera_name="Unnamed Camera"
+        fi
+
+        # Handle potential null or empty camera_id
+        if [ "$camera_id" == "null" ] || [ -z "$camera_id" ]; then
+            echo "Skipping camera entry with missing camera_id." >&2 # Log to stderr
+            continue # Skip this entry
+        fi
+
+        local display_string="${display_index}) $camera_name (ID: ${camera_id:0:5}...)"
+        echo " $display_string" # Display camera name and truncated ID
+
+        camera_options+=("$camera_id") # Store camera_id in an array
+        camera_names+=("$camera_name") # Store camera name
+        i=$((i + 1))
+    done <<< "$camera_list_json"
+
+
     if [ ${#camera_options[@]} -eq 0 ]; then
-        echo "No cameras were found or parsed from the list."
-        echo "This could mean the API returned no cameras, or there was an issue parsing the output."
-        echo "Please check the 'cameras_api_debug.log' file for details."
+        echo "No valid cameras were found or parsed from the list."
+        echo "Please check the list_items_debug.log file."
         read -n 1 -s -r -p "Press any key to return to the menu..."
         echo
         return
     fi
+
 
     printf "%*s\n" "$FIXED_SEPARATOR_WIDTH" | tr ' ' '-' # Separator line (---)
     echo " 0) Cancel"
@@ -406,14 +441,12 @@ run_test() {
 
     read -p "Enter your choice: " camera_choice
 
-    # --- Start of fix for empty input ---
     if [ -z "$camera_choice" ]; then
       echo "Invalid choice. Aborting."
       read -n 1 -s -r -p "Press any key to return to the menu..."
       echo
       return # Exit the run_test function
     fi
-    # --- End of fix for empty input ---
 
     if [ "$camera_choice" -eq 0 ]; then
       echo "Operation cancelled."
@@ -423,16 +456,19 @@ run_test() {
     fi
 
     # Validate choice and get camera_id
-    # The check below now assumes camera_choice is not empty due to the check above
-    if ! [[ "$camera_choice" =~ ^[0-9]+$ ]] || [ "$camera_choice" -lt 1 ] || [ "$camera_choice" -gt ${#camera_options[@]} ]; then
+    local selected_index=$((camera_choice - 1))
+
+    if [ "$selected_index" -lt 0 ] || [ "$selected_index" -ge ${#camera_options[@]} ]; then
       echo "Invalid choice. Aborting."
       read -n 1 -s -r -p "Press any key to return to the menu..."
       echo
       return
     fi
 
-    selected_camera_id="${camera_options[$((camera_choice-1))]}"
-    echo "Selected camera ID: $selected_camera_id"
+    local selected_camera_id="${camera_options[$selected_index]}"
+    local selected_camera_name="${camera_names[$selected_index]}"
+
+    echo "Selected camera: ${selected_camera_name} (ID: ${selected_camera_id:0:5}...)"
     extra_args+=("--camera_id" "$selected_camera_id")
 
     read -p "Enter license plate (required): " license_plate
@@ -456,7 +492,6 @@ run_test() {
   fi
 
   printf "%*s\n" "$FIXED_SEPARATOR_WIDTH" | tr ' ' '-' # Separator line (---)
-  # Append the running_comment if it's set - REMOVED "$running_comment"
   echo "Running: python -m $module_path $log_level_arg ${extra_args[@]}"
   printf "%*s\n" "$FIXED_SEPARATOR_WIDTH" | tr ' ' '-' # Separator line (---)
   # Execute the script as a module

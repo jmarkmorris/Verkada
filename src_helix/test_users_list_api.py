@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Script to test the Verkada Access Users List API endpoint.
-Can also list users in a parsable format for menu selection.
+Fetches and prints the list of access users and saves a JSON template.
 """
 import os
 import sys
@@ -22,7 +22,9 @@ logger = logging.getLogger(__name__)
 
 
 def fetch_users_list(api_token: str) -> dict:
-    """Fetch list of access users from Verkada API."""
+    """Fetch list of access users from Verkada API (first page only)."""
+    # Note: This function fetches only the first page.
+    # Use fetch_all_access_users from api_utils for full list with pagination.
     try:
         # Use the new _fetch_data function
         data = _fetch_data(api_token, USERS_LIST_ENDPOINT, method='GET')
@@ -67,79 +69,7 @@ def fetch_users_list(api_token: str) -> dict:
         raise # Re-raise the exception
 
 
-def _list_users_for_selection(api_key: str):
-    """
-    Fetches users and prints them to stdout in 'index,user_id,name' format
-    for use by the runtest.sh script menu.
-    Suppresses standard logging to stdout during the listing process.
-    """
-    # We get the logger again here to ensure we have the correct instance
-    local_logger = logging.getLogger(__name__)
-    temp_stream_handler = None
-
-    # Temporarily remove the stream handler
-    # *before* any API calls or printing the marker
-    for handler in local_logger.handlers:
-        if isinstance(handler, logging.StreamHandler) and handler.stream == sys.stdout:
-            temp_stream_handler = handler
-            local_logger.removeHandler(handler)
-            break # Assuming only one StreamHandler for stdout
-
-    try:
-        # Get API token using imported function
-        # get_api_token now has debug logging, which goes to the file handler
-        # It returns the full data, extract the token string
-        token_data = get_api_token(api_key)
-        api_token = token_data.get('token')
-        if not api_token:
-             raise ValueError("API token not found in response.")
-
-
-        # Fetch user data using the new _fetch_data function
-        # Errors will be logged to file by the file handler via _fetch_data
-        data = _fetch_data(api_token, USERS_LIST_ENDPOINT, method='GET')
-
-        # These debug logs will now go to the file handler because the logger level is DEBUG
-        logger.debug(f"Raw user list data in _list_for_selection: {data}")
-        logger.debug(f"Type of data received in _list_for_selection: {type(data)}")
-
-        # Extract the list of users using the correct key 'access_members'
-        all_users = data.get('access_members', []) if isinstance(data, dict) else []
-
-        logger.debug(f"Extracted users_list in _list_for_selection: {all_users}")
-        logger.debug(f"Length of users_list in _list_for_selection: {len(all_users)}")
-
-        # Add a marker to indicate the start of the parsable output
-        # Print directly to stdout, bypassing the logger
-        print("---START_USER_LIST---", file=sys.stdout)
-        sys.stdout.flush() # Flush the marker immediately
-
-        # Print users in a parsable format: index,user_id,name
-        # Print nothing if the list is empty
-        for i, user in enumerate(all_users):
-            # Ensure user is a dict and has required keys: 'user_id' and 'full_name'
-            if isinstance(user, dict) and 'user_id' in user and 'full_name' in user:
-                 # Use the full_name provided by the API
-                 full_name = user.get('full_name') or "Unnamed User" # Provide a default name
-
-                 # Clean the name to remove any commas that could break parsing
-                 clean_name = full_name.replace(',', ' ')
-
-                 print(f"{i+1},{user['user_id']},{clean_name}", file=sys.stdout) # Print user lines
-            else:
-                 # Updated warning message to reflect the keys being checked
-                 logger.warning(f"Skipping user entry due to missing 'user_id' or 'full_name': {user}")
-
-        sys.stdout.flush() # Explicitly flush stdout after printing the list
-
-    except Exception as e:
-        # Log the error to the file handler
-        logger.error(f"Error listing users for selection: {e}", exc_info=True)
-        sys.exit(1) # Exit with non-zero status on error
-    finally:
-        # Re-add the stream handler
-        if temp_stream_handler:
-            local_logger.addHandler(temp_stream_handler)
+# Removed the _list_users_for_selection function
 
 
 def main():
@@ -152,11 +82,7 @@ def main():
         default='ERROR',
         help="Set the logging level (default: ERROR)"
     )
-    parser.add_argument(
-        "--list-for-selection",
-        action="store_true",
-        help="Fetch and list users in a format suitable for the runtest.sh menu"
-    )
+    # Removed --list-for-selection argument
 
 
     # Parse arguments
@@ -174,13 +100,6 @@ def main():
     else:
         logger.debug(f"API_KEY found: {api_key[:5]}...{api_key[-4:]}")
 
-    # If --list-for-selection is set, run the helper function and exit
-    if args.list_for_selection:
-        _list_users_for_selection(api_key)
-        sys.exit(0) # Exit successfully after listing
-
-
-    # Otherwise, proceed with the standard test script logic
     users_data = None # Initialize to None
     try:
         # Get API token
@@ -191,11 +110,11 @@ def main():
         if not api_token:
              raise ValueError("API token not found in response.")
 
-        # Fetch users list
+        # Fetch users list (first page)
         logger.debug("Attempting to fetch users list data...")
         users_data = fetch_users_list(api_token) # Capture the full data
         users_list = users_data.get('access_members', []) if isinstance(users_data, dict) else []
-        logger.info(f"Successfully retrieved access users list. Found {len(users_list)} users.")
+        logger.info(f"Successfully retrieved access users list (first page). Found {len(users_list)} users on this page.")
 
         # Generate and save JSON template if data is available
         if users_list:
@@ -205,7 +124,7 @@ def main():
             # Pass the first item of the list and the key to wrap it with
             save_json_template(users_list[0], output_filename, wrap_key="access_members")
         else:
-            logger.warning("No access users found to generate a template.")
+            logger.warning("No access users found on the first page to generate a template.")
 
     except Exception as e:
         # Log the execution failure

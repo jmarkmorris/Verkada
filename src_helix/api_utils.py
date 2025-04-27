@@ -201,6 +201,93 @@ def _fetch_data(api_token: str = None, endpoint: str = None, method: str = 'GET'
         raise
 
 
+def fetch_all_paginated_data(api_token: str, endpoint: str, list_key: str, params: dict = None) -> list:
+    """
+    Fetches all data from a paginated API endpoint.
+    Handles pagination using 'next_page_token'.
+
+    Args:
+        api_token: The short-lived API token.
+        endpoint: The API endpoint path.
+        list_key: The key in the response dictionary that contains the list of items (e.g., 'cameras', 'access_members').
+        params: Optional dictionary of initial query parameters.
+
+    Returns:
+        A list containing all items from all pages.
+    """
+    all_items = []
+    page_token = None
+    page_count = 0
+    initial_params = params.copy() if params else {} # Copy initial params
+
+    logger.debug(f"Fetching all data from {endpoint} with list key '{list_key}'")
+
+    while True:
+        current_params = initial_params.copy()
+        current_params["page_size"] = 1000 # Use max page size for efficiency
+
+        if page_token:
+            current_params["page_token"] = page_token
+            logger.debug(f"Fetching page {page_count + 1} with page_token: {page_token}")
+        else:
+             logger.debug(f"Fetching initial page {page_count + 1}")
+
+        try:
+            data = _fetch_data(api_token, endpoint, method='GET', params=current_params)
+
+            if isinstance(data, dict):
+                current_page_items = data.get(list_key, [])
+                if not isinstance(current_page_items, list):
+                     logger.warning(f"Expected '{list_key}' list in response for page {page_count + 1}, but got {type(current_page_items)}. Stopping pagination.")
+                     break # Stop if the key is not a list
+
+                logger.debug(f"Found '{list_key}' key with {len(current_page_items)} items on page {page_count + 1}")
+                all_items.extend(current_page_items)
+                logger.debug(f"Added {len(current_page_items)} items from page {page_count + 1}. Total items fetched so far: {len(all_items)}")
+
+                page_token = data.get('next_page_token') # Get next page token from the dictionary
+            else:
+                logger.warning(f"Response data for page {page_count + 1} is not a dictionary: {type(data)}. Stopping pagination.")
+                break # Stop if the response is not a dictionary
+
+            page_count += 1
+
+            if page_token:
+                logger.debug(f"Next page token found: {page_token}. Continuing pagination.")
+                # Optional: Add a small delay to avoid hitting rate limits
+                # time.sleep(0.1)
+            else:
+                logger.debug(f"No next page token found. Ending pagination.")
+                break # No more pages
+
+        except Exception as e:
+            # _fetch_data already logged the specific error (HTTP, JSON, etc.)
+            # Log a higher-level error here and stop pagination
+            logger.error(f"Failed to fetch data from {endpoint}, page {page_count + 1}: {e}")
+            break # Stop pagination on any error
+
+    logger.info(f"Finished fetching all data from {endpoint}. Total items fetched: {len(all_items)}")
+    return all_items
+
+
+def fetch_all_access_users(api_token: str) -> list:
+    """
+    Fetches all access users from the /access/v1/access_users endpoint.
+    Handles pagination.
+    """
+    logger.info("Fetching all access users...")
+    return fetch_all_paginated_data(api_token, USERS_LIST_ENDPOINT, 'access_members')
+
+
+def fetch_all_cameras(api_token: str) -> list:
+    """
+    Fetches all cameras from the /cameras/v1/devices endpoint.
+    Handles pagination.
+    """
+    logger.info("Fetching all cameras...")
+    return fetch_all_paginated_data(api_token, CAMERAS_ENDPOINT, 'cameras')
+
+
 def get_api_token(api_key: str) -> dict:
     """
     Fetch short-lived API token from Verkada API.
@@ -303,17 +390,10 @@ def fetch_lpr_enabled_cameras(api_token: str) -> list:
     Returns a list of camera dictionaries.
     """
     try:
-        # Use the new _fetch_data function
-        data = _fetch_data(api_token, CAMERAS_ENDPOINT, method='GET')
+        # Use the new fetch_all_cameras function to get all cameras
+        all_cameras = fetch_all_cameras(api_token)
 
-        logger.debug(f"Raw camera response data in fetch_lpr_enabled_cameras: {data}")
-        logger.debug(f"Type of data received in fetch_lpr_enabled_cameras: {type(data)}")
-
-        # Extract the list of cameras, defaulting to empty list if not found or not a list
-        all_cameras = data.get('cameras')
-        if not isinstance(all_cameras, list):
-             logger.warning(f"Expected 'cameras' list in response, but got {type(all_cameras)}. Returning empty list.")
-             return []
+        logger.debug(f"Total cameras fetched in fetch_lpr_enabled_cameras: {len(all_cameras)}")
 
         # Filter for cameras with 'name' and 'camera_id' that contain 'License' (case-insensitive)
         lpr_cameras = [
@@ -326,8 +406,8 @@ def fetch_lpr_enabled_cameras(api_token: str) -> list:
 
         return lpr_cameras
     except Exception as e:
-        # _fetch_data already logs the specific error, just re-raise or log a higher-level error
-        logger.error(f"Failed to fetch LPR-enabled cameras: {e}")
+        # fetch_all_cameras already logs the specific error, just re-raise or log a higher-level error
+        logger.error(f"Failed to fetch and filter LPR-enabled cameras: {e}")
         raise # Re-raise the exception
 
 

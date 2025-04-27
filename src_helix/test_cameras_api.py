@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Script to test the Verkada Cameras API endpoint.
+Fetches and prints the list of cameras and saves a JSON template.
 """
 import os
 import sys
@@ -19,7 +20,9 @@ logger = logging.getLogger(__name__)
 
 
 def fetch_cameras_data(api_token: str):
-    """Fetch camera data from Verkada API."""
+    """Fetch camera data from Verkada API (first page only)."""
+    # Note: This function fetches only the first page.
+    # Use fetch_all_cameras from api_utils for full list with pagination.
     try:
         # Use the new _fetch_data function
         data = _fetch_data(api_token, CAMERAS_ENDPOINT, method='GET')
@@ -46,73 +49,7 @@ def fetch_cameras_data(api_token: str):
         raise # Re-raise the exception
 
 
-def _list_cameras_for_menu(api_key: str):
-    """
-    Fetches cameras and prints them to stdout in 'index,id,name' format
-    for use by the runtest.sh script menu. Filters for cameras with 'License' in their name.
-    Suppresses standard logging to stdout.
-    """
-    # We get the logger again here to ensure we have the correct instance
-    local_logger = logging.getLogger(__name__)
-    temp_stream_handler = None
-
-    # Temporarily remove the stream handler
-    # *before* any API calls or printing the marker
-    for handler in local_logger.handlers:
-        if isinstance(handler, logging.StreamHandler) and handler.stream == sys.stdout:
-            temp_stream_handler = handler
-            local_logger.removeHandler(handler)
-            break # Assuming only one StreamHandler for stdout
-
-    try:
-        # Get API token using imported function
-        # get_api_token now has debug logging, which goes to the file handler
-        # It returns the full data, extract the token string
-        token_data = get_api_token(api_key)
-        api_token = token_data.get('token')
-        if not api_token:
-             raise ValueError("API token not found in response.")
-
-
-        # Fetch camera data using the new _fetch_data function
-        # Errors will be logged to file by the file handler via _fetch_data
-        data = _fetch_data(api_token, CAMERAS_ENDPOINT, method='GET')
-
-        # These debug logs will now go to the file handler because the logger level is DEBUG
-        logger.debug(f"Raw camera response data in _list_for_menu: {data}")
-        logger.debug(f"Type of data received in _list_for_menu: {type(data)}")
-
-        # Filter for cameras with 'name' and 'camera_id' that contain 'License' (case-insensitive)
-        all_cameras = [
-            cam for cam in data.get('cameras', []) # Use .get with default empty list
-            if isinstance(cam, dict) and 'name' in cam and 'camera_id' in cam and 'license' in cam['name'].lower()
-        ]
-
-        logger.debug(f"Extracted cameras_list in _list_for_menu: {all_cameras}")
-        logger.debug(f"Length of cameras_list in _list_for_menu: {len(all_cameras)}")
-
-        # Add a marker to indicate the start of the parsable output
-        # Print directly to stdout, bypassing the logger
-        print("---START_CAMERA_LIST---", file=sys.stdout)
-        sys.stdout.flush() # Flush the marker immediately
-
-        # Print cameras in a parsable format: index,id,name
-        # Print nothing if the list is empty
-        for i, cam in enumerate(all_cameras):
-            # Clean the camera name to remove any commas that could break parsing
-            clean_name = cam['name'].replace(',', ' ')
-            # Use 'camera_id' when printing
-            print(f"{i+1},{cam['camera_id']},{clean_name}", file=sys.stdout) # Print camera lines
-        sys.stdout.flush() # Explicitly flush stdout after printing the list
-
-    except Exception as e:
-        # Log the error to the file handler
-        logger.error(f"Error listing cameras for menu: {e}", exc_info=True)
-        sys.exit(1) # Exit with non-zero status on error
-    finally:
-        # Re-add the stream handler
-        if temp_stream_handler:
-            local_logger.addHandler(temp_stream_handler)
+# Removed the _list_cameras_for_menu function
 
 
 def main():
@@ -125,11 +62,7 @@ def main():
         default='ERROR',
         help="Set the logging level (default: ERROR)"
     )
-    parser.add_argument(
-        "--list-for-menu",
-        action="store_true",
-        help="Fetch and list cameras in a format suitable for the runtest.sh menu"
-    )
+    # Removed --list-for-menu argument
 
     # Parse arguments
     args = parser.parse_args()
@@ -143,11 +76,6 @@ def main():
         logger.error("API_KEY environment variable is not set")
         sys.exit(1)
 
-    # If --list-for-menu is set, run the helper function and exit
-    if args.list_for_menu:
-        _list_cameras_for_menu(api_key)
-        sys.exit(0) # Exit successfully after listing
-
     # Otherwise, proceed with the standard test script logic
     cameras_data = None # Initialize to None
     try:
@@ -159,9 +87,9 @@ def main():
              raise ValueError("API token not found in response.")
         logger.info(f"Successfully retrieved API token: {api_token[:10]}...")
 
-        # Fetch camera data
+        # Fetch camera data (first page)
         cameras_data = fetch_cameras_data(api_token)
-        logger.info("Successfully retrieved camera data")
+        logger.info("Successfully retrieved camera data (first page)")
 
         # Debugging the data received and extracted list
         logger.debug(f"Data received in main: {cameras_data}")
@@ -186,7 +114,7 @@ def main():
             # Pass the first item of the list and the key to wrap it with
             save_json_template(cameras_list[0], output_filename, wrap_key="cameras")
         else:
-            logger.warning("No cameras found to generate a template.")
+            logger.warning("No cameras found on the first page to generate a template.")
 
     except Exception as e:
         # Log the execution failure
