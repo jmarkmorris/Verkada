@@ -92,7 +92,7 @@ for test_item in "${test_list[@]}"; do
   # Removed 'local' from this declaration
   log_level_arg=""
   if [ "$LOG_LEVEL" != "ERROR" ]; then
-      extra_args+=("--log_level" "$LOG_LEVEL")
+      log_level_arg="--log_level $LOG_LEVEL"
   fi
 
   # --- Handle specific tests requiring parameters ---
