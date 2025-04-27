@@ -151,11 +151,13 @@ def _fetch_data(api_token: str = None, endpoint: str = None, method: str = 'GET'
 
     try:
         if method.upper() == 'GET':
-            response = requests.get(url, headers=request_headers, params=params)
+            # Add timeout to requests
+            response = requests.get(url, headers=request_headers, params=params, timeout=30)
         elif method.upper() == 'POST':
             # Assuming POST requests might send params as query parameters or form data
             # If JSON body is needed, this function would need adjustment (json=params)
-            response = requests.post(url, headers=request_headers, params=params)
+            # Add timeout to requests
+            response = requests.post(url, headers=request_headers, params=params, timeout=30)
         else:
             raise ValueError(f"Unsupported HTTP method: {method}")
 
@@ -227,9 +229,10 @@ def fetch_all_paginated_data(api_token: str, endpoint: str, list_key: str, param
 
     while True:
         current_params = initial_params.copy()
-        # Only add page_size if the endpoint is NOT the cameras endpoint
-        if endpoint != CAMERAS_ENDPOINT:
-            current_params["page_size"] = 250 # Use smaller page size for non-camera endpoints
+        # Only add page_size if the endpoint is NOT the cameras or notifications endpoint
+        # Assume other paginated endpoints support page_size unless proven otherwise
+        if endpoint != CAMERAS_ENDPOINT and endpoint != NOTIFICATIONS_ENDPOINT:
+            current_params["page_size"] = 250 # Use smaller page size for non-camera/notification endpoints
             logger.debug(f"Using page_size=250 for endpoint {endpoint}")
         else:
             logger.debug(f"Not using page_size parameter for endpoint {endpoint}")
@@ -310,6 +313,41 @@ def fetch_all_lpoi(api_token: str) -> tuple[list, bool]:
     # The LPOI endpoint response has the list under the key 'license_plate_of_interest'
     # Correctly return the tuple from fetch_all_paginated_data
     return fetch_all_paginated_data(api_token, LPOI_ENDPOINT, 'license_plate_of_interest')
+
+
+def fetch_all_notifications(api_token: str, params: dict = None) -> tuple[list, bool]:
+    """
+    Fetches all notifications from the /cameras/v1/alerts endpoint.
+    Handles pagination. Returns (list_of_notifications, error_flag).
+    """
+    logger.info("Fetching all notifications...")
+    # The notifications endpoint response has the list under the key 'notifications'
+    return fetch_all_paginated_data(api_token, NOTIFICATIONS_ENDPOINT, 'notifications', params=params)
+
+
+def fetch_all_access_events(api_token: str, params: dict = None) -> tuple[list, bool]:
+    """
+    Fetches all access events from the /events/v1/access endpoint.
+    Handles pagination. Returns (list_of_events, error_flag).
+    """
+    logger.info("Fetching all access events...")
+    # The access events endpoint response has the list under the key 'events'
+    return fetch_all_paginated_data(api_token, ACCESS_EVENTS_ENDPOINT, 'events', params=params)
+
+
+def fetch_all_lpr_timestamps(api_token: str, params: dict = None) -> tuple[list, bool]:
+    """
+    Fetches all LPR timestamps (detections) from the /cameras/v1/analytics/lpr/timestamps endpoint.
+    Handles pagination. Returns (list_of_detections, error_flag).
+    Requires camera_id and license_plate in params.
+    """
+    if not params or 'camera_id' not in params or 'license_plate' not in params:
+        logger.error("camera_id and license_plate are required in params for fetch_all_lpr_timestamps")
+        return [], True # Return empty list and error flag
+
+    logger.info(f"Fetching all LPR timestamps for plate '{params.get('license_plate')}' on camera '{params.get('camera_id')}'...")
+    # The LPR timestamps endpoint response has the list under the key 'detections'
+    return fetch_all_paginated_data(api_token, LPR_TIMESTAMPS_ENDPOINT, 'detections', params=params)
 
 
 def get_api_token(api_key: str) -> dict:
