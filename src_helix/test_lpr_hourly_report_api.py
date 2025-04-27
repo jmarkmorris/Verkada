@@ -17,18 +17,10 @@ import traceback
 from collections import defaultdict # To easily count detections per hour
 
 # Import shared utility functions and the centralized logging function
-from src_helix.api_utils import get_api_token, VERKADA_API_BASE_URL, fetch_lpr_enabled_cameras, fetch_lpr_images_for_camera, format_timestamp, configure_logging # Import functions from api_utils
+# Import fetch_all_lpoi from api_utils
+from src_helix.api_utils import get_api_token, VERKADA_API_BASE_URL, fetch_lpr_enabled_cameras, fetch_lpr_images_for_camera, format_timestamp, configure_logging, fetch_all_lpoi # Import functions from api_utils
 
-# Import necessary fetch functions from other test scripts
-# Assuming these functions are designed to be imported and reused and return data.
-try:
-    # fetch_lpoi_data now returns a tuple: (raw_first_page_data, all_lpoi_items_list)
-    from src_helix.test_lpoi_api import fetch_lpoi_data as fetch_lpoi_data_and_list
-except ImportError as e:
-    # Updated error message to reflect the correct import source
-    print(f"Error importing necessary functions: {e}", file=sys.stderr)
-    print("Please ensure 'test_lpoi_api.py' and 'api_utils.py' exist and are in the correct path.", file=sys.stderr)
-    sys.exit(1)
+# Removed the import from test_lpoi_api.py
 
 
 # Get the logger for this module. It will be configured by configure_logging in main.
@@ -88,8 +80,8 @@ def main():
         # --- Step 1: Fetch License Plates of Interest (LPOI) ---
         logger.info("Fetching License Plates of Interest...")
 
-        # fetch_lpoi_data_and_list now returns a tuple: (raw_first_page_data, all_lpoi_items_list)
-        raw_lpoi_data, all_lpoi_items = fetch_lpoi_data_and_list(api_token) # Use the imported function
+        # Use the new fetch_all_lpoi function from api_utils
+        all_lpoi_items = fetch_all_lpoi(api_token)
 
         # Extract just the license plate strings from the list and convert to a set for efficient lookup
         # Ensure all_lpoi_items is treated as a list

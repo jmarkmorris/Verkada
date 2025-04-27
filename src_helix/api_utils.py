@@ -295,6 +295,16 @@ def fetch_all_cameras(api_token: str) -> list:
     return fetch_all_paginated_data(api_token, CAMERAS_ENDPOINT, 'cameras')
 
 
+def fetch_all_lpoi(api_token: str) -> list:
+    """
+    Fetches all License Plates of Interest (LPOI) from the API.
+    Handles pagination.
+    """
+    logger.info("Fetching all License Plates of Interest (LPOI)...")
+    # The LPOI endpoint response has the list under the key 'license_plate_of_interest'
+    return fetch_all_paginated_data(api_token, LPOI_ENDPOINT, 'license_plate_of_interest')
+
+
 def get_api_token(api_key: str) -> dict:
     """
     Fetch short-lived API token from Verkada API.

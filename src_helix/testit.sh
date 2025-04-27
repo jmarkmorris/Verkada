@@ -124,7 +124,8 @@ for test_item in "${test_list[@]}"; do
       echo "  -> Fetching user list to select first user..."
       # Call list_items.py to get the full user list as JSON
       # Direct stderr to /dev/null to keep output clean, unless LOG_LEVEL is DEBUG
-      local list_output
+      # Removed 'local' from list_output declaration
+      list_output=""
       if [ "$LOG_LEVEL" == "DEBUG" ]; then
           list_output=$(python -m src_helix.list_items --type users --log_level DEBUG)
           list_exit_code=$?
