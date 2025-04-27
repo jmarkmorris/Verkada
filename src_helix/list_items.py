@@ -28,6 +28,9 @@ from src_helix.api_utils import (
 def configure_list_items_logging(log_level_str: str = 'ERROR'):
     """
     Configures logging for list_items.py, directing stream output to stderr.
+
+    Args:
+        log_level_str: The desired logging level as a string.
     """
     root_logger = logging.getLogger()
     # Clear existing handlers first
@@ -65,7 +68,17 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    """Main entry point for the script."""
+    """
+    Main entry point for the script.
+
+    Parses command-line arguments for item type (users/cameras) and log level.
+    Retrieves the API key from environment variables.
+    Obtains an API token.
+    Fetches the *first page* of the specified item type.
+    Outputs the list of items as JSON to standard output.
+    Logs errors and informational messages to standard error.
+    Exits with status 0 if successful, 1 on error.
+    """
     parser = argparse.ArgumentParser(description="Fetch and list Verkada API items as JSON (First Page Only)")
     parser.add_argument(
         "--type",

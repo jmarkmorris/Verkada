@@ -25,7 +25,19 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    """Main entry point for the script."""
+    """
+    Main entry point for the script.
+
+    Parses command-line arguments for history duration and log level.
+    Retrieves the API key from environment variables.
+    Obtains an API token.
+    Fetches the list of License Plates of Interest (LPOI).
+    Fetches all LPR-enabled cameras.
+    For each LPR camera, fetches all LPR image detections within the specified history.
+    Aggregates detections by hour, categorizing them as LPOI or Non-LPOI.
+    Prints the hourly counts in a formatted table.
+    Exits with status 0 if successful, 1 on error (including fetch errors).
+    """
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Generate Hourly LPR Report (LPOI vs Non-LPOI)")
     parser.add_argument(

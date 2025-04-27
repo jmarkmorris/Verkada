@@ -20,7 +20,20 @@ logger = logging.getLogger(__name__)
 
 
 def fetch_user_details(api_token: str, user_id: str):
-    """Fetch specific access user details from Verkada API."""
+    """
+    Fetch specific access user details from Verkada API.
+
+    Args:
+        api_token: The short-lived API token.
+        user_id: The unique identifier of the user to fetch.
+
+    Returns:
+        A dictionary containing the user details if successful.
+
+    Raises:
+        requests.exceptions.HTTPError: If the API returns an HTTP error status (4xx or 5xx).
+        Exception: For other unexpected errors during the request or JSON parsing.
+    """
     params = {
         "user_id": user_id
     }
@@ -52,7 +65,17 @@ def fetch_user_details(api_token: str, user_id: str):
 
 
 def main():
-    """Main entry point for the script."""
+    """
+    Main entry point for the script.
+
+    Parses command-line arguments for user ID and log level.
+    Retrieves the API key from environment variables.
+    Obtains an API token.
+    Fetches the details for the specified user ID.
+    Prints the user details.
+    Generates and saves a JSON template based on the fetched details.
+    Exits with status 0 if successful, 1 on error.
+    """
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Test Verkada Access User Details API")
     parser.add_argument(

@@ -23,7 +23,17 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    """Main entry point for the script."""
+    """
+    Main entry point for the script.
+
+    Parses command-line arguments for camera ID, license plate, history duration, and log level.
+    Retrieves the API key from environment variables.
+    Obtains an API token.
+    Fetches all LPR timestamps (detections) for the specified plate/camera/time range.
+    Prints the list of detections.
+    Generates and saves a JSON template based on the first detection found.
+    Exits with status 0 if successful, 1 on error (including fetch errors).
+    """
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Test Verkada LPR Timestamps API (Fetches All)")
     parser.add_argument(

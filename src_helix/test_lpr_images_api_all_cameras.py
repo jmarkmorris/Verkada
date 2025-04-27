@@ -21,19 +21,20 @@ from src_helix.api_utils import get_api_token, VERKADA_API_BASE_URL, fetch_lpr_e
 # Get the logger for this module. It will be configured by configure_logging in main.
 logger = logging.getLogger(__name__)
 
-# Removed the old logging setup code (handlers, formatters, addHandler calls)
-
-
-# Removed redundant endpoint definitions, they are in api_utils now
-# CAMERAS_ENDPOINT = "/cameras/v1/devices"
-# LPR_IMAGES_ENDPOINT = "/cameras/v1/analytics/lpr/images"
-
-# Removed fetch_lpr_enabled_cameras, fetch_lpr_images_for_camera, format_timestamp definitions
-# They are now in api_utils.py
-
 
 def main():
-    """Main entry point for the script."""
+    """
+    Main entry point for the script.
+
+    Parses command-line arguments for history duration and log level.
+    Retrieves the API key from environment variables.
+    Obtains an API token.
+    Fetches all LPR-enabled cameras.
+    For each LPR camera, fetches all LPR image detections within the specified history.
+    Aggregates all detections.
+    Prints the aggregated detections in a formatted table.
+    Exits with status 0 if successful, 1 on error.
+    """
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Test Verkada LPR Images API for all LPR-enabled cameras")
     parser.add_argument(
@@ -70,9 +71,7 @@ def main():
     try:
         # Get API token
         logger.debug("Attempting to get API token...")
-        # get_api_token now returns the full data dictionary
         token_data = get_api_token(api_key) # Use imported function
-        # Extract the token string from the returned dictionary
         api_token = token_data.get('token')
         if not api_token:
              raise ValueError("API token not found in response.")

@@ -20,7 +20,17 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    """Main entry point for the script."""
+    """
+    Main entry point for the script.
+
+    Parses command-line arguments for log level.
+    Retrieves the API key from environment variables.
+    Obtains an API token.
+    Fetches all access users.
+    Prints the user list.
+    Generates and saves a JSON template based on the first user found.
+    Exits with status 0 if successful, 1 on error (including fetch errors).
+    """
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Test Verkada Access Users List API (Fetches All Users)")
     parser.add_argument(

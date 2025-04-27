@@ -24,7 +24,19 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    """Main entry point for the script."""
+    """
+    Main entry point for the script.
+
+    Parses command-line arguments for history duration and log level.
+    Retrieves the API key from environment variables.
+    Obtains an API token.
+    Fetches the list of License Plates of Interest (LPOI).
+    Fetches all LPR-enabled cameras.
+    For each LPR camera, fetches all LPR image detections within the specified history.
+    Filters the detections to include only those matching the LPOI list.
+    Prints the matched detections in a formatted table.
+    Exits with status 0 if successful, 1 on error (including fetch errors).
+    """
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Test Verkada LPR Images API filtered by LPOI")
     parser.add_argument(
