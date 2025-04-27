@@ -15,7 +15,8 @@ import datetime
 import traceback
 
 # Import shared utility functions and the centralized logging function
-from src_helix.api_utils import get_api_token, VERKADA_API_BASE_URL, fetch_lpr_enabled_cameras, fetch_lpr_images_for_camera, format_timestamp, configure_logging # Import functions from api_utils
+# Import the new filtering function
+from src_helix.api_utils import get_api_token, VERKADA_API_BASE_URL, fetch_lpr_enabled_cameras, fetch_lpr_images_for_camera, format_timestamp, configure_logging, filter_lpr_by_non_lpoi # Import functions from api_utils
 
 # Import necessary fetch functions from other test scripts
 # Assuming these functions are designed to be imported and reused and return data.
@@ -108,13 +109,13 @@ def main():
         camera_name_map = {cam['camera_id']: cam.get('name', 'Unnamed Camera') for cam in lpr_cameras}
         logger.debug(f"Camera ID to Name map created: {camera_name_map}")
 
-        # --- Step 3: Fetch LPR images for each camera and filter by NON-LPOI ---
+        # --- Step 3: Fetch LPR images for each camera ---
         logger.info(f"Querying LPR images for the last {args.history_hours} hours...")
         end_time = int(time.time())
         start_time = end_time - (args.history_hours * 60 * 60)
         logger.info(f"Time range: {datetime.datetime.fromtimestamp(start_time)} to {datetime.datetime.fromtimestamp(end_time)}")
 
-        non_lpoi_detections = []
+        all_detections = []
         total_detections_fetched = 0
 
         for camera in lpr_cameras:
@@ -124,26 +125,23 @@ def main():
                 logger.info(f"Fetching LPR images for camera: {camera_name} (ID: {camera_id})")
                 detections = fetch_lpr_images_for_camera(api_token, camera_id, start_time, end_time) # Use imported function
                 total_detections_fetched += len(detections)
-
-                # Filter detections for this camera - INCLUDE if NOT in LPOI list
+                # Add camera name to each detection for easier printing *before* filtering
                 for det in detections:
-                    # Ensure detection is a dictionary and has 'license_plate' and 'timestamp'
-                    if isinstance(det, dict) and 'license_plate' in det and 'timestamp' in det:
-                        # Check if the license plate is NOT in the LPOI set
-                        if det['license_plate'] not in lpoi_plates:
-                            # Add camera name to the detection for printing
-                            det['camera_name'] = camera_name
-                            non_lpoi_detections.append(det)
-                            logger.debug(f"Matched Non-LPOI: {det.get('license_plate')} on camera {camera_name}")
-                    else:
-                         logger.warning(f"Skipping malformed detection entry for camera {camera_name}: {det}")
+                    det['camera_name'] = camera_name
+                all_detections.extend(detections)
 
             else:
                 logger.warning(f"Skipping camera entry with no camera_id: {camera}")
 
-        logger.info(f"Finished fetching LPR images from all LPR-enabled cameras. Total detections fetched: {total_detections_fetched}. Non-LPOI detections: {len(non_lpoi_detections)}")
+        logger.info(f"Finished fetching LPR images from all LPR-enabled cameras. Total detections fetched: {total_detections_fetched}.")
 
-        # --- Step 4: Print non-LPOI results in a table format ---
+        # --- Step 4: Filter detections by NON-LPOI using the new function ---
+        logger.info("Filtering detections for Non-LPOI...")
+        non_lpoi_detections = filter_lpr_by_non_lpoi(all_detections, lpoi_plates)
+        logger.info(f"Found {len(non_lpoi_detections)} Non-LPOI detections.")
+
+
+        # --- Step 5: Print non-LPOI results in a table format ---
         if non_lpoi_detections:
             # Sort non-LPOI detections by license plate first, then by timestamp
             # Using default values for get() to handle potential missing keys gracefully

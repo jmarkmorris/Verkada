@@ -398,6 +398,73 @@ def format_timestamp(unix_timestamp: int) -> str:
         logger.warning(f"Could not format timestamp {unix_timestamp}: {e}")
         return str(unix_timestamp) # Return original value or error indicator
 
+def filter_lpr_by_lpoi(detections: list, lpoi_set: set) -> list:
+    """
+    Filters a list of LPR detections to include only those whose license plate
+    is present in the provided set of License Plates of Interest (LPOI).
+
+    Args:
+        detections: A list of LPR detection dictionaries.
+        lpoi_set: A set of license plate strings considered LPOI.
+
+    Returns:
+        A new list containing only the detections that match an LPOI plate.
+    """
+    if not isinstance(detections, list):
+        logger.warning(f"Invalid input: detections must be a list, got {type(detections)}. Returning empty list.")
+        return []
+    if not isinstance(lpoi_set, set):
+        logger.warning(f"Invalid input: lpoi_set must be a set, got {type(lpoi_set)}. Returning empty list.")
+        return []
+
+    logger.debug(f"Filtering {len(detections)} detections against {len(lpoi_set)} LPOI plates.")
+
+    matched_detections = []
+    for det in detections:
+        # Ensure detection is a dictionary and has 'license_plate'
+        if isinstance(det, dict) and 'license_plate' in det:
+            if det['license_plate'] in lpoi_set:
+                matched_detections.append(det)
+        else:
+            logger.debug(f"Skipping malformed detection entry during LPOI filtering: {det}")
+
+    logger.debug(f"Found {len(matched_detections)} detections matching LPOI.")
+    return matched_detections
+
+def filter_lpr_by_non_lpoi(detections: list, lpoi_set: set) -> list:
+    """
+    Filters a list of LPR detections to include only those whose license plate
+    is *not* present in the provided set of License Plates of Interest (LPOI).
+
+    Args:
+        detections: A list of LPR detection dictionaries.
+        lpoi_set: A set of license plate strings considered LPOI.
+
+    Returns:
+        A new list containing only the detections that do *not* match an LPOI plate.
+    """
+    if not isinstance(detections, list):
+        logger.warning(f"Invalid input: detections must be a list, got {type(detections)}. Returning empty list.")
+        return []
+    if not isinstance(lpoi_set, set):
+        logger.warning(f"Invalid input: lpoi_set must be a set, got {type(lpoi_set)}. Returning empty list.")
+        return []
+
+    logger.debug(f"Filtering {len(detections)} detections against {len(lpoi_set)} LPOI plates (Non-LPOI).")
+
+    non_lpoi_detections = []
+    for det in detections:
+        # Ensure detection is a dictionary and has 'license_plate'
+        if isinstance(det, dict) and 'license_plate' in det:
+            if det['license_plate'] not in lpoi_set:
+                non_lpoi_detections.append(det)
+        else:
+            logger.debug(f"Skipping malformed detection entry during Non-LPOI filtering: {det}")
+
+    logger.debug(f"Found {len(non_lpoi_detections)} detections not matching LPOI.")
+    return non_lpoi_detections
+
+
 # Example usage if api_utils were run directly (not intended for this project structure)
 # if __name__ == '__main__':
 #     configure_logging('DEBUG')
