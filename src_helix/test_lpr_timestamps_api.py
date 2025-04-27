@@ -16,16 +16,10 @@ import datetime
 import traceback
 
 # Import shared utility functions and the centralized logging function and save_json_template
-# Import fetch_all_lpr_timestamps from api_utils
 from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, LPR_TIMESTAMPS_ENDPOINT, configure_logging, save_json_template, fetch_all_lpr_timestamps
 
 # Get the logger for this module. It will be configured by configure_logging in main.
 logger = logging.getLogger(__name__)
-
-# Removed the old logging setup code (handlers, formatters, addHandler calls)
-
-
-# Removed the old fetch_lpr_timestamps_data function
 
 
 def main():
@@ -54,7 +48,6 @@ def main():
         default='ERROR',
         help="Set the logging level (default: ERROR)"
     )
-    # Removed --list-for-menu as it's handled by test_cameras_api.py now
 
     # Parse arguments
     args = parser.parse_args()
@@ -63,28 +56,27 @@ def main():
     configure_logging(args.log_level)
 
     # Add debug logging to show the arguments received
-    logger.debug(f"Arguments received: camera_id='{args.camera_id}', license_plate='{args.license_plate}', history_days={args.history_days}, log_level={args.log_level}") # Debug parsed args
+    logger.debug(f"Arguments received: camera_id='{args.camera_id}', license_plate='{args.license_plate}', history_days={args.history_days}, log_level={args.log_level}")
 
     # Get API key from environment variable
-    logger.debug("Attempting to get API_KEY environment variable...") # Debug before getting API key
+    logger.debug("Attempting to get API_KEY environment variable...")
     api_key = os.environ.get('API_KEY')
     if not api_key:
         logger.error("API_KEY environment variable is not set")
         sys.exit(1)
     else:
-        logger.debug(f"API_KEY found: {api_key[:5]}...{api_key[-4:]}") # Debug API key found
+        logger.debug(f"API_KEY found: {api_key[:5]}...{api_key[-4:]}")
 
     lpr_timestamps_list = [] # Initialize to empty list
     try:
         # Get API token
-        logger.debug("Attempting to get API token...") # Debug before getting token
-        # get_api_token now returns the full data dictionary
-        token_data = get_api_token(api_key) # Use imported function
+        logger.debug("Attempting to get API token...")
+        token_data = get_api_token(api_key)
         api_token = token_data.get('token')
         if not api_token:
              raise ValueError("API token not found in response.")
-        logger.info(f"Successfully retrieved API token: {api_token[:10]}...") # Keep this info log
-        logger.debug(f"Retrieved API token: {api_token[:10]}...") # Debug token
+        logger.info(f"Successfully retrieved API token: {api_token[:10]}...")
+        logger.debug(f"Retrieved API token: {api_token[:10]}...")
 
         # Calculate time range
         end_time = int(time.time())
@@ -96,19 +88,16 @@ def main():
             "license_plate": args.license_plate,
             "start_time": start_time,
             "end_time": end_time
-            # page_size is handled by fetch_all_paginated_data
         }
 
         # Fetch ALL LPR timestamps data using the function from api_utils
         logger.info(f"Attempting to fetch ALL LPR timestamps (detections) for plate '{args.license_plate}' on camera '{args.camera_id}' for the last {args.history_days} days")
         logger.debug(f"Date range: {datetime.datetime.fromtimestamp(start_time)} to {datetime.datetime.fromtimestamp(end_time)}")
-        # fetch_all_lpr_timestamps now returns a tuple (list, error_flag)
         lpr_timestamps_list, error_flag = fetch_all_lpr_timestamps(api_token, params=params)
 
         # Check if an error occurred during fetching
         if error_flag:
             logger.error("Error occurred during pagination while fetching LPR timestamps. Data may be incomplete.")
-            # Exit with non-zero status to indicate failure
             sys.exit(1)
 
         logger.info(f"Successfully retrieved {len(lpr_timestamps_list)} LPR timestamps (detections) for plate '{args.license_plate}' on camera '{args.camera_id}'")
@@ -124,9 +113,7 @@ def main():
         # Generate and save JSON template if data is available
         if lpr_timestamps_list:
             logger.debug(f"First LPR timestamp item: {lpr_timestamps_list[0]}")
-            # Use the centralized save_json_template function
             output_filename = "src_helix/api-json/test_lpr_timestamps_api.json"
-            # Pass the first item of the list and the key to wrap it with
             save_json_template(lpr_timestamps_list[0], output_filename, wrap_key="detections")
         else:
             logger.warning("No LPR timestamps found to generate a template.")

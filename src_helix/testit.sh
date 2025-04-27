@@ -69,7 +69,6 @@ total_tests_to_attempt=${#test_list[@]} # Total tests we attempt to run
 passed_count=0
 failed_count=0
 design_skipped_count=${#skipped_tests[@]} # Initialize with count of explicitly skipped tests
-# Removed runtime_skipped_count
 
 # Fixed width for separators
 SEPARATOR_WIDTH=80
@@ -125,7 +124,6 @@ for test_item in "${test_list[@]}"; do
       echo "  -> Fetching user list to select first user..."
       # Call list_items.py to get the full user list as JSON
       # Direct stderr to /dev/null to keep output clean, unless LOG_LEVEL is DEBUG
-      # Removed 'local' from list_output declaration
       list_output=""
       if [ "$LOG_LEVEL" == "DEBUG" ]; then
           list_output=$(python -m src_helix.list_items --type users --log_level DEBUG)
@@ -141,7 +139,6 @@ for test_item in "${test_list[@]}"; do
         skip_current_test=true
       else
         # Parse the JSON output using jq to get the first user's user_id and full_name
-        # .[0] gets the first object in the array
         first_user_id=$(echo "$list_output" | jq -r '.[0].user_id')
         first_user_name=$(echo "$list_output" | jq -r '.[0].full_name')
 
@@ -153,7 +150,7 @@ for test_item in "${test_list[@]}"; do
           if [ "$first_user_name" == "null" ] || [ -z "$first_user_name" ]; then
               first_user_name="Unnamed User"
           fi
-          # Pass the user_id to the script (assuming test_user_details_api.py is updated)
+          # Pass the user_id to the script
           extra_args+=("--user_id" "$first_user_id")
           echo "  -> Selected first user: ${first_user_name} (ID: ${first_user_id:0:5}...)"
         fi
@@ -164,23 +161,16 @@ for test_item in "${test_list[@]}"; do
   # --- End specific test handling ---
 
   if [ "$skip_current_test" = true ]; then
-    echo "FAIL: $description (Runtime Setup Failed)" # Changed from SKIP to FAIL
-    # Increment failed_count for tests skipped due to setup failure
-    failed_count=$((failed_count + 1)) # Changed from runtime_skipped_count
+    echo "FAIL: $description (Runtime Setup Failed)"
+    failed_count=$((failed_count + 1))
   else
-    # Convert script path to module path (e.g., src_helix/test_script.py -> src_helix.test_script)
+    # Convert script path to module path
     module_path=$(echo "$script_file" | sed 's/\.py$//' | sed 's/\//./g')
-
-    # Conditionally add the --log_level argument. Omit if the selected level is ERROR,
-    # as the Python scripts' default will be changed to ERROR.
-    # log_level_arg is already declared above without local
 
     printf "%*s\n" "$SEPARATOR_WIDTH" | tr ' ' "-"
     echo "Running: python -m $module_path $log_level_arg ${extra_args[@]}"
     printf "%*s\n" "$SEPARATOR_WIDTH" | tr ' ' "-"
     # Execute the script as a module
-    # Use set -o pipefail to ensure the exit code of the python command is captured
-    # even if it's piped (though not currently piping stdout here)
     set -o pipefail
     python -m "$module_path" $log_level_arg "${extra_args[@]}"
     exit_code=$?
@@ -220,9 +210,8 @@ total_defined=$((total_tests_to_attempt + design_skipped_count))
 echo " Total Tests Defined: $total_defined"
 echo " Tests Attempted: $total_tests_to_attempt"
 echo " Passed: $passed_count"
-echo " Failed: $failed_count" # Now includes runtime setup failures
-echo " Skipped (by design): $design_skipped_count" # Only shows design skips
-# Removed runtime skipped count line
+echo " Failed: $failed_count"
+echo " Skipped (by design): $design_skipped_count"
 echo "================================================================================"
 
 # Exit with a non-zero status if any tests failed

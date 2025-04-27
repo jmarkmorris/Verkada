@@ -3,7 +3,7 @@
 Script to test the Verkada Notifications API endpoint.
 Fetches ALL notifications within a specified time range.
 """
-import os # Import os
+import os
 import sys
 import json
 import logging
@@ -14,26 +14,14 @@ import datetime
 import traceback
 
 # Import shared utility functions and the centralized logging function and save_json_template
-# Import fetch_all_notifications from api_utils
 from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, NOTIFICATIONS_ENDPOINT, configure_logging, save_json_template, fetch_all_notifications
 
 # Get the logger for this module. It will be configured by configure_logging in main.
 logger = logging.getLogger(__name__)
 
-# Removed the old logging setup code (handlers, formatters, addHandler calls)
-
-
-# Removed the old fetch_notifications_data function
-
-
-# Removed the old handle_notifications_api function
-
 
 def main():
     """Main entry point for the script."""
-    # Add a critical log message at the very start of main
-    # logger.critical("Script test_notifications_api.py started.") # Removed this specific critical log
-
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Test Verkada Notifications API (Fetches All)")
     parser.add_argument(
@@ -68,7 +56,6 @@ def main():
     try:
         # Get API token
         logger.debug("Attempting to get API token...")
-        # get_api_token now returns the full data dictionary
         token_data = get_api_token(api_key)
         api_token = token_data.get('token')
         if not api_token:
@@ -84,18 +71,15 @@ def main():
         params = {
             "start_time": start_time,
             "end_time": end_time
-            # page_size is handled by fetch_all_paginated_data
         }
 
         # Fetch ALL notifications using the function from api_utils
         logger.info(f"Attempting to fetch ALL notifications from {NOTIFICATIONS_ENDPOINT}")
-        # fetch_all_notifications now returns a tuple (list, error_flag)
         notifications_list, error_flag = fetch_all_notifications(api_token, params=params)
 
         # Check if an error occurred during fetching
         if error_flag:
             logger.error("Error occurred during pagination while fetching notifications. Data may be incomplete.")
-            # Exit with non-zero status to indicate failure
             sys.exit(1)
 
         logger.info(f"Successfully retrieved {len(notifications_list)} notifications.")
@@ -113,9 +97,7 @@ def main():
 
         if notifications_list:
             logger.debug(f"First notification item: {notifications_list[0]}")
-            # Use the centralized save_json_template function
             output_filename = "src_helix/api-json/test_notifications_api.json"
-            # Pass the first item of the list and the key to wrap it with
             save_json_template(notifications_list[0], output_filename, wrap_key="notifications")
         else:
             logger.warning("No notifications found to generate a template.")

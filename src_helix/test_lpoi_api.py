@@ -18,11 +18,6 @@ from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE
 # Get the logger for this module. It will be configured by configure_logging in main.
 logger = logging.getLogger(__name__)
 
-# Removed the old logging setup code (handlers, formatters, addHandler calls)
-
-
-# Removed the old fetch_lpoi_data function which handled pagination locally
-
 
 def main():
     """Main entry point for the script."""
@@ -53,7 +48,6 @@ def main():
     try:
         # Get API token
         logger.debug("Attempting to get API token...")
-        # get_api_token now returns the full data dictionary
         token_data = get_api_token(api_key)
         api_token = token_data.get('token')
         if not api_token:
@@ -62,7 +56,6 @@ def main():
 
         # Fetch ALL LPOI data using the function from api_utils
         logger.info("Attempting to fetch ALL LPOI data...")
-        # fetch_all_lpoi now returns a tuple (list, error_flag)
         lpoi_list, error_flag = fetch_all_lpoi(api_token)
 
         # Check if an error occurred during fetching
@@ -96,9 +89,7 @@ def main():
 
         if lpoi_list:
             logger.debug(f"First LPOI item for template: {lpoi_list[0]}")
-            # Use the centralized save_json_template function
             output_filename = "src_helix/api-json/test_lpoi_api.json"
-            # Pass the first item of the list and the key to wrap it with (using the plural key for the template file)
             save_json_template(lpoi_list[0], output_filename, wrap_key="license_plates_of_interest")
         else:
             logger.warning("No License Plates of Interest found to generate a template.")

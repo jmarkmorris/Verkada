@@ -14,20 +14,17 @@ import json
 import logging
 import argparse
 
-# Import shared utility functions, including the new fetch_all functions
+# Import shared utility functions
 from src_helix.api_utils import (
     get_api_token,
-    _fetch_data, # Use the basic fetch function
+    _fetch_data,
     USERS_LIST_ENDPOINT,
     CAMERAS_ENDPOINT,
     configure_logging,
-    LOGS_DIR # Import LOGS_DIR to potentially configure file logging path
+    LOGS_DIR
 )
 
 # Configure logging specifically for this script to output to stderr
-# This ensures stdout is clean for the JSON output.
-# We still use the configure_logging function but might adjust handlers if needed.
-# Let's re-configure the root logger to use stderr for stream output.
 def configure_list_items_logging(log_level_str: str = 'ERROR'):
     """
     Configures logging for list_items.py, directing stream output to stderr.
@@ -37,12 +34,12 @@ def configure_list_items_logging(log_level_str: str = 'ERROR'):
     if root_logger.hasHandlers():
         root_logger.handlers.clear()
 
-    root_logger.setLevel(logging.DEBUG) # Set root to DEBUG to capture all messages
+    root_logger.setLevel(logging.DEBUG)
 
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     # Stream handler for stderr
-    stream_handler = logging.StreamHandler(sys.stderr) # Direct stream output to stderr
+    stream_handler = logging.StreamHandler(sys.stderr)
     stream_handler.setFormatter(formatter)
     try:
         stream_handler.setLevel(getattr(logging, log_level_str.upper()))
@@ -52,7 +49,7 @@ def configure_list_items_logging(log_level_str: str = 'ERROR'):
 
     root_logger.addHandler(stream_handler)
 
-    # Optional: Add a file handler for DEBUG logs if desired, similar to api_utils
+    # File handler for DEBUG logs
     log_file_path = os.path.join(LOGS_DIR, 'list_items_debug.log')
     try:
         file_handler = logging.FileHandler(log_file_path)
@@ -128,16 +125,14 @@ def main():
         logger.info(f"Fetched {len(items_list)} {args.type} from the first page.")
 
         # Output the list as JSON to stdout
-        # Use ensure_ascii=False to handle non-ASCII characters correctly
         json.dump(items_list, sys.stdout, indent=4, ensure_ascii=False)
-        sys.stdout.write('\n') # Add a newline at the end
-        sys.stdout.flush() # Ensure output is written immediately
+        sys.stdout.write('\n')
+        sys.stdout.flush()
 
     except Exception as e:
         logger.error(f"Script execution failed: {e}", exc_info=True)
         sys.exit(1)
     finally:
-        # Ensure logs are flushed before exiting
         logging.shutdown()
 
 if __name__ == '__main__':

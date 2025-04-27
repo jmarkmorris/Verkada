@@ -28,20 +28,16 @@ def configure_logging(log_level_str: str = 'ERROR'):
 
     # Remove existing handlers to prevent duplicates
     if root_logger.hasHandlers():
-        # print("DEBUG: Root logger already has handlers. Removing them.", file=sys.stderr) # Diagnostic print
         root_logger.handlers.clear()
-        # print("DEBUG: Root logger handlers cleared.", file=sys.stderr) # Diagnostic print
 
 
     # Set the root logger level to DEBUG so it processes all messages
     # Handlers will filter based on their own levels
     root_logger.setLevel(logging.DEBUG)
-    # print(f"DEBUG: Root logger level set to DEBUG.", file=sys.stderr) # Diagnostic print
 
 
     # Create formatters
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    # print("DEBUG: Formatter created.", file=sys.stderr) # Diagnostic print
 
 
     # Create handlers
@@ -50,11 +46,9 @@ def configure_logging(log_level_str: str = 'ERROR'):
     stream_handler.setFormatter(formatter)
     try:
         stream_handler.setLevel(getattr(logging, log_level_str.upper()))
-        # print(f"DEBUG: Stream handler level set to {log_level_str.upper()}.", file=sys.stderr) # Diagnostic print
     except AttributeError:
         print(f"WARNING: Invalid log level string '{log_level_str}'. Defaulting stream handler to ERROR.", file=sys.stderr)
         stream_handler.setLevel(logging.ERROR)
-        # print("DEBUG: Stream handler level defaulted to ERROR.", file=sys.stderr) # Diagnostic print
 
 
     # File handler for debug logs - always log DEBUG and above to file
@@ -67,42 +61,33 @@ def configure_logging(log_level_str: str = 'ERROR'):
         file_handler = logging.FileHandler(log_file_path)
         file_handler.setLevel(logging.DEBUG) # File handler always logs DEBUG and above
         file_handler.setFormatter(formatter)
-        # print(f"DEBUG: File handler created successfully for {log_file_path}.", file=sys.stderr) # Diagnostic print
     except Exception as e:
         # If file handler creation fails, log an error to the console (via stream_handler)
         # and continue without the file handler.
         # Use a temporary logger or print directly if root logger isn't fully set up yet
         print(f"ERROR: Failed to create file handler for {log_file_path}: {e}", file=sys.stderr)
-        # print("DEBUG: File handler creation failed.", file=sys.stderr) # Diagnostic print
 
 
     # Add handlers to the root logger
     root_logger.addHandler(stream_handler)
-    # print("DEBUG: Stream handler added to root logger.", file=sys.stderr) # Diagnostic print
     if file_handler: # Only add if file handler was successfully created
         root_logger.addHandler(file_handler)
-        # print("DEBUG: File handler added to root logger.", file=sys.stderr) # Diagnostic print
-
-    # print("DEBUG: Logging configuration complete.", file=sys.stderr) # Diagnostic print
 
 
 # Get the logger for this module. It will inherit handlers from the root logger.
 logger = logging.getLogger(__name__)
 
-# Removed the old logging setup code from here.
-# The configure_logging function will be called by the main scripts.
-
 
 VERKADA_API_BASE_URL = "https://api.verkada.com"
 TOKEN_ENDPOINT = "/token"
-CAMERAS_ENDPOINT = "/cameras/v1/devices" # Added Cameras endpoint
-LPR_IMAGES_ENDPOINT = "/cameras/v1/analytics/lpr/images" # Added LPR Images endpoint
-LPOI_ENDPOINT = "/cameras/v1/analytics/lpr/license_plate_of_interest" # Added LPOI endpoint
-USERS_LIST_ENDPOINT = "/access/v1/access_users" # Added Users List endpoint
-USER_DETAILS_ENDPOINT = "/access/v1/access_users/user" # Added User Details endpoint
-NOTIFICATIONS_ENDPOINT = "/cameras/v1/alerts" # Added Notifications endpoint
-ACCESS_EVENTS_ENDPOINT = "/events/v1/access" # Added Access Events endpoint
-LPR_TIMESTAMPS_ENDPOINT = "/cameras/v1/analytics/lpr/timestamps" # Added LPR Timestamps endpoint
+CAMERAS_ENDPOINT = "/cameras/v1/devices"
+LPR_IMAGES_ENDPOINT = "/cameras/v1/analytics/lpr/images"
+LPOI_ENDPOINT = "/cameras/v1/analytics/lpr/license_plate_of_interest"
+USERS_LIST_ENDPOINT = "/access/v1/access_users"
+USER_DETAILS_ENDPOINT = "/access/v1/access_users/user"
+NOTIFICATIONS_ENDPOINT = "/cameras/v1/alerts"
+ACCESS_EVENTS_ENDPOINT = "/events/v1/access"
+LPR_TIMESTAMPS_ENDPOINT = "/cameras/v1/analytics/lpr/timestamps"
 
 
 def _fetch_data(api_token: str = None, endpoint: str = None, method: str = 'GET', params: dict = None, headers: dict = None, base_url: str = VERKADA_API_BASE_URL) -> dict:
@@ -154,8 +139,6 @@ def _fetch_data(api_token: str = None, endpoint: str = None, method: str = 'GET'
             # Add timeout to requests
             response = requests.get(url, headers=request_headers, params=params, timeout=30)
         elif method.upper() == 'POST':
-            # Assuming POST requests might send params as query parameters or form data
-            # If JSON body is needed, this function would need adjustment (json=params)
             # Add timeout to requests
             response = requests.post(url, headers=request_headers, params=params, timeout=30)
         else:
@@ -180,26 +163,17 @@ def _fetch_data(api_token: str = None, endpoint: str = None, method: str = 'GET'
         return data
 
     except requests.exceptions.RequestException as e:
-        # requests.exceptions.RequestException is the base class for all requests exceptions
-        # including HTTPError, ConnectionError, Timeout, etc.
-        # Specific HTTPError details are logged within the except block in the calling script
-        # if needed, or can be extracted from the exception object here.
-        # Let's log the basic error here and re-raise.
         logger.error(f"Request Exception fetching data from {endpoint}: {e}")
-        # Re-raise the exception after logging
         raise
     except json.JSONDecodeError as e:
         logger.error(f"Failed to parse JSON response from {endpoint}: {e}")
-        # Attempt to log response content if available and not too large
         try:
             logger.error(f"Response content: {response.text[:500]}...") # Log first 500 chars
         except Exception:
             logger.error("Could not log response content.")
-        # Re-raise the exception after logging
         raise
     except Exception as e:
         logger.error(f"Unexpected error fetching data from {endpoint}: {e}", exc_info=True)
-        # Re-raise the exception after logging
         raise
 
 
@@ -229,14 +203,7 @@ def fetch_all_paginated_data(api_token: str, endpoint: str, list_key: str, param
 
     while True:
         current_params = initial_params.copy()
-        # Only add page_size if the endpoint is NOT the cameras or notifications endpoint
-        # Assume other paginated endpoints support page_size unless proven otherwise
-        if endpoint != CAMERAS_ENDPOINT and endpoint != NOTIFICATIONS_ENDPOINT:
-            current_params["page_size"] = 250 # Use smaller page size for non-camera/notification endpoints
-            logger.debug(f"Using page_size=250 for endpoint {endpoint}")
-        else:
-            logger.debug(f"Not using page_size parameter for endpoint {endpoint}")
-
+        # Rely on API's default page size
 
         if page_token:
             current_params["page_token"] = page_token
@@ -273,8 +240,6 @@ def fetch_all_paginated_data(api_token: str, endpoint: str, list_key: str, param
                 break # No more pages
 
         except Exception as e:
-            # _fetch_data already logged the specific error (HTTP, JSON, etc.)
-            # Log a higher-level error here and stop pagination
             logger.error(f"Failed to fetch data from {endpoint}, page {page_count + 1}: {e}")
             error_occurred = True # Set the error flag
             break # Stop pagination on any error
@@ -289,7 +254,6 @@ def fetch_all_access_users(api_token: str) -> tuple[list, bool]:
     Handles pagination. Returns (list_of_users, error_flag).
     """
     logger.info("Fetching all access users...")
-    # Correctly return the tuple from fetch_all_paginated_data
     return fetch_all_paginated_data(api_token, USERS_LIST_ENDPOINT, 'access_members')
 
 
@@ -299,8 +263,6 @@ def fetch_all_cameras(api_token: str) -> tuple[list, bool]:
     Handles pagination. Returns (list_of_cameras, error_flag).
     """
     logger.info("Fetching all cameras...")
-    # This will now call fetch_all_paginated_data without adding page_size
-    # Correctly return the tuple from fetch_all_paginated_data
     return fetch_all_paginated_data(api_token, CAMERAS_ENDPOINT, 'cameras')
 
 
@@ -310,8 +272,6 @@ def fetch_all_lpoi(api_token: str) -> tuple[list, bool]:
     Handles pagination. Returns (list_of_lpoi, error_flag).
     """
     logger.info("Fetching all License Plates of Interest (LPOI)...")
-    # The LPOI endpoint response has the list under the key 'license_plate_of_interest'
-    # Correctly return the tuple from fetch_all_paginated_data
     return fetch_all_paginated_data(api_token, LPOI_ENDPOINT, 'license_plate_of_interest')
 
 
@@ -321,7 +281,6 @@ def fetch_all_notifications(api_token: str, params: dict = None) -> tuple[list, 
     Handles pagination. Returns (list_of_notifications, error_flag).
     """
     logger.info("Fetching all notifications...")
-    # The notifications endpoint response has the list under the key 'notifications'
     return fetch_all_paginated_data(api_token, NOTIFICATIONS_ENDPOINT, 'notifications', params=params)
 
 
@@ -331,7 +290,6 @@ def fetch_all_access_events(api_token: str, params: dict = None) -> tuple[list, 
     Handles pagination. Returns (list_of_events, error_flag).
     """
     logger.info("Fetching all access events...")
-    # The access events endpoint response has the list under the key 'events'
     return fetch_all_paginated_data(api_token, ACCESS_EVENTS_ENDPOINT, 'events', params=params)
 
 
@@ -346,7 +304,6 @@ def fetch_all_lpr_timestamps(api_token: str, params: dict = None) -> tuple[list,
         return [], True # Return empty list and error flag
 
     logger.info(f"Fetching all LPR timestamps for plate '{params.get('license_plate')}' on camera '{params.get('camera_id')}'...")
-    # The LPR timestamps endpoint response has the list under the key 'detections'
     return fetch_all_paginated_data(api_token, LPR_TIMESTAMPS_ENDPOINT, 'detections', params=params)
 
 
@@ -362,15 +319,12 @@ def get_api_token(api_key: str) -> dict:
     }
 
     try:
-        # Use the internal fetch function, providing custom headers
         data = _fetch_data(endpoint=TOKEN_ENDPOINT, method='POST', headers=headers)
         logger.debug(f"Token response data keys: {list(data.keys())}")
-        # Return the full data dictionary, not just the token string
         return data
     except Exception as e:
-        # _fetch_data already logs the specific error
         logger.error(f"API token retrieval failed: {e}")
-        raise # Re-raise the exception
+        raise
 
 
 def create_template(data: dict) -> dict:
@@ -380,23 +334,20 @@ def create_template(data: dict) -> dict:
         if isinstance(value, dict):
             template[key] = create_template(value)
         elif isinstance(value, list):
-            # For lists, create a list containing one template item if the list is not empty
-            # and the first item is a dictionary. Otherwise, template the first item directly.
             if value and isinstance(value[0], dict):
                  template[key] = [create_template(value[0])]
             elif value:
-                 # Template the first item if it's a primitive type
                  template[key] = [type(value[0])()] if isinstance(value[0], (int, float, str, bool)) else [None]
             else:
-                 template[key] = [] # Empty list remains empty
+                 template[key] = []
         elif isinstance(value, str):
             template[key] = ""
         elif isinstance(value, bool):
-            template[key] = False # Or None, depending on desired empty state for boolean
+            template[key] = False
         elif isinstance(value, (int, float)):
             template[key] = 0
         else:
-            template[key] = None # Handles None and other types
+            template[key] = None
 
     return template
 
@@ -423,14 +374,10 @@ def save_json_template(data_to_template, output_filename: str, wrap_key: str = N
 
         final_output = template_data
         if wrap_key:
-            # If wrap_key is provided, wrap the template.
-            # Assume if wrap_key is used, the original data was likely a list item
-            # that should be represented as a list in the template file.
             final_output = {wrap_key: [template_data]}
             logger.debug(f"Wrapped template data with key '{wrap_key}'")
 
 
-        # Ensure the output directory exists
         output_dir = os.path.dirname(output_filename)
         os.makedirs(output_dir, exist_ok=True)
         logger.debug(f"Ensured directory exists: {output_dir}")
@@ -445,7 +392,6 @@ def save_json_template(data_to_template, output_filename: str, wrap_key: str = N
         logger.error(f"Failed to generate or write JSON template to {output_filename}: {e}", exc_info=True)
 
 
-# Moved shared functions from test_lpr_images_api_all_cameras.py
 def fetch_lpr_enabled_cameras(api_token: str) -> list:
     """
     Fetches all cameras and filters for those with 'License' in their name.
@@ -453,18 +399,14 @@ def fetch_lpr_enabled_cameras(api_token: str) -> list:
     Raises Exception if fetching cameras failed.
     """
     try:
-        # Use the new fetch_all_cameras function to get all cameras
         all_cameras, error_flag = fetch_all_cameras(api_token)
 
-        # Check if an error occurred during fetching
         if error_flag:
-            # Log the error and raise an exception to signal failure
             logger.error("Error occurred while fetching camera list. Cannot proceed.")
             raise Exception("Failed to fetch complete camera list due to pagination error.")
 
         logger.debug(f"Total cameras fetched in fetch_lpr_enabled_cameras: {len(all_cameras)}")
 
-        # Filter for cameras with 'name' and 'camera_id' that contain 'License' (case-insensitive)
         lpr_cameras = [
             cam for cam in all_cameras
             if isinstance(cam, dict) and 'name' in cam and 'camera_id' in cam and 'license' in cam['name'].lower()
@@ -475,9 +417,8 @@ def fetch_lpr_enabled_cameras(api_token: str) -> list:
 
         return lpr_cameras
     except Exception as e:
-        # fetch_all_cameras already logs the specific error, just re-raise or log a higher-level error
         logger.error(f"Failed to fetch and filter LPR-enabled cameras: {e}")
-        raise # Re-raise the exception
+        raise
 
 
 def fetch_lpr_images_for_camera(api_token: str, camera_id: str, start_time: int, end_time: int) -> list:
@@ -498,7 +439,6 @@ def fetch_lpr_images_for_camera(api_token: str, camera_id: str, start_time: int,
             "camera_id": camera_id,
             "start_time": start_time,
             "end_time": end_time,
-            "page_size": 200 # Max page size
         }
         if page_token:
             params["page_token"] = page_token
@@ -507,14 +447,12 @@ def fetch_lpr_images_for_camera(api_token: str, camera_id: str, start_time: int,
              logger.debug(f"Fetching initial page for camera ID: {camera_id}")
 
         try:
-            # Use the new _fetch_data function
             data = _fetch_data(api_token, LPR_IMAGES_ENDPOINT, method='GET', params=params)
 
-            # The API response structure for /images is a dictionary with 'camera_id', 'detections', 'next_page_token'
             detections = data.get('detections', []) if isinstance(data, dict) else []
             if not isinstance(detections, list):
                  logger.warning(f"Expected 'detections' list in response for camera {camera_id}, page {page_count + 1}, but got {type(detections)}. Stopping pagination for this camera.")
-                 break # Stop if detections is not a list
+                 break
 
             all_detections.extend(detections)
             logger.debug(f"Added {len(detections)} detections from page {page_count + 1}. Total detections so far: {len(all_detections)}")
@@ -524,22 +462,17 @@ def fetch_lpr_images_for_camera(api_token: str, camera_id: str, start_time: int,
 
             if page_token:
                 logger.debug(f"Next page token found: {page_token}. Continuing pagination for camera {camera_id}.")
-                # Optional: Add a small delay to avoid hitting rate limits
-                # time.sleep(0.1)
             else:
                 logger.debug(f"No next page token found. Ending pagination for camera {camera_id}.")
-                break # No more pages
+                break
 
         except Exception as e:
-            # _fetch_data already logged the specific error (HTTP, JSON, etc.)
-            # Log a higher-level error here and stop pagination for this camera
             logger.error(f"Failed to fetch LPR images for camera {camera_id}, page {page_count + 1}: {e}")
-            error_occurred = True # Set the error flag
-            break # Stop pagination for this camera on any error
+            error_occurred = True
+            break
 
     logger.info(f"Finished fetching LPR images for camera {camera_id}. Total detections: {len(all_detections)}. Failure occurred: {error_occurred}")
 
-    # If an error occurred during pagination, raise an exception
     if error_occurred:
         raise Exception(f"Failed to fetch complete LPR image data for camera {camera_id} due to pagination error.")
 
@@ -553,7 +486,7 @@ def format_timestamp(unix_timestamp: int) -> str:
         return dt_object.strftime('%Y-%m-%d %H:%M:%S')
     except (TypeError, ValueError) as e:
         logger.warning(f"Could not format timestamp {unix_timestamp}: {e}")
-        return str(unix_timestamp) # Return original value or error indicator
+        return str(unix_timestamp)
 
 def filter_lpr_by_lpoi(detections: list, lpoi_set: set) -> list:
     """
@@ -578,7 +511,6 @@ def filter_lpr_by_lpoi(detections: list, lpoi_set: set) -> list:
 
     matched_detections = []
     for det in detections:
-        # Ensure detection is a dictionary and has 'license_plate'
         if isinstance(det, dict) and 'license_plate' in det:
             if det['license_plate'] in lpoi_set:
                 matched_detections.append(det)
@@ -611,7 +543,6 @@ def filter_lpr_by_non_lpoi(detections: list, lpoi_set: set) -> list:
 
     non_lpoi_detections = []
     for det in detections:
-        # Ensure detection is a dictionary and has 'license_plate'
         if isinstance(det, dict) and 'license_plate' in det:
             if det['license_plate'] not in lpoi_set:
                 non_lpoi_detections.append(det)
@@ -620,20 +551,3 @@ def filter_lpr_by_non_lpoi(detections: list, lpoi_set: set) -> list:
 
     logger.debug(f"Found {len(non_lpoi_detections)} detections not matching LPOI.")
     return non_lpoi_detections
-
-
-# Example usage if api_utils were run directly (not intended for this project structure)
-# if __name__ == '__main__':
-#     configure_logging('DEBUG')
-#     logger.info("api_utils module started directly.")
-#     # Example API call (requires API_KEY env var)
-#     # api_key = os.environ.get('API_KEY')
-#     # if api_key:
-#     #     try:
-#     #         token_data = get_api_token(api_key)
-#     #         logger.info(f"Successfully got token: {token_data.get('token', 'N/A')[:10]}...")
-#     #     except Exception as e:
-#     #         logger.error(f"Failed to get token: {e}")
-#     # else:
-#     #     logger.warning("API_KEY not set, cannot test get_api_token.")
-

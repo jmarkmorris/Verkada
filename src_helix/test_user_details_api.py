@@ -13,15 +13,10 @@ import traceback
 import time # Import the time module
 
 # Import shared utility functions and constants, including configure_logging and save_json_template
-# Import _fetch_data from api_utils
 from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, USERS_LIST_ENDPOINT, USER_DETAILS_ENDPOINT, _fetch_data, configure_logging, save_json_template
 
 # Get the logger for this module. It will be configured by configure_logging in main.
 logger = logging.getLogger(__name__)
-
-# Removed the old logging setup code (handlers, formatters, addHandler calls)
-
-# Removed fetch_users_list_silently as it's no longer needed
 
 
 def fetch_user_details(api_token: str, user_id: str):
@@ -31,16 +26,9 @@ def fetch_user_details(api_token: str, user_id: str):
     }
 
     try:
-        # Use the new _fetch_data function
         data = _fetch_data(api_token, USER_DETAILS_ENDPOINT, method='GET', params=params)
 
         logger.debug(f"Raw user details response data: {data}")
-
-        # Print the details response in pretty format
-        # This print happens AFTER the custom print line below
-        # print(f"\n--- Access User Details API Response (User ID: {user_id}) ---")
-        # print(json.dumps(data, indent=4))
-        # sys.stdout.flush() # Explicitly flush stdout after printing JSON
 
         return data
     except requests.exceptions.HTTPError as e:
@@ -57,10 +45,10 @@ def fetch_user_details(api_token: str, user_id: str):
             logger.error("3. Verify the API key is not expired")
         elif e.response.status_code == 404:
              logger.error(f"404 Not Found error for {USER_DETAILS_ENDPOINT}. User ID '{user_id}' may not exist.")
-        raise # Re-raise the exception after logging
+        raise
     except Exception as e:
         logger.error(f"Unexpected error fetching user details: {e}", exc_info=True)
-        raise # Re-raise the exception
+        raise
 
 
 def main():
@@ -73,12 +61,10 @@ def main():
         default='ERROR',
         help="Set the logging level (default: ERROR)"
     )
-    # Removed --user_index and --user_number arguments
-    # Add --user_id argument, which is now required
     parser.add_argument(
         "--user_id",
         type=str,
-        required=True, # user_id is now required
+        required=True,
         help="The unique identifier of the user to fetch details for"
     )
 
@@ -102,7 +88,6 @@ def main():
     try:
         # Get API token
         logger.debug("Attempting to get API token...")
-        # get_api_token now returns the full data dictionary
         token_data = get_api_token(api_key)
         api_token = token_data.get('token')
         if not api_token:
@@ -113,27 +98,25 @@ def main():
         user_id_to_fetch = args.user_id
         logger.info(f"Attempting to fetch details for user ID: {user_id_to_fetch}...")
 
-        # Add a small delay before fetching user details (optional, but good practice)
-        # time.sleep(0.5) # Pause for 0.5 seconds - Keep this delay
+        # Add a small delay before fetching user details
+        # time.sleep(0.5)
 
         user_details = fetch_user_details(api_token, user_id_to_fetch)
 
         # Print the custom line using the user_id provided
         print(f"\nDetail information for user ID: {user_id_to_fetch}")
-        sys.stdout.flush() # Explicitly flush stdout
+        sys.stdout.flush()
 
         # Now print the full details response if it was successfully fetched
         if user_details:
             print(f"\n--- Access User Details API Response (User ID: {user_id_to_fetch}) ---")
             print(json.dumps(user_details, indent=4))
-            sys.stdout.flush() # Explicitly flush stdout
+            sys.stdout.flush()
             logger.info(f"Successfully retrieved details for user ID: {user_id_to_fetch}")
 
             # Generate and save JSON template
             logger.debug("Generating JSON template...")
-            # Use the centralized save_json_template function
             output_filename = "src_helix/api-json/test_user_details_api.json"
-            # Pass the data directly, no wrap_key needed as it's not a list item
             save_json_template(user_details, output_filename)
 
         else:

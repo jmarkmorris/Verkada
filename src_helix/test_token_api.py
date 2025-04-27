@@ -11,13 +11,10 @@ import argparse
 import traceback
 
 # Import shared utility functions and constants, including configure_logging and save_json_template
-# get_api_token now returns the full data dictionary
 from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, TOKEN_ENDPOINT, configure_logging, save_json_template
 
 # Get the logger for this module. It will be configured by configure_logging in main.
 logger = logging.getLogger(__name__)
-
-# Removed the old logging setup code (handlers, formatters, addHandler calls)
 
 
 def main():
@@ -48,7 +45,7 @@ def main():
 
     token_data = None # Initialize to None
     try:
-        # Get API token - get_api_token now returns the full data dictionary
+        # Get API token
         logger.debug("Attempting to get API token...")
         token_data = get_api_token(api_key)
         # Log the token itself from the returned data
@@ -59,17 +56,14 @@ def main():
 
         # Print the response in pretty format
         print("\n--- Token API Response ---")
-        # Print the data returned by get_api_token
         print(json.dumps(token_data, indent=4))
-        sys.stdout.flush() # Explicitly flush stdout after printing JSON
+        sys.stdout.flush()
 
 
         # Generate and save JSON template
         if token_data:
             logger.debug("Generating JSON template...")
-            # Use the centralized save_json_template function
             output_filename = "src_helix/api-json/test_token_api.json"
-            # Pass the data directly, no wrap_key needed as it's not a list item
             save_json_template(token_data, output_filename)
         else:
             logger.warning("No data returned from Token API to generate a template.")

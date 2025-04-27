@@ -14,19 +14,10 @@ import datetime
 import traceback
 
 # Import shared utility functions and the centralized logging function and save_json_template
-# Import fetch_all_access_events from api_utils
 from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, ACCESS_EVENTS_ENDPOINT, configure_logging, save_json_template, fetch_all_access_events
 
 # Get the logger for this module. It will be configured by configure_logging in main.
 logger = logging.getLogger(__name__)
-
-# Removed the old logging setup code (handlers, formatters, addHandler calls)
-
-
-# Removed the old fetch_access_events_data function
-
-
-# Removed the old handle_access_events_api function
 
 
 def main():
@@ -65,7 +56,6 @@ def main():
     try:
         # Get API token
         logger.debug("Attempting to get API token...")
-        # get_api_token now returns the full data dictionary
         token_data = get_api_token(api_key)
         api_token = token_data.get('token')
         if not api_token:
@@ -81,18 +71,15 @@ def main():
         params = {
             "start_time": start_time,
             "end_time": end_time
-            # page_size is handled by fetch_all_paginated_data
         }
 
         # Fetch ALL access events using the function from api_utils
         logger.info(f"Attempting to fetch ALL access events from {ACCESS_EVENTS_ENDPOINT}")
-        # fetch_all_access_events now returns a tuple (list, error_flag)
         events_list, error_flag = fetch_all_access_events(api_token, params=params)
 
         # Check if an error occurred during fetching
         if error_flag:
             logger.error("Error occurred during pagination while fetching access events. Data may be incomplete.")
-            # Exit with non-zero status to indicate failure
             sys.exit(1)
 
         logger.info(f"Successfully retrieved {len(events_list)} access events.")
@@ -110,9 +97,7 @@ def main():
 
         if events_list:
             logger.debug(f"First access event item: {events_list[0]}")
-            # Use the centralized save_json_template function
             output_filename = "src_helix/api-json/test_access_events_api.json"
-            # Pass the first item of the list and the key to wrap it with
             save_json_template(events_list[0], output_filename, wrap_key="events")
         else:
             logger.warning("No access events found to generate a template.")

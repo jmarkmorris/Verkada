@@ -17,16 +17,11 @@ import traceback
 from collections import defaultdict # To easily count detections per hour
 
 # Import shared utility functions and the centralized logging function
-# Import fetch_all_lpoi from api_utils
-from src_helix.api_utils import get_api_token, VERKADA_API_BASE_URL, fetch_lpr_enabled_cameras, fetch_lpr_images_for_camera, format_timestamp, configure_logging, fetch_all_lpoi # Import functions from api_utils
-
-# Removed the import from test_lpoi_api.py
+from src_helix.api_utils import get_api_token, VERKADA_API_BASE_URL, fetch_lpr_enabled_cameras, fetch_lpr_images_for_camera, format_timestamp, configure_logging, fetch_all_lpoi
 
 
 # Get the logger for this module. It will be configured by configure_logging in main.
 logger = logging.getLogger(__name__)
-
-# Removed the old logging setup code (handlers, formatters, addHandler calls)
 
 
 def main():
@@ -68,31 +63,23 @@ def main():
     try:
         # Get API token
         logger.debug("Attempting to get API token...")
-        # get_api_token now returns the full data dictionary
-        token_data = get_api_token(api_key) # Use imported function
-        # Extract the token string from the returned dictionary
+        token_data = get_api_token(api_key)
         api_token = token_data.get('token')
         if not api_token:
              raise ValueError("API token not found in response.")
 
-        # FIX: Use the extracted api_token string for logging
         logger.info(f"Successfully retrieved API token: {api_token[:10]}...")
 
         # --- Step 1: Fetch License Plates of Interest (LPOI) ---
         logger.info("Fetching License Plates of Interest...")
-
-        # Use the new fetch_all_lpoi function from api_utils
-        # fetch_all_lpoi now returns a tuple (list, error_flag)
         all_lpoi_items, lpoi_error_flag = fetch_all_lpoi(api_token)
 
         # Check if an error occurred during LPOI fetching
         if lpoi_error_flag:
             logger.error("Error occurred during pagination while fetching LPOI list. Cannot proceed.")
-            # Exit with non-zero status to indicate failure
             sys.exit(1)
 
         # Extract just the license plate strings from the list and convert to a set for efficient lookup
-        # Ensure all_lpoi_items is treated as a list
         lpoi_plates = {item.get('license_plate') for item in all_lpoi_items if isinstance(item, dict) and item.get('license_plate')}
 
         logger.info(f"Successfully retrieved {len(lpoi_plates)} License Plates of Interest.")
@@ -100,14 +87,13 @@ def main():
 
         # --- Step 2: Fetch LPR-enabled cameras ---
         logger.info("Fetching LPR-enabled cameras...")
-        # fetch_lpr_enabled_cameras now raises an exception on error
         lpr_cameras = fetch_lpr_enabled_cameras(api_token)
 
         if not lpr_cameras:
             logger.warning("No LPR-enabled cameras found. Exiting.")
             sys.exit(0)
 
-        # Create a mapping from camera_id to camera name for easy lookup (not strictly needed for this report, but good practice)
+        # Create a mapping from camera_id to camera name for easy lookup
         camera_name_map = {cam['camera_id']: cam.get('name', 'Unnamed Camera') for cam in lpr_cameras}
         logger.debug(f"Camera ID to Name map created: {camera_name_map}")
 
@@ -126,16 +112,12 @@ def main():
             if camera_id:
                 logger.info(f"Fetching LPR images for camera: {camera_name} (ID: {camera_id})")
                 try:
-                    # Fetch images for the current camera
-                    # fetch_lpr_images_for_camera now raises an exception on error
                     detections = fetch_lpr_images_for_camera(api_token, camera_id, start_time, end_time)
                     total_detections_fetched += len(detections)
-                    all_detections.extend(detections) # Add all detections, filtering comes next
+                    all_detections.extend(detections)
                 except Exception as camera_fetch_error:
-                    # Log the error specific to this camera fetch
                     logger.error(f"Failed to fetch LPR images for camera {camera_name} (ID: {camera_id}): {camera_fetch_error}", exc_info=True)
-                    error_occurred = True # Set the flag if any camera fetch fails
-                    # Continue to the next camera to try and fetch others
+                    error_occurred = True
             else:
                 logger.warning(f"Skipping camera entry with no camera_id: {camera}")
 
@@ -146,22 +128,16 @@ def main():
 
         logger.info("Categorizing and aggregating detections by hour...")
         for det in all_detections:
-            # Ensure detection is a dictionary and has 'license_plate' and 'timestamp'
             if isinstance(det, dict) and 'license_plate' in det and 'timestamp' in det:
                 timestamp = det['timestamp']
                 license_plate = det['license_plate']
 
                 try:
-                    # Convert timestamp to datetime object in local timezone
                     dt_object = datetime.datetime.fromtimestamp(timestamp)
-                    # Get date (YYYY-MM-DD) and hour (0-23)
                     date_str = dt_object.strftime('%Y-%m-%d')
-                    hour = dt_object.hour # 0-23
+                    hour = dt_object.hour
 
-                    # Determine if it's LPOI or Non-LPOI
                     category = 'lpoi' if license_plate in lpoi_plates else 'non_lpoi'
-
-                    # Increment the count for the specific hour and category
                     hourly_counts[(date_str, hour)][category] += 1
 
                 except (TypeError, ValueError) as e:
@@ -177,32 +153,22 @@ def main():
 
         # --- Step 5: Print the Hourly Report Table ---
         if hourly_counts:
-            # Sort the hours for printing
             sorted_hours = sorted(hourly_counts.keys())
 
-            # Define column widths (adjust as needed)
-            # Define column widths (adjust as needed)
-            date_width = 10 # YYYY-MM-DD
-            hour_width = 15 # HH AM/PM - HH AM/PM
-            non_lpoi_width = 10 # Count (Adjusted)
-            lpoi_width = 10 # Count (Adjusted)
-
-            # Calculate total width for separator lines
-            # Add 3 for each column separator '|' and 2 for padding ' | '
+            date_width = 10
+            hour_width = 15
+            non_lpoi_width = 10
+            lpoi_width = 10
             total_width = date_width + hour_width + non_lpoi_width + lpoi_width + (3 * 3) + 2
 
-            # Print header
-            print("-" * total_width) # Top separator line
-            # Report title including the date range queried
+            print("-" * total_width)
             formatted_start_date = datetime.datetime.fromtimestamp(start_time).strftime('%Y-%m-%d')
             formatted_end_date = datetime.datetime.fromtimestamp(end_time).strftime('%Y-%m-%d')
 
-            # Remove leading/trailing '|' from the title line
             print(f"LPR Hourly Report ::: {formatted_start_date} to {formatted_end_date}")
-            print("-" * total_width) # Separator line after title
-            # Remove ' Count' from column headers
+            print("-" * total_width)
             print(f"{'Date':<{date_width}} | {'Hour':<{hour_width}} | {'Non-LPOI':<{non_lpoi_width}} | {'LPOI':<{lpoi_width}}")
-            print("-" * total_width) # Header separator line
+            print("-" * total_width)
 
             previous_date = None
             for date_str, hour in sorted_hours:
@@ -210,26 +176,21 @@ def main():
                 non_lpoi_count = counts['non_lpoi']
                 lpoi_count = counts['lpoi']
 
-                # Format the hour range (e.g., "03 PM - 04 PM")
-                # Create datetime objects for the start and end of the hour
                 dt_start_of_hour = datetime.datetime.strptime(f"{date_str} {hour:02d}:00:00", '%Y-%m-%d %H:%M:%S')
                 dt_end_of_hour = dt_start_of_hour + datetime.timedelta(hours=1)
 
-                # Use '%I %p' to get hour and AM/PM without minutes
                 formatted_hour_start = dt_start_of_hour.strftime('%I %p')
                 formatted_hour_end = dt_end_of_hour.strftime('%I %p')
                 hour_range_str = f"{formatted_hour_start} - {formatted_hour_end}"
 
-                # Add separator line at midnight (hour 0) and noon (hour 12), but not before the very first row
                 if previous_date is not None and (hour == 0 or hour == 12):
-                     print("-" * total_width) # Group separator line
+                     print("-" * total_width)
 
-                # Print the data row
                 print(f"{date_str:<{date_width}} | {hour_range_str:<{hour_width}} | {non_lpoi_count:<{non_lpoi_width}} | {lpoi_count:<{lpoi_width}}")
 
-                previous_date = date_str # Update previous date tracker
+                previous_date = date_str
 
-            print("-" * total_width) # Bottom separator line
+            print("-" * total_width)
 
         else:
             print("\nNo LPR detections found in the specified time range to generate an hourly report.")
@@ -243,7 +204,6 @@ def main():
         logger.error(f"Script execution failed: {e}", exc_info=True)
         sys.exit(1)
     finally:
-        # Ensure logs are flushed before exiting
         logging.shutdown()
 
 if __name__ == '__main__':
