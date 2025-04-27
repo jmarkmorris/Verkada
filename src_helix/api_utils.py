@@ -224,7 +224,13 @@ def fetch_all_paginated_data(api_token: str, endpoint: str, list_key: str, param
 
     while True:
         current_params = initial_params.copy()
-        current_params["page_size"] = 1000 # Use max page size for efficiency
+        # Only add page_size if the endpoint is NOT the cameras endpoint
+        if endpoint != CAMERAS_ENDPOINT:
+            current_params["page_size"] = 250 # Use smaller page size for non-camera endpoints
+            logger.debug(f"Using page_size=250 for endpoint {endpoint}")
+        else:
+            logger.debug(f"Not using page_size parameter for endpoint {endpoint}")
+
 
         if page_token:
             current_params["page_token"] = page_token
@@ -285,6 +291,7 @@ def fetch_all_cameras(api_token: str) -> list:
     Handles pagination.
     """
     logger.info("Fetching all cameras...")
+    # This will now call fetch_all_paginated_data without adding page_size
     return fetch_all_paginated_data(api_token, CAMERAS_ENDPOINT, 'cameras')
 
 
@@ -559,3 +566,4 @@ def filter_lpr_by_non_lpoi(detections: list, lpoi_set: set) -> list:
 #     #         logger.error(f"Failed to get token: {e}")
 #     # else:
 #     #     logger.warning("API_KEY not set, cannot test get_api_token.")
+
