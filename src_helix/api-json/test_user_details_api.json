@@ -7,6 +7,7 @@
     ],
     "ble_unlock": false,
     "cards": [],
+    "end_date": "",
     "entry_code": "",
     "has_profile_photo": false,
     "license_plates": [
@@ -18,5 +19,6 @@
     ],
     "mfa_codes": [],
     "remote_unlock": false,
+    "start_date": "",
     "user_id": ""
 }

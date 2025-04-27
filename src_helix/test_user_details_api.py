@@ -10,6 +10,7 @@ import logging
 import requests
 import argparse
 import traceback
+import time # Import the time module
 
 # Import shared utility functions and constants, including configure_logging and save_json_template
 # Import _fetch_data from api_utils
@@ -164,6 +165,10 @@ def main():
                 sys.stdout.flush() # Explicitly flush stdout
 
                 logger.info(f"Attempting to fetch details for user at index {args.user_index} (ID: {user_id_to_fetch})...")
+
+                # Add a small delay before fetching user details
+                time.sleep(0.5) # Pause for 0.5 seconds
+
                 user_details = fetch_user_details(api_token, user_id_to_fetch)
 
                 # Print the custom line using the user number and name from the *list* record
