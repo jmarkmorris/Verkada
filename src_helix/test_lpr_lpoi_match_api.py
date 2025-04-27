@@ -63,6 +63,7 @@ def main():
     else:
         logger.debug(f"API_KEY found: {api_key[:5]}...{api_key[-4:]}")
 
+    error_occurred = False # Flag to track if any fetch failed
     try:
         # Get API token
         logger.debug("Attempting to get API token...")
@@ -78,7 +79,14 @@ def main():
         # --- Step 1: Fetch License Plates of Interest (LPOI) ---
         logger.info("Fetching License Plates of Interest...")
         # Use the new fetch_all_lpoi function from api_utils
-        all_lpoi_items = fetch_all_lpoi(api_token)
+        # fetch_all_lpoi now returns a tuple (list, error_flag)
+        all_lpoi_items, lpoi_error_flag = fetch_all_lpoi(api_token)
+
+        # Check if an error occurred during LPOI fetching
+        if lpoi_error_flag:
+            logger.error("Error occurred during pagination while fetching LPOI list. Cannot proceed.")
+            # Exit with non-zero status to indicate failure
+            sys.exit(1)
 
         # Extract just the license plate strings from the list and convert to a set for efficient lookup
         # Ensure all_lpoi_items is treated as a list
@@ -93,7 +101,8 @@ def main():
 
         # --- Step 2: Fetch LPR-enabled cameras ---
         logger.info("Fetching LPR-enabled cameras...")
-        lpr_cameras = fetch_lpr_enabled_cameras(api_token) # Use the imported function
+        # fetch_lpr_enabled_cameras now raises an exception on error
+        lpr_cameras = fetch_lpr_enabled_cameras(api_token)
 
         if not lpr_cameras:
             logger.warning("No LPR-enabled cameras found. Exiting.")
@@ -117,13 +126,19 @@ def main():
             camera_name = camera.get('name', 'Unnamed Camera')
             if camera_id:
                 logger.info(f"Fetching LPR images for camera: {camera_name} (ID: {camera_id})")
-                detections = fetch_lpr_images_for_camera(api_token, camera_id, start_time, end_time) # Use imported function
-                total_detections_fetched += len(detections)
-                # Add camera name to each detection for easier printing *before* filtering
-                for det in detections:
-                    det['camera_name'] = camera_name
-                all_detections.extend(detections)
-
+                try:
+                    # fetch_lpr_images_for_camera now raises an exception on error
+                    detections = fetch_lpr_images_for_camera(api_token, camera_id, start_time, end_time)
+                    total_detections_fetched += len(detections)
+                    # Add camera name to each detection for easier printing *before* filtering
+                    for det in detections:
+                        det['camera_name'] = camera_name
+                    all_detections.extend(detections)
+                except Exception as camera_fetch_error:
+                    # Log the error specific to this camera fetch
+                    logger.error(f"Failed to fetch LPR images for camera {camera_name} (ID: {camera_id}): {camera_fetch_error}", exc_info=True)
+                    error_occurred = True # Set the flag if any camera fetch fails
+                    # Continue to the next camera to try and fetch others
             else:
                 logger.warning(f"Skipping camera entry with no camera_id: {camera}")
 
@@ -183,6 +198,11 @@ def main():
                 print(f"{display_plate:<{plate_width}} | {display_gate:<{gate_width}} | {display_time:<{time_width}}")
         else:
             print("\nNo LPR detections matching License Plates of Interest found in the specified time range.")
+
+        # --- Step 6: Check if errors occurred during fetching ---
+        if error_occurred:
+            logger.error("One or more errors occurred while fetching LPR images for cameras. Results may be incomplete.")
+            sys.exit(1) # Exit with non-zero code to indicate failure
 
     except Exception as e:
         logger.error(f"Script execution failed: {e}", exc_info=True)

@@ -201,7 +201,7 @@ def _fetch_data(api_token: str = None, endpoint: str = None, method: str = 'GET'
         raise
 
 
-def fetch_all_paginated_data(api_token: str, endpoint: str, list_key: str, params: dict = None) -> list:
+def fetch_all_paginated_data(api_token: str, endpoint: str, list_key: str, params: dict = None) -> tuple[list, bool]:
     """
     Fetches all data from a paginated API endpoint.
     Handles pagination using 'next_page_token'.
@@ -213,12 +213,15 @@ def fetch_all_paginated_data(api_token: str, endpoint: str, list_key: str, param
         params: Optional dictionary of initial query parameters.
 
     Returns:
-        A list containing all items from all pages.
+        A tuple containing:
+            - A list containing all items fetched from all pages.
+            - A boolean flag indicating if any error occurred during pagination (True if error, False otherwise).
     """
     all_items = []
     page_token = None
     page_count = 0
     initial_params = params.copy() if params else {} # Copy initial params
+    error_occurred = False # Flag to track errors during pagination
 
     logger.debug(f"Fetching all data from {endpoint} with list key '{list_key}'")
 
@@ -270,38 +273,42 @@ def fetch_all_paginated_data(api_token: str, endpoint: str, list_key: str, param
             # _fetch_data already logged the specific error (HTTP, JSON, etc.)
             # Log a higher-level error here and stop pagination
             logger.error(f"Failed to fetch data from {endpoint}, page {page_count + 1}: {e}")
+            error_occurred = True # Set the error flag
             break # Stop pagination on any error
 
-    logger.info(f"Finished fetching all data from {endpoint}. Total items fetched: {len(all_items)}")
-    return all_items
+    logger.info(f"Finished fetching all data from {endpoint}. Total items fetched: {len(all_items)}. Error occurred: {error_occurred}")
+    return all_items, error_occurred # Return the list and the error flag
 
 
-def fetch_all_access_users(api_token: str) -> list:
+def fetch_all_access_users(api_token: str) -> tuple[list, bool]:
     """
     Fetches all access users from the /access/v1/access_users endpoint.
-    Handles pagination.
+    Handles pagination. Returns (list_of_users, error_flag).
     """
     logger.info("Fetching all access users...")
+    # Correctly return the tuple from fetch_all_paginated_data
     return fetch_all_paginated_data(api_token, USERS_LIST_ENDPOINT, 'access_members')
 
 
-def fetch_all_cameras(api_token: str) -> list:
+def fetch_all_cameras(api_token: str) -> tuple[list, bool]:
     """
     Fetches all cameras from the /cameras/v1/devices endpoint.
-    Handles pagination.
+    Handles pagination. Returns (list_of_cameras, error_flag).
     """
     logger.info("Fetching all cameras...")
     # This will now call fetch_all_paginated_data without adding page_size
+    # Correctly return the tuple from fetch_all_paginated_data
     return fetch_all_paginated_data(api_token, CAMERAS_ENDPOINT, 'cameras')
 
 
-def fetch_all_lpoi(api_token: str) -> list:
+def fetch_all_lpoi(api_token: str) -> tuple[list, bool]:
     """
     Fetches all License Plates of Interest (LPOI) from the API.
-    Handles pagination.
+    Handles pagination. Returns (list_of_lpoi, error_flag).
     """
     logger.info("Fetching all License Plates of Interest (LPOI)...")
     # The LPOI endpoint response has the list under the key 'license_plate_of_interest'
+    # Correctly return the tuple from fetch_all_paginated_data
     return fetch_all_paginated_data(api_token, LPOI_ENDPOINT, 'license_plate_of_interest')
 
 
@@ -405,10 +412,17 @@ def fetch_lpr_enabled_cameras(api_token: str) -> list:
     """
     Fetches all cameras and filters for those with 'License' in their name.
     Returns a list of camera dictionaries.
+    Raises Exception if fetching cameras failed.
     """
     try:
         # Use the new fetch_all_cameras function to get all cameras
-        all_cameras = fetch_all_cameras(api_token)
+        all_cameras, error_flag = fetch_all_cameras(api_token)
+
+        # Check if an error occurred during fetching
+        if error_flag:
+            # Log the error and raise an exception to signal failure
+            logger.error("Error occurred while fetching camera list. Cannot proceed.")
+            raise Exception("Failed to fetch complete camera list due to pagination error.")
 
         logger.debug(f"Total cameras fetched in fetch_lpr_enabled_cameras: {len(all_cameras)}")
 
@@ -432,10 +446,12 @@ def fetch_lpr_images_for_camera(api_token: str, camera_id: str, start_time: int,
     """
     Fetches LPR images (detections) for a single camera within a time range,
     handling pagination. Returns a list of detection dictionaries.
+    Raises Exception if an error occurs during pagination.
     """
     all_detections = []
     page_token = None
     page_count = 0
+    error_occurred = False # Flag specific to this function's pagination
 
     logger.debug(f"Fetching LPR images for camera ID: {camera_id} from {datetime.datetime.fromtimestamp(start_time)} to {datetime.datetime.fromtimestamp(end_time)}")
 
@@ -477,12 +493,18 @@ def fetch_lpr_images_for_camera(api_token: str, camera_id: str, start_time: int,
                 break # No more pages
 
         except Exception as e:
-            # _fetch_data already logs the specific error (HTTP, JSON, etc.)
+            # _fetch_data already logged the specific error (HTTP, JSON, etc.)
             # Log a higher-level error here and stop pagination for this camera
             logger.error(f"Failed to fetch LPR images for camera {camera_id}, page {page_count + 1}: {e}")
+            error_occurred = True # Set the error flag
             break # Stop pagination for this camera on any error
 
-    logger.info(f"Finished fetching LPR images for camera {camera_id}. Total detections: {len(all_detections)}")
+    logger.info(f"Finished fetching LPR images for camera {camera_id}. Total detections: {len(all_detections)}. Error occurred: {error_occurred}")
+
+    # If an error occurred during pagination, raise an exception
+    if error_occurred:
+        raise Exception(f"Failed to fetch complete LPR image data for camera {camera_id} due to pagination error.")
+
     return all_detections
 
 

@@ -62,7 +62,14 @@ def main():
 
         # Fetch ALL LPOI data using the function from api_utils
         logger.info("Attempting to fetch ALL LPOI data...")
-        lpoi_list = fetch_all_lpoi(api_token) # This now returns the full list
+        # fetch_all_lpoi now returns a tuple (list, error_flag)
+        lpoi_list, error_flag = fetch_all_lpoi(api_token)
+
+        # Check if an error occurred during fetching
+        if error_flag:
+            logger.error("Error occurred during pagination while fetching LPOI list. Data may be incomplete.")
+            # Exit with non-zero status to indicate failure
+            sys.exit(1)
 
         logger.info(f"Successfully retrieved ALL License Plates of Interest. Found {len(lpoi_list)} items.")
 
