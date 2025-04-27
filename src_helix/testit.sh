@@ -65,10 +65,11 @@ skipped_tests=(
 )
 
 # Counters
-total_tests_defined=${#test_list[@]} # Total tests we attempt to run
+total_tests_to_attempt=${#test_list[@]} # Total tests we attempt to run
 passed_count=0
 failed_count=0
-skipped_count=${#skipped_tests[@]} # Initialize with count of explicitly skipped tests
+design_skipped_count=${#skipped_tests[@]} # Initialize with count of explicitly skipped tests
+# Removed runtime_skipped_count
 
 # Fixed width for separators
 SEPARATOR_WIDTH=80
@@ -163,9 +164,9 @@ for test_item in "${test_list[@]}"; do
   # --- End specific test handling ---
 
   if [ "$skip_current_test" = true ]; then
-    echo "SKIP: $description"
-    # Increment skipped_count for tests skipped due to setup failure
-    skipped_count=$((skipped_count + 1))
+    echo "FAIL: $description (Runtime Setup Failed)" # Changed from SKIP to FAIL
+    # Increment failed_count for tests skipped due to setup failure
+    failed_count=$((failed_count + 1)) # Changed from runtime_skipped_count
   else
     # Convert script path to module path (e.g., src_helix/test_script.py -> src_helix.test_script)
     module_path=$(echo "$script_file" | sed 's/\.py$//' | sed 's/\//./g')
@@ -214,11 +215,14 @@ fi
 echo "================================================================================"
 echo " Test Summary"
 echo "================================================================================"
-echo " Total Tests Defined: $((total_tests_defined + ${#skipped_tests[@]}))" # Total tests in both lists
-echo " Tests Attempted: $total_tests_defined"
+# Calculate total defined tests (attempted + skipped by design)
+total_defined=$((total_tests_to_attempt + design_skipped_count))
+echo " Total Tests Defined: $total_defined"
+echo " Tests Attempted: $total_tests_to_attempt"
 echo " Passed: $passed_count"
-echo " Failed: $failed_count"
-echo " Skipped: $skipped_count" # Includes both explicitly skipped and setup-skipped
+echo " Failed: $failed_count" # Now includes runtime setup failures
+echo " Skipped (by design): $design_skipped_count" # Only shows design skips
+# Removed runtime skipped count line
 echo "================================================================================"
 
 # Exit with a non-zero status if any tests failed

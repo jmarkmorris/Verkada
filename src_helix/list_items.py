@@ -4,6 +4,9 @@ Helper script to fetch lists of items (users, cameras) from the Verkada API
 and output them as JSON to stdout.
 Intended for use by shell scripts (like runtest.sh, testit.sh) for parsing.
 Logs are directed to stderr to keep stdout clean for JSON output.
+
+NOTE: This script fetches ONLY THE FIRST PAGE of results for efficiency,
+as it's primarily used by testit.sh to get a single item ID.
 """
 import os
 import sys
@@ -14,8 +17,9 @@ import argparse
 # Import shared utility functions, including the new fetch_all functions
 from src_helix.api_utils import (
     get_api_token,
-    fetch_all_access_users,
-    fetch_all_cameras,
+    _fetch_data, # Use the basic fetch function
+    USERS_LIST_ENDPOINT,
+    CAMERAS_ENDPOINT,
     configure_logging,
     LOGS_DIR # Import LOGS_DIR to potentially configure file logging path
 )
@@ -65,7 +69,7 @@ logger = logging.getLogger(__name__)
 
 def main():
     """Main entry point for the script."""
-    parser = argparse.ArgumentParser(description="Fetch and list Verkada API items as JSON")
+    parser = argparse.ArgumentParser(description="Fetch and list Verkada API items as JSON (First Page Only)")
     parser.add_argument(
         "--type",
         choices=['users', 'cameras'],
@@ -99,14 +103,29 @@ def main():
         logger.info(f"Successfully retrieved API token: {api_token[:10]}...")
 
         items_list = []
+        endpoint = ""
+        list_key = ""
+
         if args.type == 'users':
-            logger.info("Fetching all access users...")
-            items_list = fetch_all_access_users(api_token)
-            logger.info(f"Fetched {len(items_list)} access users.")
+            endpoint = USERS_LIST_ENDPOINT
+            list_key = 'access_members'
+            logger.info(f"Fetching first page of {args.type}...")
         elif args.type == 'cameras':
-            logger.info("Fetching all cameras...")
-            items_list = fetch_all_cameras(api_token)
-            logger.info(f"Fetched {len(items_list)} cameras.")
+            endpoint = CAMERAS_ENDPOINT
+            list_key = 'cameras'
+            logger.info(f"Fetching first page of {args.type}...")
+
+        # Fetch only the first page using _fetch_data
+        first_page_data = _fetch_data(api_token, endpoint, method='GET')
+
+        # Extract the list from the response dictionary
+        items_list = first_page_data.get(list_key, []) if isinstance(first_page_data, dict) else []
+
+        if not isinstance(items_list, list):
+            logger.error(f"Expected a list under the key '{list_key}' but found type {type(items_list)}. API response structure might have changed.")
+            sys.exit(1)
+
+        logger.info(f"Fetched {len(items_list)} {args.type} from the first page.")
 
         # Output the list as JSON to stdout
         # Use ensure_ascii=False to handle non-ASCII characters correctly

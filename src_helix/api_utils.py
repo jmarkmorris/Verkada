@@ -276,7 +276,7 @@ def fetch_all_paginated_data(api_token: str, endpoint: str, list_key: str, param
             error_occurred = True # Set the error flag
             break # Stop pagination on any error
 
-    logger.info(f"Finished fetching all data from {endpoint}. Total items fetched: {len(all_items)}. Error occurred: {error_occurred}")
+    logger.info(f"Finished fetching all data from {endpoint}. Total items fetched: {len(all_items)}. Failure occurred: {error_occurred}")
     return all_items, error_occurred # Return the list and the error flag
 
 
@@ -499,7 +499,7 @@ def fetch_lpr_images_for_camera(api_token: str, camera_id: str, start_time: int,
             error_occurred = True # Set the error flag
             break # Stop pagination for this camera on any error
 
-    logger.info(f"Finished fetching LPR images for camera {camera_id}. Total detections: {len(all_detections)}. Error occurred: {error_occurred}")
+    logger.info(f"Finished fetching LPR images for camera {camera_id}. Total detections: {len(all_detections)}. Failure occurred: {error_occurred}")
 
     # If an error occurred during pagination, raise an exception
     if error_occurred:
