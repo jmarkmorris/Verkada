@@ -2,40 +2,6 @@
 
 This document outlines potential improvements for the Python API test scripts and the `runtest.sh` runner, ordered by estimated risk (least to most).
 
-## Implemented Improvements
-
-1.  **Centralized Logging Configuration:**
-    *   **Problem:** Repetitive logging setup across scripts.
-    *   **Implementation:** Created `configure_logging` function in `api_utils.py` and called it from each test script's `main` function.
-    *   **Benefit:** Consistent logging configuration across the project, reduced repetitive code.
-    *   **Estimated Lines Eliminated:** Approximately 100 lines across test scripts.
-    *   **Risk:** Low.
-
-2.  **Centralized JSON Template Saving:**
-    *   **Problem:** Repeated logic for generating and saving JSON templates.
-    *   **Implementation:** Created `save_json_template` function in `api_utils.py` and called it from relevant test scripts (`test_cameras_api.py`, `test_token_api.py`, `test_user_details_api.py`, `test_access_events_api.py`, `test_lpoi_api.py`, `test_users_list_api.py`, `test_notifications_api.py`, `test_lpr_timestamps_api.py`).
-    *   **Benefit:** Consolidated template saving logic, reduced repetitive code.
-    *   **Estimated Lines Eliminated:** Approximately 90 lines across test scripts.
-    *   **Risk:** Low.
-
-3.  **Improved `runtest.sh` Argument Handling:**
-    *   **Problem:** Repeated logic in `runtest.sh` for prompting for `history_days` and `history_hours`.
-    *   **Implementation:** Consolidated time-based argument prompting into the `get_time_args` function in `runtest.sh`.
-    *   **Benefit:** Reduced repetition and improved structure in `runtest.sh`.
-    *   **Risk:** Low.
-
-4.  **Refined `runtest.sh` Menu Parsing:**
-    *   **Problem:** Fragile parsing of `menu_items` array in `runtest.sh` using comma delimiter, which could break if fields contained commas.
-    *   **Implementation:** Changed the delimiter for `menu_items` array in `runtest.sh` to pipe `|`.
-    *   **Benefit:** More robust parsing of menu items.
-    *   **Risk:** Low.
-
-5.  **Created Automated Test Runner (`testit.sh`):**
-    *   **Problem:** No automated way to run all tests and check for pass/fail status.
-    *   **Implementation:** Created `testit.sh` script to iterate through most tests, handle parameters programmatically for `test_user_details_api.py` (by selecting the first user from the list), skip `test_lpr_timestamps_api.py` (due to requiring specific, non-automatable input), check script exit codes, and report a summary.
-    *   **Benefit:** Enables automated testing, provides a quick overview of API endpoint status, and clearly identifies tests that require manual interaction.
-    *   **Risk:** Low (for the script itself; relies on the stability and exit codes of the underlying Python tests).
-
 ## Remaining Improvement Ideas (Ordered by Least Risk)
 
 1.  **Centralize Pagination Logic:**
