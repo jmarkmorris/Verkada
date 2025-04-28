@@ -7,13 +7,10 @@ time range, then aggregates and prints counts per hour in a table.
 """
 import os
 import sys
-import json
 import logging
-import requests
 import argparse
 import time
 import datetime
-import traceback
 from collections import defaultdict # To easily count detections per hour
 
 # Import shared utility functions and the centralized logging function

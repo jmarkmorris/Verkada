@@ -7,11 +7,9 @@ import os
 import sys
 import json
 import logging
-import requests
 import argparse
 import time
 import datetime
-import traceback
 
 # Import shared utility functions and the centralized logging function and save_json_template
 from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, NOTIFICATIONS_ENDPOINT, configure_logging, save_json_template, fetch_all_notifications

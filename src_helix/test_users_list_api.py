@@ -7,9 +7,7 @@ import os
 import sys
 import json
 import logging
-import requests
 import argparse
-import traceback
 
 # Import shared utility functions and constants, including configure_logging and save_json_template
 # Import fetch_all_access_users from api_utils

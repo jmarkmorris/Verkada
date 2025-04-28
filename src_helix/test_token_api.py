@@ -6,9 +6,7 @@ import os
 import sys
 import json
 import logging
-import requests
 import argparse
-import traceback
 
 # Import shared utility functions and constants, including configure_logging and save_json_template
 from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, TOKEN_ENDPOINT, configure_logging, save_json_template

@@ -6,13 +6,10 @@ within a specified time range, then prints only the detections that *do not* mat
 """
 import os
 import sys
-import json
 import logging
-import requests
 import argparse
 import time
 import datetime
-import traceback
 
 # Import shared utility functions and the centralized logging function
 from src_helix.api_utils import get_api_token, VERKADA_API_BASE_URL, fetch_lpr_enabled_cameras, fetch_lpr_images_for_camera, format_timestamp, configure_logging, filter_lpr_by_non_lpoi, fetch_all_lpoi

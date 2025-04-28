@@ -9,8 +9,6 @@ import json
 import logging
 import requests
 import argparse
-import traceback
-import time # Import the time module
 
 # Import shared utility functions and constants, including configure_logging and save_json_template
 from src_helix.api_utils import get_api_token, create_template, VERKADA_API_BASE_URL, USERS_LIST_ENDPOINT, USER_DETAILS_ENDPOINT, _fetch_data, configure_logging, save_json_template
