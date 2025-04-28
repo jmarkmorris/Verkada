@@ -7,7 +7,7 @@ import os
 import sys
 import json
 import logging
-import requests
+import requests # type: ignore
 import argparse
 
 # Import shared utility functions and constants, including configure_logging and save_json_template
